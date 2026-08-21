@@ -1,0 +1,5 @@
+Milhão IA — Funcionamento do Jogo
+
+O Milhão IA é um jogo educativo inspirado no formato do Show do Milhão, no qual o jogador responde perguntas sobre lógica de programação e utiliza ajudas tradicionais do jogo que são realizadas por uma Inteligência Artificial simulada.
+
+O principal objetivo é demonstrar que a Inteligência Artificial pode ser uma ferramenta útil para auxiliar na tomada de decisões, mas suas respostas não são necessariamente confiáveis. Por isso, o jogador deverá analisar o resultado fornecido pela IA e decidir se deseja aceitá-lo ou não.
