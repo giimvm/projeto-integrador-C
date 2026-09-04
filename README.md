@@ -19,3 +19,7 @@ Dessa forma, o jogo busca transformar conceitos de lógica proposicional e alfab
 - Roteirista -> Raysha Neide, Letícia Minucelli
 - Researcher/UX -> Júlia Aquino, Victor Pina, Vitória Thayná
 - Visual Designer -> Luma Frazão, Raysha Neide
+
+## Evidência do Backlog
+
+<img src="src/Backlog.png"
