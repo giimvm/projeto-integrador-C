@@ -64,7 +64,7 @@ Formular hipóteses
 Solucionar o caso
 
 
-
+## Funções Dentro do Projeto
 
 | Papel | Quem | O que faz no AI.Libi | Importância |
 |---|---|---|---|
@@ -75,3 +75,4 @@ Solucionar o caso
 | **Researcher / Especialista de Conteúdo** | Júlia Aquino, Victor Pina, Vitória Thayná | Valida os conceitos de IA, lógica proposicional e implicação lógica e, quando necessário, aspectos relacionados à investigação criminal. | **Muito importante** |
 | **UX Designer** | Júlia Aquino, Victor Pina, Vitória Thayná | Define como o jogador navega, consulta evidências, compara pistas, recebe as análises da IA e entende as informações sem confusão. | **Muito importante** |
 | **Visual Designer / Artista** | Luma Frazão, Raysha Neide | Produz personagens, cenários, interface, fotografias, documentos e demais elementos visuais do caso. | **Importante** |
+
