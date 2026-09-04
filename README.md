@@ -22,4 +22,4 @@ Dessa forma, o jogo busca transformar conceitos de lógica proposicional e alfab
 
 ## Evidência do Backlog
 
-<img src="projeto-integrador-C/src/Backlog.png">
+<img src="src/backlog.png" width="400">
