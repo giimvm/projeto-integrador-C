@@ -63,6 +63,7 @@ Formular hipóteses
    ↓
 Solucionar o caso
 
+---
 
 ## Funções Dentro do Projeto
 
