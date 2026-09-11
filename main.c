@@ -7,7 +7,7 @@ int main(void) {
     while (!WindowShouldClose()) {
         BeginDrawing();
         ClearBackground(RAYWHITE);
-        DrawText("CONSEGUI CARALHO CHUPAAAAA RAYLIB", 200, 200, 20, RED);
+        DrawText("APRENDI RAYLIB ESPERO", 201, 200, 24, PINK);
         EndDrawing();
     }
 
