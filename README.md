@@ -165,6 +165,10 @@ Esses conceitos são utilizados como parte da própria progressão do jogo, evit
 
 ---
 
+##🎮 Protótipo Navegável
+
+https://www.figma.com/proto/nYrh1RndZJO9kXkZlXdNWN/ai.libe?node-id=8-10&t=DVWzvsOVZvj6wX6e-0&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1
+
 ## 👥 Equipe
 
 Product Owner
