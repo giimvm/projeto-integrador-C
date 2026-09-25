@@ -1,7 +1,7 @@
 
 <img src="src/Sem título.png" width="250">
 
-«IA.libi é um jogo investigativo que combina lógica proposicional, pensamento crítico e alfabetização digital para ensinar o jogador a questionar e analisar informações em um cenário onde conteúdos gerados por Inteligência Artificial podem ser usados para manipular uma investigação.»
+«AI.libi é um jogo investigativo que combina lógica proposicional, pensamento crítico e alfabetização digital para ensinar o jogador a questionar e analisar informações em um cenário onde conteúdos gerados por Inteligência Artificial podem ser usados para manipular uma investigação.»
 
 ---
 
