@@ -165,9 +165,406 @@ Esses conceitos são utilizados como parte da própria progressão do jogo, evit
 
 ---
 
+# User storys
+
+FIGMA COM USER STORYS: 
+<a href="https://www.figma.com/make/Gbf4PrvbA808cUpLNcBonx/Storyboard-para-User-Stories?fullscreen=1&t=CxG7oRRqDXarRII3-1&code-node-id=0-6">Figma</a>
+
+# US01 - Iniciar Investigação
+
+## História de Usuário
+
+Como jogador,
+quero iniciar uma investigação,
+para resolver o caso apresentado.
+
+## Sketch
+
+<img src="src/US01.png" width="300">
+
+## Storyboard
+
+1. O jogador abre o jogo.
+2. O menu principal é apresentado.
+3. O jogador seleciona "Iniciar Investigação".
+4. O contexto do caso é exibido.
+5. O primeiro interrogatório é iniciado.
+
+## Diagrama de Atividades
+
+<img src="src/us01_diagrama.png" width="300">
+
+---
+
+# US02 - Consultar Tutorial
+
+## História de Usuário
+
+Como jogador,
+quero acessar o tutorial,
+para entender as mecânicas do jogo.
+
+## Sketch
+
+<img src="src/US02.png" width="300">
+
+## Storyboard
+
+1. O jogador acessa o menu principal.
+2. Seleciona a opção Tutorial.
+3. O sistema apresenta as regras.
+4. O jogador aprende as mecânicas.
+5. Retorna ao menu principal.
+
+## Diagrama de Atividades
+
+<img src="src/us02_diagrama.png" width="300">
+
+
+---
+
+# US03 - Configurações
+
+## História de Usuário
+
+Como jogador,
+quero alterar as configurações,
+para personalizar minha experiência.
+
+## Sketch
+
+<img src="src/US03.png" width="300">
+
+## Storyboard
+
+1. O jogador acessa configurações.
+2. Ajusta as opções desejadas.
+3. Salva as alterações.
+4. O sistema registra as mudanças.
+5. Retorna ao menu principal.
+
+## Diagrama de Atividades
+
+<img src="src/us03_diagrama.png" width="300">
+
+---
+
+# US04 - Conhecer o Contexto do Caso
+
+## História de Usuário
+
+Como investigador,
+quero conhecer os detalhes do caso,
+para iniciar a investigação.
+
+## Sketch
+
+<img src="src/US04.png" width="300">
+
+## Storyboard
+
+1. A narrativa inicial é apresentada.
+2. O crime é descrito.
+3. Os suspeitos são apresentados.
+4. O objetivo da investigação é explicado.
+5. O jogador segue para o interrogatório.
+
+## Diagrama de Atividades
+
+<img src="src/us04_diagrama.png" width="300">
+
+---
+
+# US05 - Interrogar Suspeito
+
+## História de Usuário
+
+Como investigador,
+quero interrogar suspeitos,
+para obter informações sobre o caso.
+
+## Sketch
+
+<img src="src/US05.png" width="300">
+
+## Storyboard
+
+1. O jogador encontra um suspeito.
+2. O suspeito fornece seu depoimento.
+3. O jogador acompanha o diálogo.
+4. Novas pistas surgem.
+5. O desafio lógico é iniciado.
+
+## Diagrama de Atividades
+
+<img src="src/us05_diagrama.png" width="300">
+
+---
+
+# US06 - Resolver Pergunta de Lógica
+
+## História de Usuário
+
+Como investigador,
+quero resolver desafios de lógica,
+para desbloquear evidências.
+
+## Sketch
+
+<img src="src/US06.png" width="300">
+
+## Storyboard
+
+1. Uma pergunta lógica é apresentada.
+2. O jogador analisa as alternativas.
+3. Seleciona uma resposta.
+4. O sistema valida a resposta.
+5. O resultado é exibido.
+
+## Diagrama de Atividades
+
+<img src="src/us06_diagrama.png" width="300">
+
+---
+
+# US07 - Desbloquear Evidência
+
+## História de Usuário
+
+Como investigador,
+quero desbloquear evidências,
+para avançar na investigação.
+
+## Sketch
+
+<img src="src/US07.png" width="300">
+
+## Storyboard
+
+1. O jogador responde corretamente.
+2. A evidência é liberada.
+3. A evidência é adicionada ao dossiê.
+4. O jogador a visualiza.
+5. A análise é iniciada.
+
+## Diagrama de Atividades
+
+<img src="src/us07_diagrama.png" width="300">
+
+---
+
+# US08 - Identificar Evidência Gerada por IA
+
+## História de Usuário
+
+Como investigador,
+quero analisar evidências,
+para identificar adulterações por IA.
+
+## Sketch
+
+<img src="src/US08.png" width="300">
+
+## Storyboard
+
+1. O jogador visualiza a evidência.
+2. Analisa o conteúdo.
+3. Procura sinais de adulteração.
+4. Marca IA ou Autêntica.
+5. O sistema registra a resposta.
+
+## Diagrama de Atividades
+
+<img src="src/us08_diagrama.png" width="300">
+
+---
+
+# US09 - Consultar Dossiê
+
+## História de Usuário
+
+Como investigador,
+quero acessar o dossiê da investigação,
+para revisar as evidências obtidas.
+
+## Sketch
+
+<img src="src/US09.png" width="300">
+
+## Storyboard
+
+1. O jogador abre o dossiê.
+2. A lista de evidências é exibida.
+3. Uma evidência é selecionada.
+4. Os detalhes são analisados.
+5. O jogador retorna à investigação.
+
+## Diagrama de Atividades
+
+<img src="src/us09_diagrama.png" width="300">
+
+---
+
+# US10 - Avançar Entre Interrogatórios
+
+## História de Usuário
+
+Como investigador,
+quero avançar para novos interrogatórios,
+para continuar a investigação.
+
+## Sketch
+
+<img src="src/US10.png" width="300">
+
+## Storyboard
+
+1. O interrogatório atual termina.
+2. O sistema apresenta o resumo do desempenho.
+3. O jogador analisa as evidências obtidas.
+4. Clica em "Próximo Interrogatório".
+5. O próximo suspeito é carregado.
+
+## Diagrama de Atividades
+
+<img src="src/us10_diagrama.png" width="300">
+
+---
+
+# US11 - Revisar Evidências
+
+## História de Usuário
+
+Como investigador,
+quero revisar todas as evidências,
+para tomar uma decisão correta.
+
+## Sketch
+
+<img src="src/US11.png" width="300">
+
+## Storyboard
+
+1. Os interrogatórios terminam.
+2. O painel de evidências é aberto.
+3. O jogador revisa as provas.
+4. Compara os resultados.
+5. Prepara sua acusação.
+
+## Diagrama de Atividades
+
+<img src="src/us11_diagrama.png" width="300">
+
+---
+
+# US12 - Escolher Culpado
+
+## História de Usuário
+
+Como investigador,
+quero escolher o culpado,
+para encerrar a investigação.
+
+## Sketch
+
+<img src="src/US12.png" width="300">
+
+## Storyboard
+
+1. A lista de suspeitos é apresentada.
+2. O jogador revisa as informações.
+3. Seleciona um suspeito.
+4. Confirma a acusação.
+5. O sistema processa a escolha.
+
+## Diagrama de Atividades
+
+<img src="src/us12_diagrama.png" width="300">
+---
+
+# US13 - Good Ending
+
+## História de Usuário
+
+Como jogador,
+quero receber um final positivo,
+quando solucionar corretamente o caso.
+
+## Sketch
+
+<img src="src/US13.png" width="300">
+
+## Storyboard
+
+1. A acusação é enviada.
+2. O sistema verifica a resposta.
+3. O culpado correto é identificado.
+4. O caso é resolvido.
+5. O relatório final é exibido.
+
+## Diagrama de Atividades
+
+<img src="src/us13_diagrama.png" width="300">
+
+---
+
+# US14 - Bad Ending
+
+## História de Usuário
+
+Como jogador,
+quero visualizar as consequências de um erro,
+para compreender o resultado da investigação.
+
+## Sketch
+
+<img src="src/US14.png" width="300">
+
+## Storyboard
+
+1. A acusação é enviada.
+2. O sistema verifica a resposta.
+3. Um inocente é acusado.
+4. O caso permanece sem solução.
+5. O relatório final é apresentado.
+
+## Diagrama de Atividades
+
+<img src="src/us14_diagrama.png" width="300">
+
+---
+
+# US15 - Relatório Final
+
+## História de Usuário
+
+Como jogador,
+quero visualizar o relatório final,
+para compreender toda a investigação.
+
+## Sketch
+
+<img src="src/US15.png" width="300">
+
+## Storyboard
+
+1. A tela final é aberta.
+2. Todas as evidências são exibidas.
+3. As adulterações por IA são destacadas.
+4. A solução é explicada.
+5. Um alerta sobre o uso indevido da IA é apresentado.
+
+## Diagrama de Atividades
+
+<img src="src/us15_diagrama.png" width="300">
+
 ##🎮 Protótipo Navegável
 
-https://www.figma.com/proto/nYrh1RndZJO9kXkZlXdNWN/ai.libe?node-id=8-10&t=DVWzvsOVZvj6wX6e-0&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1
+[Protótipo no Figma](https://www.figma.com/proto/nYrh1RndZJO9kXkZlXdNWN/ai.libe?node-id=8-10&t=DVWzvsOVZvj6wX6e-0&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1
+)
+
+[Acesse o vídeo de navegação pelo protótipo no Google Drive](https://drive.google.com/file/d/1p1ygVFuu-OtDfhTMRVN4-6xVGGTo9_HO/view?usp=sharing)
+
 
 ## 👥 Equipe
 
