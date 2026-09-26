@@ -563,7 +563,7 @@ para compreender toda a investigação.
 [Protótipo no Figma](https://www.figma.com/proto/nYrh1RndZJO9kXkZlXdNWN/ai.libe?node-id=8-10&t=DVWzvsOVZvj6wX6e-0&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1
 )
 
-[Acesse o vídeo de navegação pelo protótipo no Google Drive](https://drive.google.com/file/d/10ybb_YWwRki6-qTxsIoHzPlVUvHI69Cb/view?usp=sharing)
+[Acesse o vídeo de navegação pelo protótipo no Google Drive](https://drive.google.com/file/d/1w0aCzOO3d0PE_nThnVuaYUD0AvGshSVF/view?usp=sharing)
 
 
 ## 👥 Equipe
