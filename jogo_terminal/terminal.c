@@ -684,14 +684,15 @@ void jogar() {
     if (menuEntreCenas() == 0) { abandonou = 1; return; }
     cena5();
     if (menuEntreCenas() == 0) { abandonou = 1; return; }
-    // Apresenta as últimas evidências e solicita a acusação final.
+    // Cena 6 revela o homicídio e libera as duas últimas evidências.
     cena6();
+    // Depois de todas as provas, o jogador faz a acusação final.
     acusacaoFinal();
 }
 
 // ---------------- MENU ----------------
 
-// Explica as regras necessárias para jogar e solucionar a investigação.
+// Explica ao jogador como funciona a investigação.
 void mostrarRegras() {
     limparTela();
     printf("=== REGRAS ===\n\n");
@@ -704,25 +705,23 @@ void mostrarRegras() {
     pausar();
 }
 
-// Permite ativar ou desativar as pausas entre as telas do jogo.
+// Permite ligar ou desligar as pausas entre as telas.
 void configuracoes() {
     int escolha;
 
     do {
         limparTela();
         printf("=== CONFIGURACOES ===\n\n");
-        // Mostra a configuração atual das pausas.
         printf("[1] Pausas entre telas: %s\n", pausasLigadas ? "LIGADO" : "DESLIGADO");
         printf("[0] Voltar\nOpcao: ");
         escolha = lerOpcao(0, 1);
-        // Alterna entre pausas ativadas e desativadas.
         if (escolha == 1) {
+            // O operador ! inverte o valor: 1 vira 0 e 0 vira 1.
             pausasLigadas = !pausasLigadas;
         }
     } while (escolha != 0);
 }
 
-// Apresenta o nome do projeto e os integrantes da equipe.
 void creditos() {
     limparTela();
     printf("=== CREDITOS ===\n\n");
@@ -732,27 +731,25 @@ void creditos() {
     pausar();
 }
 
-// Função principal: exibe o menu e direciona o jogador para cada opção.
 int main() {
     int opcao;
     int jogarDeNovo;
 
-    // Mantém o menu ativo até o jogador confirmar que deseja sair.
+    // Game loop: o jogo só termina quando o jogador escolhe Sair e confirma.
     do {
         limparTela();
         printf("==============================\n");
         printf("           IA.LIBI\n");
         printf("==============================\n\n");
         printf("[1] Jogar\n[2] Regras\n[3] Configuracoes\n[4] Creditos\n[0] Sair\n\nOpcao: ");
-        // Lê a opção escolhida e impede números fora do menu.
         opcao = lerOpcao(0, 4);
 
         if (opcao == 1) {
-            // Permite iniciar uma nova partida após terminar a anterior.
+            // Repete a investigação enquanto o jogador quiser jogar de novo.
             do {
                 jogar();
                 jogarDeNovo = 0;
-                // Não oferece outra partida se o jogador abandonou a investigação.
+                // Só pergunta se o jogador não abandonou o caso no meio.
                 if (abandonou == 0) {
                     printf("\nJogar novamente? [1] Sim [2] Voltar ao menu: ");
                     jogarDeNovo = (lerOpcao(1, 2) == 1);
@@ -767,7 +764,7 @@ int main() {
         } else {
             printf("\nTem certeza que quer sair? [1] Sim [2] Nao: ");
             if (lerOpcao(1, 2) == 2) {
-                opcao = -1;
+                opcao = -1;   // cancela a saída e volta ao menu
             }
         }
     } while (opcao != 0);
