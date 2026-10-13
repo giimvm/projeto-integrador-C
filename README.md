@@ -566,6 +566,51 @@ para compreender toda a investigação.
 [Acesse o vídeo de navegação pelo protótipo no Google Drive](https://drive.google.com/file/d/1w0aCzOO3d0PE_nThnVuaYUD0AvGshSVF/view?usp=sharing)
 
 
+# Como Compilar e Executar
+
+## Compilação
+
+No terminal, navegue até a pasta onde está localizado o arquivo `.c` e execute:
+
+```bash
+gcc Terminal.c -o Terminal.exe
+```
+
+> Substitua `Terminal.c` pelo nome do seu arquivo-fonte, se for diferente.
+
+## Execução
+
+Após a compilação, execute o programa com o comando:
+
+```bash
+./Terminal.exe
+```
+
+## Exemplo
+
+Arquivo:
+
+```text
+Terminal.c
+```
+
+Compilar:
+
+```bash
+gcc Terminal.c -o Terminal.exe
+```
+
+Executar:
+
+```bash
+./Terminal.exe
+```
+
+## Requisitos
+
+- GCC instalado e configurado no sistema.
+- Terminal compatível com a execução de programas em C.
+
 ## 👥 Equipe
 
 Product Owner
@@ -582,6 +627,7 @@ Product Owner
   
 - Lanna Marcullino
   * 👔 **LinkedIn:** [Acesse o perfil de Lanna Marcullino](https://www.linkedin.com/in/lanna-marculino-988aa03b2)
+    obs: máquina apresentou problema para dar commits
 
 - Letícia Minucelli
   * 👔 **LinkedIn:** [Acesse o perfil de Letícia Minucelli](https://www.linkedin.com/in/letícia-minucelli-46106430b)
