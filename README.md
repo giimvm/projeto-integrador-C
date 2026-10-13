@@ -573,17 +573,17 @@ para compreender toda a investigação.
 No terminal, navegue até a pasta onde está localizado o arquivo `.c` e execute:
 
 ```bash
-gcc Terminal.c -o Terminal.exe
+gcc terminal.c -o terminal.exe
 ```
 
-> Substitua `Terminal.c` pelo nome do seu arquivo-fonte, se for diferente.
+> Substitua `terminal.c` pelo nome do seu arquivo-fonte, se for diferente.
 
 ## Execução
 
 Após a compilação, execute o programa com o comando:
 
 ```bash
-./Terminal.exe
+./terminal.exe
 ```
 
 ## Exemplo
@@ -591,19 +591,19 @@ Após a compilação, execute o programa com o comando:
 Arquivo:
 
 ```text
-Terminal.c
+terminal.c
 ```
 
 Compilar:
 
 ```bash
-gcc Terminal.c -o Terminal.exe
+gcc terminal.c -o terminal.exe
 ```
 
 Executar:
 
 ```bash
-./Terminal.exe
+./terminal.exe
 ```
 
 ## Requisitos
