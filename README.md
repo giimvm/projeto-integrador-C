@@ -631,6 +631,8 @@ Durante o desenvolvimento das **US02**, atuei como **Navigator**, auxiliando Lum
 
 [ScreenCast das Histórias de Usuários](https://drive.google.com/file/d/1LvloIpaRKzMaGN2_6kSzIHapZJP6Z9-s/view?usp=sharing)
 
+<img src="prototipo_de_baixa/src/trello.png" width="300">
+
 ## 👥 Equipe
 
 Product Owner
