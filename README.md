@@ -1,5 +1,5 @@
 
-<img src="src/Sem título.png" width="250">
+<img src="prototipo_de_baixa/src/Sem título.png" width="250">
 
 «AI.libi é um jogo investigativo que combina lógica proposicional, pensamento crítico e alfabetização digital para ensinar o jogador a questionar e analisar informações em um cenário onde conteúdos gerados por Inteligência Artificial podem ser usados para manipular uma investigação.»
 
@@ -180,7 +180,7 @@ para resolver o caso apresentado.
 
 ## Sketch
 
-<img src="src/US01.png" width="300">
+<img src="prototipo_de_baixa/src/US01.png" width="300">
 
 ## Storyboard
 
@@ -192,7 +192,7 @@ para resolver o caso apresentado.
 
 ## Diagrama de Atividades
 
-<img src="src/us01_diagrama.png" width="300">
+<img src="prototipo_de_baixa/src/us01_diagrama.png" width="300">
 
 ---
 
@@ -206,7 +206,7 @@ para entender as mecânicas do jogo.
 
 ## Sketch
 
-<img src="src/US02.png" width="300">
+<img src="prototipo_de_baixa/src/US02.png" width="300">
 
 ## Storyboard
 
@@ -218,7 +218,7 @@ para entender as mecânicas do jogo.
 
 ## Diagrama de Atividades
 
-<img src="src/us02_diagrama.png" width="300">
+<img src="prototipo_de_baixa/src/us02_diagrama.png" width="300">
 
 
 ---
@@ -233,7 +233,7 @@ para personalizar minha experiência.
 
 ## Sketch
 
-<img src="src/US03.png" width="300">
+<img src="prototipo_de_baixa/src/US03.png" width="300">
 
 ## Storyboard
 
@@ -245,7 +245,7 @@ para personalizar minha experiência.
 
 ## Diagrama de Atividades
 
-<img src="src/us03_diagrama.png" width="300">
+<img src="prototipo_de_baixa/src/us03_diagrama.png" width="300">
 
 ---
 
@@ -259,7 +259,7 @@ para iniciar a investigação.
 
 ## Sketch
 
-<img src="src/US04.png" width="300">
+<img src="prototipo_de_baixa/src/US04.png" width="300">
 
 ## Storyboard
 
@@ -271,7 +271,7 @@ para iniciar a investigação.
 
 ## Diagrama de Atividades
 
-<img src="src/us04_diagrama.png" width="300">
+<img src="prototipo_de_baixa/src/us04_diagrama.png" width="300">
 
 ---
 
@@ -285,7 +285,7 @@ para obter informações sobre o caso.
 
 ## Sketch
 
-<img src="src/US05.png" width="300">
+<img src="prototipo_de_baixa/src/US05.png" width="300">
 
 ## Storyboard
 
@@ -297,7 +297,7 @@ para obter informações sobre o caso.
 
 ## Diagrama de Atividades
 
-<img src="src/us05_diagrama.png" width="300">
+<img src="prototipo_de_baixa/src/us05_diagrama.png" width="300">
 
 ---
 
@@ -311,7 +311,7 @@ para desbloquear evidências.
 
 ## Sketch
 
-<img src="src/US06.png" width="300">
+<img src="prototipo_de_baixa/src/US06.png" width="300">
 
 ## Storyboard
 
@@ -323,7 +323,7 @@ para desbloquear evidências.
 
 ## Diagrama de Atividades
 
-<img src="src/us06_diagrama.png" width="300">
+<img src="prototipo_de_baixa/src/us06_diagrama.png" width="300">
 
 ---
 
@@ -337,7 +337,7 @@ para avançar na investigação.
 
 ## Sketch
 
-<img src="src/US07.png" width="300">
+<img src="prototipo_de_baixa/src/US07.png" width="300">
 
 ## Storyboard
 
@@ -349,7 +349,7 @@ para avançar na investigação.
 
 ## Diagrama de Atividades
 
-<img src="src/us07_diagrama.png" width="300">
+<img src="prototipo_de_baixa/src/us07_diagrama.png" width="300">
 
 ---
 
@@ -363,7 +363,7 @@ para identificar adulterações por IA.
 
 ## Sketch
 
-<img src="src/US08.png" width="300">
+<img src="prototipo_de_baixa/src/US08.png" width="300">
 
 ## Storyboard
 
@@ -375,7 +375,7 @@ para identificar adulterações por IA.
 
 ## Diagrama de Atividades
 
-<img src="src/us08_diagrama.png" width="300">
+<img src="prototipo_de_baixa/src/us08_diagrama.png" width="300">
 
 ---
 
@@ -389,7 +389,7 @@ para revisar as evidências obtidas.
 
 ## Sketch
 
-<img src="src/US09.png" width="300">
+<img src="prototipo_de_baixa/src/US09.png" width="300">
 
 ## Storyboard
 
@@ -401,7 +401,7 @@ para revisar as evidências obtidas.
 
 ## Diagrama de Atividades
 
-<img src="src/us09_diagrama.png" width="300">
+<img src="prototipo_de_baixa/src/us09_diagrama.png" width="300">
 
 ---
 
@@ -415,7 +415,7 @@ para continuar a investigação.
 
 ## Sketch
 
-<img src="src/US10.png" width="300">
+<img src="prototipo_de_baixa/src/US10.png" width="300">
 
 ## Storyboard
 
@@ -427,7 +427,7 @@ para continuar a investigação.
 
 ## Diagrama de Atividades
 
-<img src="src/us10_diagrama.png" width="300">
+<img src="prototipo_de_baixa/src/us10_diagrama.png" width="300">
 
 ---
 
@@ -441,7 +441,7 @@ para tomar uma decisão correta.
 
 ## Sketch
 
-<img src="src/US11.png" width="300">
+<img src="prototipo_de_baixa/src/US11.png" width="300">
 
 ## Storyboard
 
@@ -453,7 +453,7 @@ para tomar uma decisão correta.
 
 ## Diagrama de Atividades
 
-<img src="src/us11_diagrama.png" width="300">
+<img src="prototipo_de_baixa/src/us11_diagrama.png" width="300">
 
 ---
 
@@ -467,7 +467,7 @@ para encerrar a investigação.
 
 ## Sketch
 
-<img src="src/US12.png" width="300">
+<img src="prototipo_de_baixa/src/US12.png" width="300">
 
 ## Storyboard
 
@@ -479,7 +479,7 @@ para encerrar a investigação.
 
 ## Diagrama de Atividades
 
-<img src="src/us12_diagrama.png" width="300">
+<img src="prototipo_de_baixa/src/us12_diagrama.png" width="300">
 ---
 
 # US13 - Good Ending
@@ -492,7 +492,7 @@ quando solucionar corretamente o caso.
 
 ## Sketch
 
-<img src="src/US13.png" width="300">
+<img src="prototipo_de_baixa/src/US13.png" width="300">
 
 ## Storyboard
 
@@ -504,7 +504,7 @@ quando solucionar corretamente o caso.
 
 ## Diagrama de Atividades
 
-<img src="src/us13_diagrama.png" width="300">
+<img src="prototipo_de_baixa/src/us13_diagrama.png" width="300">
 
 ---
 
@@ -518,7 +518,7 @@ para compreender o resultado da investigação.
 
 ## Sketch
 
-<img src="src/US14.png" width="300">
+<img src="prototipo_de_baixa/src/US14.png" width="300">
 
 ## Storyboard
 
@@ -530,7 +530,7 @@ para compreender o resultado da investigação.
 
 ## Diagrama de Atividades
 
-<img src="src/us14_diagrama.png" width="300">
+<img src="prototipo_de_baixa/src/us14_diagrama.png" width="300">
 
 ---
 
@@ -544,7 +544,7 @@ para compreender toda a investigação.
 
 ## Sketch
 
-<img src="src/US15.png" width="300">
+<img src="prototipo_de_baixa/src/US15.png" width="300">
 
 ## Storyboard
 
@@ -556,7 +556,7 @@ para compreender toda a investigação.
 
 ## Diagrama de Atividades
 
-<img src="src/us15_diagrama.png" width="300">
+<img src="prototipo_de_baixa/src/us15_diagrama.png" width="300">
 
 ##🎮 Protótipo Navegável
 
@@ -610,6 +610,18 @@ Executar:
 
 - GCC instalado e configurado no sistema.
 - Terminal compatível com a execução de programas em C.
+
+## Colaboração e evidências
+
+### Relato de Programação em Pares - Luma (Driver)
+
+Durante o desenvolvimento das **US02**, atuei como **Driver**, sendo responsável pela implementação do código, enquanto Letícia atuou como **Navigator**, acompanhando a lógica e sugerindo melhorias. A experiência contribuiu para a troca de conhecimentos e para a validação das soluções durante o desenvolvimento. Como ponto negativo, algumas decisões demandaram mais tempo devido às discussões antes da implementação.
+
+### Relato de Programação em Pares - Letícia (Navigator)
+
+Durante o desenvolvimento das **US02**, atuei como **Navigator**, auxiliando Luma na análise da lógica, revisão das implementações e tomada de decisões técnicas. A atividade favoreceu a colaboração e a identificação de melhorias no código. Como desafio, o processo exigiu um maior alinhamento entre a dupla, tornando algumas etapas mais demoradas do que no desenvolvimento individual.
+
+[ScreenCast das Histórias de Usuários](https://drive.google.com/file/d/1LvloIpaRKzMaGN2_6kSzIHapZJP6Z9-s/view?usp=sharing)
 
 ## 👥 Equipe
 
@@ -737,7 +749,3 @@ O IA.libi transforma esse problema em uma experiência de investigação:
 Porque, em uma investigação — assim como na vida real — uma informação convincente não é necessariamente uma informação verdadeira.
 
 ---
-
-📄 Licença
-
-Este projeto possui finalidade acadêmica e educacional.Essa versão já fica bem mais próxima de um README de projeto profissional: tem hierarquia clara, onboarding, documentação das mecânicas, contexto, equipe, status e estrutura, além de usar o backlog como parte da documentação.
