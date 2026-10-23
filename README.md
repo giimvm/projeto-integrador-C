@@ -611,6 +611,14 @@ Executar:
 - GCC instalado e configurado no sistema.
 - Terminal compatível com a execução de programas em C.
 
+## Qualidade e Testes
+
+### bug tracker
+
+[Screencast dos Testes](https://drive.google.com/file/d/1QYxtFs5ZoVz9ueSk89od_WC6WQeR7DDE/view?usp=sharing)
+
+[Bug Tracker](https://drive.google.com/file/d/1MjC1fqsw-wlaSxOmEzyaNhTbzoa0UmCD/view?usp=sharing)
+
 ## Colaboração e evidências
 
 ### Relato de Programação em Pares - Luma (Driver)
