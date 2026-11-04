@@ -1,11 +1,15 @@
 #include "raylib.h"
 
 
+
+
 typedef enum {
     STATE_MENU = 0,
     STATE_REGRAS,
     STATE_CONFIG,
     STATE_CREDITOS,
+
+
 
 
     // Subtelas da CENA 1
@@ -17,6 +21,8 @@ typedef enum {
     STATE_C1_6,
     STATE_C1_7,
     STATE_C1_8,
+
+
 
 
     // CENA 2
@@ -50,6 +56,8 @@ typedef enum {
     STATE_C2_28,         // C2.27.png
 
 
+
+
     // RAMIFICAÇÃO JUÍZA E VEREDITO
     STATE_ACUSA_CAIO_1,          
     STATE_ACUSA_CAIO_2,          
@@ -60,9 +68,13 @@ typedef enum {
 } GameState;
 
 
+
+
 bool BotaoClicado(Rectangle btn, Vector2 posMouse) {
     return CheckCollisionPointRec(posMouse, btn) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
 }
+
+
 
 
 float AtualizarSlider(Rectangle slider, Vector2 posMouse, float valorAtual) {
@@ -76,9 +88,13 @@ float AtualizarSlider(Rectangle slider, Vector2 posMouse, float valorAtual) {
 }
 
 
+
+
 void DesenharEfeitoHover(Rectangle btn, Vector2 posMouse, Color cor) {
     // Quadrado vermelho removido
 }
+
+
 
 
 int main(void) {
@@ -86,51 +102,67 @@ int main(void) {
     const int alturaTela = 600;
 
 
+
+
     InitWindow(larguraTela, alturaTela, "Projeto Investigativo");
     SetTargetFPS(60);
 
 
+
+
     GameState estadoAtual = STATE_MENU;
+
 
     // ======= CARREGAMENTO DE TEXTURAS COM SUPORTE MULTI-CAMINHO =======
     Texture2D imgMenu = LoadTexture("src/menu_inicial/menu.png");
     if (imgMenu.id == 0) imgMenu = LoadTexture("jogo_ai.libi/src/menu_inicial/menu.png");
     if (imgMenu.id == 0) imgMenu = LoadTexture("menu_inicial/menu.png");
 
+
     Texture2D texConfigAtivado = LoadTexture("src/menu_inicial/configuracoes1.png");
     if (texConfigAtivado.id == 0) texConfigAtivado = LoadTexture("jogo_ai.libi/src/menu_inicial/configuracoes1.png");
     if (texConfigAtivado.id == 0) texConfigAtivado = LoadTexture("menu_inicial/configuracoes1.png");
+
 
     Texture2D texConfigDesativado = LoadTexture("src/menu_inicial/configuracoes.png");
     if (texConfigDesativado.id == 0) texConfigDesativado = LoadTexture("jogo_ai.libi/src/menu_inicial/configuracoes.png");
     if (texConfigDesativado.id == 0) texConfigDesativado = LoadTexture("menu_inicial/configuracoes.png");
 
+
     Texture2D texCreditos = LoadTexture("src/menu_inicial/creditos.png");
     if (texCreditos.id == 0) texCreditos = LoadTexture("jogo_ai.libi/src/menu_inicial/creditos.png");
     if (texCreditos.id == 0) texCreditos = LoadTexture("menu_inicial/creditos.png");
+
 
     Texture2D texRegras[5];
     texRegras[0] = LoadTexture("src/menu_inicial/REGRAS1.png");
     if (texRegras[0].id == 0) texRegras[0] = LoadTexture("jogo_ai.libi/src/menu_inicial/REGRAS1.png");
     if (texRegras[0].id == 0) texRegras[0] = LoadTexture("menu_inicial/REGRAS1.png");
 
+
     texRegras[1] = LoadTexture("src/menu_inicial/REGRAS2.png");
     if (texRegras[1].id == 0) texRegras[1] = LoadTexture("jogo_ai.libi/src/menu_inicial/REGRAS2.png");
     if (texRegras[1].id == 0) texRegras[1] = LoadTexture("menu_inicial/REGRAS2.png");
+
 
     texRegras[2] = LoadTexture("src/menu_inicial/REGRAS3.png");
     if (texRegras[2].id == 0) texRegras[2] = LoadTexture("jogo_ai.libi/src/menu_inicial/REGRAS3.png");
     if (texRegras[2].id == 0) texRegras[2] = LoadTexture("menu_inicial/REGRAS3.png");
 
+
     texRegras[3] = LoadTexture("src/menu_inicial/REGRAS4.png");
     if (texRegras[3].id == 0) texRegras[3] = LoadTexture("jogo_ai.libi/src/menu_inicial/REGRAS4.png");
     if (texRegras[3].id == 0) texRegras[3] = LoadTexture("menu_inicial/REGRAS4.png");
+
 
     texRegras[4] = LoadTexture("src/menu_inicial/REGRAS5.png");
     if (texRegras[4].id == 0) texRegras[4] = LoadTexture("jogo_ai.libi/src/menu_inicial/REGRAS5.png");
     if (texRegras[4].id == 0) texRegras[4] = LoadTexture("menu_inicial/REGRAS5.png");
 
+
     int paginaRegras = 0;
+
+
 
 
     // ======= TEXTURAS DA CENA 1 =======
@@ -142,28 +174,42 @@ int main(void) {
     if (imgC1_2.id == 0) imgC1_2 = LoadTexture("cena1/C1.2.png");
 
 
+
+
     Texture2D imgC1_3 = LoadTexture("src/cena1/C1.3.png");
     if (imgC1_3.id == 0) imgC1_3 = LoadTexture("cena1/C1.3.png");
+
+
 
 
     Texture2D imgC1_4 = LoadTexture("src/cena1/C1.4.png");
     if (imgC1_4.id == 0) imgC1_4 = LoadTexture("cena1/C1.4.png");
 
 
+
+
     Texture2D imgC1_5 = LoadTexture("src/cena1/C1.5.png");
     if (imgC1_5.id == 0) imgC1_5 = LoadTexture("cena1/C1.5.png");
+
+
 
 
     Texture2D imgC1_6 = LoadTexture("src/cena1/C1.6.png");
     if (imgC1_6.id == 0) imgC1_6 = LoadTexture("cena1/C1.6.png");
 
 
+
+
     Texture2D imgC1_7 = LoadTexture("src/cena1/C1.7.png");
     if (imgC1_7.id == 0) imgC1_7 = LoadTexture("cena1/C1.7.png");
 
 
+
+
     Texture2D imgC1_8 = LoadTexture("src/cena1/C1.8.png");
     if (imgC1_8.id == 0) imgC1_8 = LoadTexture("cena1/C1.8.png");
+
+
 
 
     // PERSONAGENS
@@ -171,8 +217,12 @@ int main(void) {
     if (imgGabriel.id == 0) imgGabriel = LoadTexture("cena1/fotogabriel.jpeg");
 
 
+
+
     Texture2D imgCaio = LoadTexture("src/cena1/fotocaio.jpeg");
     if (imgCaio.id == 0) imgCaio = LoadTexture("cena1/fotocaio.jpeg");
+
+
 
 
     // ======= TEXTURAS DA CENA 2 =======
@@ -206,6 +256,8 @@ int main(void) {
     Texture2D imgC2_28   = LoadTexture("src/cena2/C2.27.png");
 
 
+
+
     // RAMIFICAÇÃO E RESULTADOS
     Texture2D imgF1_1    = LoadTexture("src/cena2/F1.1.png");
     Texture2D imgF1_2    = LoadTexture("src/cena2/F1.2.png");
@@ -213,6 +265,8 @@ int main(void) {
     Texture2D imgP1      = LoadTexture("src/cena2/P1.png");
     Texture2D imgP1_1    = LoadTexture("src/cena2/P1.1.png");
     Texture2D imgP1_2    = LoadTexture("src/cena2/P1.2.png");
+
+
 
 
     Texture2D* todasTexturas[] = {
@@ -227,12 +281,16 @@ int main(void) {
     int totalTexturas = sizeof(todasTexturas) / sizeof(todasTexturas[0]);
 
 
+
+
     for (int i = 0; i < totalTexturas; i++) {
         if (todasTexturas[i]->id != 0) {
             GenTextureMipmaps(todasTexturas[i]);
             SetTextureFilter(*todasTexturas[i], TEXTURE_FILTER_BILINEAR);
         }
     }
+
+
 
 
     Rectangle orig         = { 0.0f, 0.0f, 0.0f, 0.0f };
@@ -242,8 +300,12 @@ int main(void) {
     Rectangle origRegras   = { 0.0f, 0.0f, (float)texRegras[0].width, (float)texRegras[0].height };
 
 
+
+
     Rectangle dest = { 0.0f, 0.0f, (float)larguraTela, (float)alturaTela };
     Vector2 pontoZero = { 0.0f, 0.0f };
+
+
 
 
     // ======= BOTÕES E ÁREAS DE CLIQUE =======
@@ -253,6 +315,8 @@ int main(void) {
     Rectangle btnCreditos = { 134, 424, 106, 39 };
 
 
+
+
     Rectangle btnVoltarMenu = { 100, 520, 90, 30 };
     Rectangle btnTelaCheia  = { 610, 415, 70, 25 };
     Rectangle sliderVolumeGeral = { 250, 245, 385, 15 };
@@ -260,12 +324,18 @@ int main(void) {
     Rectangle sliderEfeitos     = { 250, 323, 385, 15 };
 
 
+
+
     Rectangle btnVoltarRegras   = { 90, 520, 110, 35 };
     Rectangle btnContinuarRegras = { 630, 520, 130, 35 };
 
 
+
+
     Rectangle btnLogin  = { 340, 400, 120, 45 };
     Rectangle btnVoltar = { 15, 20, 160, 60 }; // Botão de Voltar no canto superior esquerdo
+
+
 
 
     Rectangle destFotoGabriel = { 440, 160, 230, 270 };
@@ -273,7 +343,11 @@ int main(void) {
     Rectangle btnFotoCaio     = { 440, 160, 230, 270 };
 
 
+
+
     Rectangle btnAvancarC2 = { 660, 450, 100, 100 };
+
+
 
 
     Rectangle btnContinuarInvestigacao = { 280, 370, 250, 70 };
@@ -282,8 +356,12 @@ int main(void) {
     Rectangle btnTentarNovamente = { 320, 425, 160, 50 };
 
 
+
+
     Rectangle btnProvaVerdadeira = { 250, 420, 140, 40 };
     Rectangle btnProvaManipulada = { 405, 420, 140, 40 };
+
+
 
 
     Rectangle btnOpcaoA = { 180, 270, 440, 40 };
@@ -292,8 +370,12 @@ int main(void) {
     Rectangle btnOpcaoD = { 180, 435, 440, 40 };
 
 
+
+
     Rectangle btnAcusaCaioSim = { 180, 270, 440, 40 };
     Rectangle btnAcusaCaioNao = { 180, 325, 440, 40 };
+
+
 
 
     bool telaCheia = true;
@@ -302,11 +384,17 @@ int main(void) {
     float volEfeitos = 0.65f;
 
 
+
+
     Vector2 posMouse = { 0.0f, 0.0f };
+
+
 
 
     while (!WindowShouldClose()) {
         posMouse = GetMousePosition();
+
+
 
 
         switch (estadoAtual) {
@@ -321,6 +409,8 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_CONFIG:
                 if (BotaoClicado(btnTelaCheia, posMouse)) {
                     telaCheia = !telaCheia;
@@ -328,18 +418,26 @@ int main(void) {
                 }
 
 
+
+
                 volGeral   = AtualizarSlider(sliderVolumeGeral, posMouse, volGeral);
                 volMusica  = AtualizarSlider(sliderMusica, posMouse, volMusica);
                 volEfeitos = AtualizarSlider(sliderEfeitos, posMouse, volEfeitos);
 
 
+
+
                 SetMasterVolume(volGeral);
+
+
 
 
                 if (BotaoClicado(btnVoltarMenu, posMouse) || IsKeyPressed(KEY_ESCAPE)) {
                     estadoAtual = STATE_MENU;
                 }
                 break;
+
+
 
 
             case STATE_CREDITOS:
@@ -347,6 +445,8 @@ int main(void) {
                     estadoAtual = STATE_MENU;
                 }
                 break;
+
+
 
 
             case STATE_REGRAS:
@@ -360,6 +460,8 @@ int main(void) {
                 }
 
 
+
+
                 if (BotaoClicado(btnVoltarRegras, posMouse)) {
                     if (paginaRegras > 0) {
                         paginaRegras--;
@@ -369,11 +471,15 @@ int main(void) {
                 }
 
 
+
+
                 if (IsKeyPressed(KEY_ESCAPE)) {
                     paginaRegras = 0;
                     estadoAtual = STATE_MENU;
                 }
                 break;
+
+
 
 
             // --- CENA 1 ---
@@ -384,10 +490,14 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C1_2:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C1_1;
                 else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) estadoAtual = STATE_C1_3;
                 break;
+
+
 
 
             case STATE_C1_3:
@@ -396,10 +506,14 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C1_4:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C1_3;
                 else if (BotaoClicado(btnFotoCaio, posMouse)) estadoAtual = STATE_C1_5;
                 break;
+
+
 
 
             case STATE_C1_5:
@@ -408,10 +522,14 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C1_6:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C1_5;
                 else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) estadoAtual = STATE_C1_7;
                 break;
+
+
 
 
             case STATE_C1_7:
@@ -420,10 +538,14 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C1_8:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C1_7;
                 else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) estadoAtual = STATE_C2_1;
                 break;
+
+
 
 
             // --- CENA 2 ---
@@ -433,10 +555,14 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C2_2:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C2_1;
                 else if (BotaoClicado(btnAvancarC2, posMouse)) estadoAtual = STATE_C2_3;
                 break;
+
+
 
 
             case STATE_C2_3:
@@ -445,10 +571,14 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C2_4:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C2_3;
                 else if (BotaoClicado(btnAvancarC2, posMouse)) estadoAtual = STATE_C2_5;
                 break;
+
+
 
 
             case STATE_C2_5:
@@ -457,10 +587,14 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C2_6:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C2_5;
                 else if (BotaoClicado(btnAvancarC2, posMouse)) estadoAtual = STATE_C2_7;
                 break;
+
+
 
 
             case STATE_C2_7:
@@ -469,10 +603,14 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C2_8:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C2_7;
                 else if (BotaoClicado(btnAvancarC2, posMouse)) estadoAtual = STATE_C2_9;
                 break;
+
+
 
 
             case STATE_C2_9:
@@ -481,10 +619,14 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C2_10:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C2_9;
                 else if (BotaoClicado(btnAvancarC2, posMouse)) estadoAtual = STATE_C2_11;
                 break;
+
+
 
 
             case STATE_C2_11:
@@ -493,10 +635,14 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C2_12:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C2_11;
                 else if (BotaoClicado(btnAvancarC2, posMouse)) estadoAtual = STATE_C2_13;
                 break;
+
+
 
 
             case STATE_C2_13:
@@ -505,10 +651,14 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C2_14:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C2_13;
                 else if (BotaoClicado(btnAvancarC2, posMouse)) estadoAtual = STATE_C2_15;
                 break;
+
+
 
 
             case STATE_C2_15:
@@ -517,10 +667,14 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C2_16:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C2_15;
                 else if (BotaoClicado(btnAvancarC2, posMouse)) estadoAtual = STATE_C2_17;
                 break;
+
+
 
 
             case STATE_C2_17:
@@ -529,10 +683,14 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C2_18:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C2_17;
                 else if (BotaoClicado(btnAvancarC2, posMouse)) estadoAtual = STATE_C2_19;
                 break;
+
+
 
 
             case STATE_C2_19:
@@ -541,10 +699,14 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C2_20:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C2_19;
                 else if (BotaoClicado(btnAvancarC2, posMouse)) estadoAtual = STATE_C2_21;
                 break;
+
+
 
 
             case STATE_C2_21:
@@ -553,10 +715,14 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C2_22:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C2_21;
                 else if (BotaoClicado(btnAvancarC2, posMouse)) estadoAtual = STATE_C2_23;
                 break;
+
+
 
 
             case STATE_C2_23:
@@ -565,10 +731,14 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C2_24:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C2_23;
                 else if (BotaoClicado(btnAvancarC2, posMouse)) estadoAtual = STATE_C2_25;
                 break;
+
+
 
 
             case STATE_C2_25:
@@ -579,6 +749,8 @@ int main(void) {
                     estadoAtual = STATE_C2_26;
                 }
                 break;
+
+
 
 
             case STATE_C2_26:
@@ -597,6 +769,8 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_CONFIRMA_CAIO:
                 if (BotaoClicado(btnVoltar, posMouse) || BotaoClicado(btnAcusaCaioNao, posMouse)) {
                     estadoAtual = STATE_C2_26;
@@ -605,6 +779,8 @@ int main(void) {
                     estadoAtual = STATE_ACUSA_CAIO_1;
                 }
                 break;
+
+
 
 
             case STATE_EVIDENCIA_DESBLOQUEADA:
@@ -617,6 +793,8 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_DESAFIO_IA:
                 if (BotaoClicado(btnVoltar, posMouse)) {
                     estadoAtual = STATE_EVIDENCIA_DESBLOQUEADA;
@@ -625,6 +803,8 @@ int main(void) {
                     estadoAtual = STATE_MENU;
                 }
                 break;
+
+
 
 
             case STATE_ACUSA_CAIO_1:
@@ -637,6 +817,8 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_ACUSA_CAIO_2:
                 if (BotaoClicado(btnVoltar, posMouse)) {
                     estadoAtual = STATE_ACUSA_CAIO_1;
@@ -645,6 +827,8 @@ int main(void) {
                     estadoAtual = STATE_ACUSA_CAIO_3;
                 }
                 break;
+
+
 
 
             case STATE_ACUSA_CAIO_3:
@@ -657,11 +841,15 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_VEREDITO_INCORRETO:
                 if (BotaoClicado(btnVoltar, posMouse) || BotaoClicado(btnTentarNovamente, posMouse) || IsKeyPressed(KEY_ESCAPE)) {
                     estadoAtual = STATE_MENU;
                 }
                 break;
+
+
 
 
             case STATE_C2_28:
@@ -676,6 +864,8 @@ int main(void) {
         // ======= RENDERIZAÇÃO DAS TELAS =======
         BeginDrawing();
         ClearBackground(BLACK);
+
+
 
 
         switch (estadoAtual) {
@@ -693,6 +883,8 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_CONFIG: {
                 Texture2D texAtual = telaCheia ? texConfigAtivado : texConfigDesativado;
                 if (texAtual.id != 0) {
@@ -706,6 +898,8 @@ int main(void) {
             }
 
 
+
+
             case STATE_CREDITOS:
                 if (texCreditos.id != 0) {
                     origCreditos = (Rectangle){ 0.0f, 0.0f, (float)texCreditos.width, (float)texCreditos.height };
@@ -715,6 +909,8 @@ int main(void) {
                     DrawText("VOLTAR", btnVoltarMenu.x, btnVoltarMenu.y, 20, RAYWHITE);
                 }
                 break;
+
+
 
 
             case STATE_REGRAS:
@@ -729,6 +925,8 @@ int main(void) {
                 break;
 
 
+
+
             // --- CENA 1 ---
             case STATE_C1_1:
                 if (imgC1_1.id != 0) {
@@ -738,12 +936,16 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C1_2:
                 if (imgC1_2.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC1_2.width, (float)imgC1_2.height };
                     DrawTexturePro(imgC1_2, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
+
+
 
 
             case STATE_C1_3:
@@ -758,6 +960,8 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C1_4:
                 if (imgC1_4.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC1_4.width, (float)imgC1_4.height };
@@ -770,12 +974,16 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C1_5:
                 if (imgC1_5.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC1_5.width, (float)imgC1_5.height };
                     DrawTexturePro(imgC1_5, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
+
+
 
 
             case STATE_C1_6:
@@ -786,6 +994,8 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C1_7:
                 if (imgC1_7.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC1_7.width, (float)imgC1_7.height };
@@ -794,12 +1004,16 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C1_8:
                 if (imgC1_8.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC1_8.width, (float)imgC1_8.height };
                     DrawTexturePro(imgC1_8, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
+
+
 
 
             // --- CENA 2 ---
@@ -811,12 +1025,16 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C2_2:
                 if (imgC2_2.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC2_2.width, (float)imgC2_2.height };
                     DrawTexturePro(imgC2_2, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
+
+
 
 
             case STATE_C2_3:
@@ -827,12 +1045,16 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C2_4:
                 if (imgC2_4.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC2_4.width, (float)imgC2_4.height };
                     DrawTexturePro(imgC2_4, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
+
+
 
 
             case STATE_C2_5:
@@ -843,12 +1065,16 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C2_6:
                 if (imgC2_6.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC2_6.width, (float)imgC2_6.height };
                     DrawTexturePro(imgC2_6, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
+
+
 
 
             case STATE_C2_7:
@@ -859,12 +1085,16 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C2_8:
                 if (imgC2_8.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC2_8.width, (float)imgC2_8.height };
                     DrawTexturePro(imgC2_8, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
+
+
 
 
             case STATE_C2_9:
@@ -875,12 +1105,16 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C2_10:
                 if (imgC2_10.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC2_10.width, (float)imgC2_10.height };
                     DrawTexturePro(imgC2_10, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
+
+
 
 
             case STATE_C2_11:
@@ -891,12 +1125,16 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C2_12:
                 if (imgC2_12.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC2_12.width, (float)imgC2_12.height };
                     DrawTexturePro(imgC2_12, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
+
+
 
 
             case STATE_C2_13:
@@ -907,12 +1145,16 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C2_14:
                 if (imgC2_14.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC2_14.width, (float)imgC2_14.height };
                     DrawTexturePro(imgC2_14, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
+
+
 
 
             case STATE_C2_15:
@@ -923,12 +1165,16 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C2_16:
                 if (imgC2_16.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC2_16.width, (float)imgC2_16.height };
                     DrawTexturePro(imgC2_16, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
+
+
 
 
             case STATE_C2_17:
@@ -939,12 +1185,16 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C2_18:
                 if (imgC2_18.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC2_18.width, (float)imgC2_18.height };
                     DrawTexturePro(imgC2_18, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
+
+
 
 
             case STATE_C2_19:
@@ -955,12 +1205,16 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C2_20:
                 if (imgC2_20.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC2_20.width, (float)imgC2_20.height };
                     DrawTexturePro(imgC2_20, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
+
+
 
 
             case STATE_C2_21:
@@ -971,12 +1225,16 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C2_22:
                 if (imgC2_22.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC2_22.width, (float)imgC2_22.height };
                     DrawTexturePro(imgC2_22, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
+
+
 
 
             case STATE_C2_23:
@@ -987,12 +1245,16 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C2_24:
                 if (imgC2_24.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC2_24.width, (float)imgC2_24.height };
                     DrawTexturePro(imgC2_24, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
+
+
 
 
             case STATE_C2_25:
@@ -1003,12 +1265,16 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_C2_26:
                 if (imgC2_26.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC2_26.width, (float)imgC2_26.height };
                     DrawTexturePro(imgC2_26, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
+
+
 
 
             case STATE_CONFIRMA_CAIO:
@@ -1019,12 +1285,16 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_ACUSA_CAIO_1:
                 if (imgF1_1.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgF1_1.width, (float)imgF1_1.height };
                     DrawTexturePro(imgF1_1, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
+
+
 
 
             case STATE_ACUSA_CAIO_2:
@@ -1035,12 +1305,16 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_ACUSA_CAIO_3:
                 if (imgF1_3.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgF1_3.width, (float)imgF1_3.height };
                     DrawTexturePro(imgF1_3, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
+
+
 
 
             case STATE_VEREDITO_INCORRETO:
@@ -1051,6 +1325,8 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_EVIDENCIA_DESBLOQUEADA:
                 if (imgP1_1.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgP1_1.width, (float)imgP1_1.height };
@@ -1059,12 +1335,16 @@ int main(void) {
                 break;
 
 
+
+
             case STATE_DESAFIO_IA:
                 if (imgP1_2.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgP1_2.width, (float)imgP1_2.height };
                     DrawTexturePro(imgP1_2, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
+
+
 
 
             case STATE_C2_28:
@@ -1076,8 +1356,12 @@ int main(void) {
         }
 
 
+
+
         EndDrawing();
     }
+
+
 
 
     // ======= UNLOAD TEXTURES =======
@@ -1090,6 +1374,8 @@ int main(void) {
     UnloadTexture(imgMenu);
 
 
+
+
     UnloadTexture(imgC1_1);
     UnloadTexture(imgC1_2);
     UnloadTexture(imgC1_3);
@@ -1100,8 +1386,12 @@ int main(void) {
     UnloadTexture(imgC1_8);
 
 
+
+
     UnloadTexture(imgGabriel);
     UnloadTexture(imgCaio);
+
+
 
 
     UnloadTexture(imgC2_1);
@@ -1134,6 +1424,8 @@ int main(void) {
     UnloadTexture(imgC2_28);
 
 
+
+
     UnloadTexture(imgF1_1);
     UnloadTexture(imgF1_2);
     UnloadTexture(imgF1_3);
@@ -1142,6 +1434,9 @@ int main(void) {
     UnloadTexture(imgP1_2);
 
 
+
+
     CloseWindow();
     return 0;
 }
+
