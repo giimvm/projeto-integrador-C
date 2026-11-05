@@ -1,6 +1,5 @@
 #include "raylib.h"
-
-
+#include <stdio.h>
 
 
 typedef enum {
@@ -8,8 +7,6 @@ typedef enum {
     STATE_REGRAS,
     STATE_CONFIG,
     STATE_CREDITOS,
-
-
 
 
     // Subtelas da CENA 1
@@ -21,8 +18,6 @@ typedef enum {
     STATE_C1_6,
     STATE_C1_7,
     STATE_C1_8,
-
-
 
 
     // CENA 2
@@ -56,25 +51,30 @@ typedef enum {
     STATE_C2_28,         // C2.27.png
 
 
-
-
     // RAMIFICAÇÃO JUÍZA E VEREDITO
     STATE_ACUSA_CAIO_1,          
     STATE_ACUSA_CAIO_2,          
     STATE_ACUSA_CAIO_3,          
     STATE_VEREDITO_INCORRETO,    
     STATE_EVIDENCIA_DESBLOQUEADA,
-    STATE_DESAFIO_IA              
+    STATE_DESAFIO_IA,
+
+
+    // CENA 3
+    STATE_C3_1,            // C3_1.png  - Chefe: "Investigadora, recebemos este dispositivo..."
+    STATE_C3_2,            // C3_2.png  - Chefe: "Veio acompanhado de uma mensagem..."
+    STATE_C3_3,            // C3_3.png  - Nova evidência encontrada
+    STATE_C3_4,            // C3_4.png  - Desafio de lógica (negação)
+    STATE_C3_PERDIDA,      // C3_5.png  - Evidência perdida (errou o desafio)
+    STATE_C3_DESBLOQUEADA, // P2.png    - Evidência desbloqueada (acertou o desafio)
+    STATE_C3_AUDIO,        // p2_2_x    - Player de áudio com transcrição
+    STATE_C3_PERGUNTA      // p2_3.png  - Verdadeira ou manipulada por IA?
 } GameState;
-
-
 
 
 bool BotaoClicado(Rectangle btn, Vector2 posMouse) {
     return CheckCollisionPointRec(posMouse, btn) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
 }
-
-
 
 
 float AtualizarSlider(Rectangle slider, Vector2 posMouse, float valorAtual) {
@@ -88,13 +88,27 @@ float AtualizarSlider(Rectangle slider, Vector2 posMouse, float valorAtual) {
 }
 
 
-
-
 void DesenharEfeitoHover(Rectangle btn, Vector2 posMouse, Color cor) {
     // Quadrado vermelho removido
 }
 
 
+// Tenta carregar uma imagem da Cena 3 em várias pastas e com dois nomes possíveis
+Texture2D CarregarCena3(const char* nome1, const char* nome2) {
+    const char* pastas[] = { "src/cena3/", "cena3/", "src/cena2/", "" };
+    const char* nomes[2] = { nome1, nome2 };
+    char caminho[256];
+
+    for (int n = 0; n < 2; n++) {
+        if (nomes[n] == NULL) continue;
+        for (int p = 0; p < 4; p++) {
+            snprintf(caminho, sizeof(caminho), "%s%s", pastas[p], nomes[n]);
+            if (FileExists(caminho)) return LoadTexture(caminho);
+        }
+    }
+    TraceLog(LOG_WARNING, "CENA3: imagem NAO encontrada: %s (nem %s)", nome1, nome2 ? nome2 : "-");
+    return (Texture2D){ 0 };
+}
 
 
 int main(void) {
@@ -102,67 +116,52 @@ int main(void) {
     const int alturaTela = 600;
 
 
-
-
     InitWindow(larguraTela, alturaTela, "Projeto Investigativo");
+    InitAudioDevice();
     SetTargetFPS(60);
 
 
-
-
     GameState estadoAtual = STATE_MENU;
-
 
     // ======= CARREGAMENTO DE TEXTURAS COM SUPORTE MULTI-CAMINHO =======
     Texture2D imgMenu = LoadTexture("src/menu_inicial/menu.png");
     if (imgMenu.id == 0) imgMenu = LoadTexture("jogo_ai.libi/src/menu_inicial/menu.png");
     if (imgMenu.id == 0) imgMenu = LoadTexture("menu_inicial/menu.png");
 
-
     Texture2D texConfigAtivado = LoadTexture("src/menu_inicial/configuracoes1.png");
     if (texConfigAtivado.id == 0) texConfigAtivado = LoadTexture("jogo_ai.libi/src/menu_inicial/configuracoes1.png");
     if (texConfigAtivado.id == 0) texConfigAtivado = LoadTexture("menu_inicial/configuracoes1.png");
-
 
     Texture2D texConfigDesativado = LoadTexture("src/menu_inicial/configuracoes.png");
     if (texConfigDesativado.id == 0) texConfigDesativado = LoadTexture("jogo_ai.libi/src/menu_inicial/configuracoes.png");
     if (texConfigDesativado.id == 0) texConfigDesativado = LoadTexture("menu_inicial/configuracoes.png");
 
-
     Texture2D texCreditos = LoadTexture("src/menu_inicial/creditos.png");
     if (texCreditos.id == 0) texCreditos = LoadTexture("jogo_ai.libi/src/menu_inicial/creditos.png");
     if (texCreditos.id == 0) texCreditos = LoadTexture("menu_inicial/creditos.png");
-
 
     Texture2D texRegras[5];
     texRegras[0] = LoadTexture("src/menu_inicial/REGRAS1.png");
     if (texRegras[0].id == 0) texRegras[0] = LoadTexture("jogo_ai.libi/src/menu_inicial/REGRAS1.png");
     if (texRegras[0].id == 0) texRegras[0] = LoadTexture("menu_inicial/REGRAS1.png");
 
-
     texRegras[1] = LoadTexture("src/menu_inicial/REGRAS2.png");
     if (texRegras[1].id == 0) texRegras[1] = LoadTexture("jogo_ai.libi/src/menu_inicial/REGRAS2.png");
     if (texRegras[1].id == 0) texRegras[1] = LoadTexture("menu_inicial/REGRAS2.png");
-
 
     texRegras[2] = LoadTexture("src/menu_inicial/REGRAS3.png");
     if (texRegras[2].id == 0) texRegras[2] = LoadTexture("jogo_ai.libi/src/menu_inicial/REGRAS3.png");
     if (texRegras[2].id == 0) texRegras[2] = LoadTexture("menu_inicial/REGRAS3.png");
 
-
     texRegras[3] = LoadTexture("src/menu_inicial/REGRAS4.png");
     if (texRegras[3].id == 0) texRegras[3] = LoadTexture("jogo_ai.libi/src/menu_inicial/REGRAS4.png");
     if (texRegras[3].id == 0) texRegras[3] = LoadTexture("menu_inicial/REGRAS4.png");
-
 
     texRegras[4] = LoadTexture("src/menu_inicial/REGRAS5.png");
     if (texRegras[4].id == 0) texRegras[4] = LoadTexture("jogo_ai.libi/src/menu_inicial/REGRAS5.png");
     if (texRegras[4].id == 0) texRegras[4] = LoadTexture("menu_inicial/REGRAS5.png");
 
-
     int paginaRegras = 0;
-
-
 
 
     // ======= TEXTURAS DA CENA 1 =======
@@ -174,42 +173,28 @@ int main(void) {
     if (imgC1_2.id == 0) imgC1_2 = LoadTexture("cena1/C1.2.png");
 
 
-
-
     Texture2D imgC1_3 = LoadTexture("src/cena1/C1.3.png");
     if (imgC1_3.id == 0) imgC1_3 = LoadTexture("cena1/C1.3.png");
-
-
 
 
     Texture2D imgC1_4 = LoadTexture("src/cena1/C1.4.png");
     if (imgC1_4.id == 0) imgC1_4 = LoadTexture("cena1/C1.4.png");
 
 
-
-
     Texture2D imgC1_5 = LoadTexture("src/cena1/C1.5.png");
     if (imgC1_5.id == 0) imgC1_5 = LoadTexture("cena1/C1.5.png");
-
-
 
 
     Texture2D imgC1_6 = LoadTexture("src/cena1/C1.6.png");
     if (imgC1_6.id == 0) imgC1_6 = LoadTexture("cena1/C1.6.png");
 
 
-
-
     Texture2D imgC1_7 = LoadTexture("src/cena1/C1.7.png");
     if (imgC1_7.id == 0) imgC1_7 = LoadTexture("cena1/C1.7.png");
 
 
-
-
     Texture2D imgC1_8 = LoadTexture("src/cena1/C1.8.png");
     if (imgC1_8.id == 0) imgC1_8 = LoadTexture("cena1/C1.8.png");
-
-
 
 
     // PERSONAGENS
@@ -217,12 +202,8 @@ int main(void) {
     if (imgGabriel.id == 0) imgGabriel = LoadTexture("cena1/fotogabriel.jpeg");
 
 
-
-
     Texture2D imgCaio = LoadTexture("src/cena1/fotocaio.jpeg");
     if (imgCaio.id == 0) imgCaio = LoadTexture("cena1/fotocaio.jpeg");
-
-
 
 
     // ======= TEXTURAS DA CENA 2 =======
@@ -256,8 +237,6 @@ int main(void) {
     Texture2D imgC2_28   = LoadTexture("src/cena2/C2.27.png");
 
 
-
-
     // RAMIFICAÇÃO E RESULTADOS
     Texture2D imgF1_1    = LoadTexture("src/cena2/F1.1.png");
     Texture2D imgF1_2    = LoadTexture("src/cena2/F1.2.png");
@@ -267,6 +246,32 @@ int main(void) {
     Texture2D imgP1_2    = LoadTexture("src/cena2/P1.2.png");
 
 
+    // ======= TEXTURAS DA CENA 3 =======
+    // (coloque as imagens em src/cena3/ - o jogo também procura em cena3/, src/cena2/ e na raiz)
+    Texture2D imgC3_1 = CarregarCena3("C3.1.png", "C3_1.png");  // Chefe: dispositivo
+    Texture2D imgC3_2 = CarregarCena3("C3.2.png", "C3_2.png");  // Chefe: mensagem
+    Texture2D imgC3_3 = CarregarCena3("C3.3.png", "C3_3.png");  // Nova evidência encontrada
+    Texture2D imgC3_4 = CarregarCena3("C3.4.png", "C3_4.png");  // Desafio de lógica
+    Texture2D imgC3_5 = CarregarCena3("C3.5.png", "C3_5.png");  // Evidência perdida
+    Texture2D imgP2   = CarregarCena3("P2.png", "P2.1.png");    // Evidência desbloqueada
+
+    // Player de áudio (4 combinações de ícones)
+    Texture2D imgAudioPausaSom  = CarregarCena3("p2.(2.1).png", "p2_2_1_.png");  // pausado + com som
+    Texture2D imgAudioPausaMudo = CarregarCena3("p2.(2.2).png", "p2__2_2_.png"); // pausado + mudo
+    Texture2D imgAudioPlaySom   = CarregarCena3("p2.(2.3).png", "p2_2__3_.png"); // tocando + com som
+    Texture2D imgAudioPlayMudo  = CarregarCena3("p2.(2.4).png", "p2_2_4_.png");  // tocando + mudo
+    Texture2D imgP2Pergunta     = CarregarCena3("p2.3.png",     "p2_3.png");     // Verdadeira ou manipulada?
+
+    // Áudio opcional da prova (se o arquivo não existir, o jogo só simula o tempo)
+    Music audioProva = { 0 };
+    bool temAudio = false;
+    if (FileExists("src/cena3/audio_prova.mp3")) audioProva = LoadMusicStream("src/cena3/audio_prova.mp3");
+    else if (FileExists("src/cena3/audio_prova.wav")) audioProva = LoadMusicStream("src/cena3/audio_prova.wav");
+    else if (FileExists("src/cena3/audio_prova.ogg")) audioProva = LoadMusicStream("src/cena3/audio_prova.ogg");
+    if (audioProva.stream.buffer != NULL) {
+        temAudio = true;
+        audioProva.looping = false;
+    }
 
 
     Texture2D* todasTexturas[] = {
@@ -276,11 +281,11 @@ int main(void) {
         &imgGabriel, &imgCaio, &imgC2_1, &imgC2_2, &imgC2_3, &imgC2_4, &imgC2_5, &imgC2_6, &imgC2_7, &imgC2_8,
         &imgC2_9, &imgC2_10, &imgC2_11, &imgC2_12, &imgC2_13, &imgC2_14, &imgC2_15, &imgC2_16, &imgC2_17,
         &imgC2_18, &imgC2_19, &imgC2_20, &imgC2_21, &imgC2_22, &imgC2_23, &imgC2_24, &imgC2_25, &imgC2_26, &imgC2_27, &imgC2_28,
-        &imgF1_1, &imgF1_2, &imgF1_3, &imgP1, &imgP1_1, &imgP1_2
+        &imgF1_1, &imgF1_2, &imgF1_3, &imgP1, &imgP1_1, &imgP1_2,
+        &imgC3_1, &imgC3_2, &imgC3_3, &imgC3_4, &imgC3_5, &imgP2,
+        &imgAudioPlayMudo, &imgAudioPlaySom, &imgAudioPausaMudo, &imgAudioPausaSom, &imgP2Pergunta
     };
     int totalTexturas = sizeof(todasTexturas) / sizeof(todasTexturas[0]);
-
-
 
 
     for (int i = 0; i < totalTexturas; i++) {
@@ -291,8 +296,6 @@ int main(void) {
     }
 
 
-
-
     Rectangle orig         = { 0.0f, 0.0f, 0.0f, 0.0f };
     Rectangle origMenu     = { 0.0f, 0.0f, (float)imgMenu.width, (float)imgMenu.height };
     Rectangle origConfig   = { 0.0f, 0.0f, (float)texConfigAtivado.width, (float)texConfigAtivado.height };
@@ -300,12 +303,8 @@ int main(void) {
     Rectangle origRegras   = { 0.0f, 0.0f, (float)texRegras[0].width, (float)texRegras[0].height };
 
 
-
-
     Rectangle dest = { 0.0f, 0.0f, (float)larguraTela, (float)alturaTela };
     Vector2 pontoZero = { 0.0f, 0.0f };
-
-
 
 
     // ======= BOTÕES E ÁREAS DE CLIQUE =======
@@ -315,8 +314,6 @@ int main(void) {
     Rectangle btnCreditos = { 134, 424, 106, 39 };
 
 
-
-
     Rectangle btnVoltarMenu = { 100, 520, 90, 30 };
     Rectangle btnTelaCheia  = { 610, 415, 70, 25 };
     Rectangle sliderVolumeGeral = { 250, 245, 385, 15 };
@@ -324,18 +321,12 @@ int main(void) {
     Rectangle sliderEfeitos     = { 250, 323, 385, 15 };
 
 
-
-
     Rectangle btnVoltarRegras   = { 90, 520, 110, 35 };
     Rectangle btnContinuarRegras = { 630, 520, 130, 35 };
 
 
-
-
     Rectangle btnLogin  = { 340, 400, 120, 45 };
     Rectangle btnVoltar = { 15, 20, 160, 60 }; // Botão de Voltar no canto superior esquerdo
-
-
 
 
     Rectangle destFotoGabriel = { 440, 160, 230, 270 };
@@ -343,11 +334,7 @@ int main(void) {
     Rectangle btnFotoCaio     = { 440, 160, 230, 270 };
 
 
-
-
     Rectangle btnAvancarC2 = { 660, 450, 100, 100 };
-
-
 
 
     Rectangle btnContinuarInvestigacao = { 280, 370, 250, 70 };
@@ -356,12 +343,8 @@ int main(void) {
     Rectangle btnTentarNovamente = { 320, 425, 160, 50 };
 
 
-
-
-    Rectangle btnProvaVerdadeira = { 250, 420, 140, 40 };
-    Rectangle btnProvaManipulada = { 405, 420, 140, 40 };
-
-
+    Rectangle btnProvaVerdadeira = { 265, 480, 125, 44 };  // botão "Verdadeira"
+    Rectangle btnProvaManipulada = { 422, 480, 125, 44 };  // botão "Manipulada"
 
 
     Rectangle btnOpcaoA = { 180, 270, 440, 40 };
@@ -370,12 +353,39 @@ int main(void) {
     Rectangle btnOpcaoD = { 180, 435, 440, 40 };
 
 
-
-
     Rectangle btnAcusaCaioSim = { 180, 270, 440, 40 };
     Rectangle btnAcusaCaioNao = { 180, 325, 440, 40 };
 
 
+    // ---- Botões da CENA 3 (coordenadas na janela 800x600) ----
+    Rectangle btnAvancarC3 = { 660, 450, 100, 100 };      // botão redondo "Avançar" (mesma posição do btnAvancarC2)
+
+    Rectangle btnResolverC3 = { 309, 384, 182, 38 };      // "Resolver desafio" (C3_3)
+
+    Rectangle btnC3OpcaoA = { 130, 305, 535, 43 };        // a) não é ... e ... não é
+    Rectangle btnC3OpcaoB = { 130, 364, 535, 43 };        // b) não é ... OU ... não é  (CORRETA)
+    Rectangle btnC3OpcaoC = { 130, 422, 535, 43 };        // c) é ... ou ... não é
+    Rectangle btnC3OpcaoD = { 130, 477, 535, 43 };        // d) é ... e ... não é
+
+    Rectangle btnContinuarPerdida = { 301, 422, 197, 38 }; // "Continuar investigação" (C3_5)
+    Rectangle btnAcessarEvidC3    = { 309, 390, 182, 38 }; // "Acessar evidência" (P2)
+
+    Rectangle btnAudioPlay = { 150, 398, 46, 46 };        // botão play/pause
+    Rectangle btnAudioMudo = { 587, 398, 46, 46 };        // botão mudo/som
+
+    Rectangle btnC3Verdadeira = { 269, 398, 116, 39 };
+    Rectangle btnC3Manipulada = { 423, 398, 121, 39 };
+
+    Rectangle btnContinuarC3  = { 495, 462, 175, 34 };    // "CLIQUE PARA CONTINUAR" (player de áudio e pergunta final)
+
+    // Estado do player de áudio
+    bool  audioTocando = true;
+    bool  audioMudo = false;
+    float audioTempo = 0.0f;
+    const float audioDuracao = 18.0f;
+
+    // De onde o jogador veio ao entrar na Cena 3 (para o botão VOLTAR da C3_1)
+    GameState origemC3 = STATE_MENU;
 
 
     bool telaCheia = true;
@@ -384,17 +394,11 @@ int main(void) {
     float volEfeitos = 0.65f;
 
 
-
-
     Vector2 posMouse = { 0.0f, 0.0f };
-
-
 
 
     while (!WindowShouldClose()) {
         posMouse = GetMousePosition();
-
-
 
 
         switch (estadoAtual) {
@@ -409,8 +413,6 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_CONFIG:
                 if (BotaoClicado(btnTelaCheia, posMouse)) {
                     telaCheia = !telaCheia;
@@ -418,26 +420,18 @@ int main(void) {
                 }
 
 
-
-
                 volGeral   = AtualizarSlider(sliderVolumeGeral, posMouse, volGeral);
                 volMusica  = AtualizarSlider(sliderMusica, posMouse, volMusica);
                 volEfeitos = AtualizarSlider(sliderEfeitos, posMouse, volEfeitos);
 
 
-
-
                 SetMasterVolume(volGeral);
-
-
 
 
                 if (BotaoClicado(btnVoltarMenu, posMouse) || IsKeyPressed(KEY_ESCAPE)) {
                     estadoAtual = STATE_MENU;
                 }
                 break;
-
-
 
 
             case STATE_CREDITOS:
@@ -445,8 +439,6 @@ int main(void) {
                     estadoAtual = STATE_MENU;
                 }
                 break;
-
-
 
 
             case STATE_REGRAS:
@@ -460,8 +452,6 @@ int main(void) {
                 }
 
 
-
-
                 if (BotaoClicado(btnVoltarRegras, posMouse)) {
                     if (paginaRegras > 0) {
                         paginaRegras--;
@@ -471,15 +461,11 @@ int main(void) {
                 }
 
 
-
-
                 if (IsKeyPressed(KEY_ESCAPE)) {
                     paginaRegras = 0;
                     estadoAtual = STATE_MENU;
                 }
                 break;
-
-
 
 
             // --- CENA 1 ---
@@ -490,14 +476,10 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C1_2:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C1_1;
                 else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) estadoAtual = STATE_C1_3;
                 break;
-
-
 
 
             case STATE_C1_3:
@@ -506,14 +488,10 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C1_4:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C1_3;
                 else if (BotaoClicado(btnFotoCaio, posMouse)) estadoAtual = STATE_C1_5;
                 break;
-
-
 
 
             case STATE_C1_5:
@@ -522,14 +500,10 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C1_6:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C1_5;
                 else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) estadoAtual = STATE_C1_7;
                 break;
-
-
 
 
             case STATE_C1_7:
@@ -538,14 +512,10 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C1_8:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C1_7;
                 else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) estadoAtual = STATE_C2_1;
                 break;
-
-
 
 
             // --- CENA 2 ---
@@ -555,14 +525,10 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C2_2:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C2_1;
                 else if (BotaoClicado(btnAvancarC2, posMouse)) estadoAtual = STATE_C2_3;
                 break;
-
-
 
 
             case STATE_C2_3:
@@ -571,14 +537,10 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C2_4:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C2_3;
                 else if (BotaoClicado(btnAvancarC2, posMouse)) estadoAtual = STATE_C2_5;
                 break;
-
-
 
 
             case STATE_C2_5:
@@ -587,14 +549,10 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C2_6:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C2_5;
                 else if (BotaoClicado(btnAvancarC2, posMouse)) estadoAtual = STATE_C2_7;
                 break;
-
-
 
 
             case STATE_C2_7:
@@ -603,14 +561,10 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C2_8:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C2_7;
                 else if (BotaoClicado(btnAvancarC2, posMouse)) estadoAtual = STATE_C2_9;
                 break;
-
-
 
 
             case STATE_C2_9:
@@ -619,14 +573,10 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C2_10:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C2_9;
                 else if (BotaoClicado(btnAvancarC2, posMouse)) estadoAtual = STATE_C2_11;
                 break;
-
-
 
 
             case STATE_C2_11:
@@ -635,14 +585,10 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C2_12:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C2_11;
                 else if (BotaoClicado(btnAvancarC2, posMouse)) estadoAtual = STATE_C2_13;
                 break;
-
-
 
 
             case STATE_C2_13:
@@ -651,14 +597,10 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C2_14:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C2_13;
                 else if (BotaoClicado(btnAvancarC2, posMouse)) estadoAtual = STATE_C2_15;
                 break;
-
-
 
 
             case STATE_C2_15:
@@ -667,14 +609,10 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C2_16:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C2_15;
                 else if (BotaoClicado(btnAvancarC2, posMouse)) estadoAtual = STATE_C2_17;
                 break;
-
-
 
 
             case STATE_C2_17:
@@ -683,14 +621,10 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C2_18:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C2_17;
                 else if (BotaoClicado(btnAvancarC2, posMouse)) estadoAtual = STATE_C2_19;
                 break;
-
-
 
 
             case STATE_C2_19:
@@ -699,14 +633,10 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C2_20:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C2_19;
                 else if (BotaoClicado(btnAvancarC2, posMouse)) estadoAtual = STATE_C2_21;
                 break;
-
-
 
 
             case STATE_C2_21:
@@ -715,14 +645,10 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C2_22:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C2_21;
                 else if (BotaoClicado(btnAvancarC2, posMouse)) estadoAtual = STATE_C2_23;
                 break;
-
-
 
 
             case STATE_C2_23:
@@ -731,14 +657,10 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C2_24:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C2_23;
                 else if (BotaoClicado(btnAvancarC2, posMouse)) estadoAtual = STATE_C2_25;
                 break;
-
-
 
 
             case STATE_C2_25:
@@ -749,8 +671,6 @@ int main(void) {
                     estadoAtual = STATE_C2_26;
                 }
                 break;
-
-
 
 
             case STATE_C2_26:
@@ -769,8 +689,6 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_CONFIRMA_CAIO:
                 if (BotaoClicado(btnVoltar, posMouse) || BotaoClicado(btnAcusaCaioNao, posMouse)) {
                     estadoAtual = STATE_C2_26;
@@ -779,8 +697,6 @@ int main(void) {
                     estadoAtual = STATE_ACUSA_CAIO_1;
                 }
                 break;
-
-
 
 
             case STATE_EVIDENCIA_DESBLOQUEADA:
@@ -793,18 +709,16 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_DESAFIO_IA:
                 if (BotaoClicado(btnVoltar, posMouse)) {
                     estadoAtual = STATE_EVIDENCIA_DESBLOQUEADA;
                 }
                 else if (BotaoClicado(btnProvaVerdadeira, posMouse) || BotaoClicado(btnProvaManipulada, posMouse)) {
-                    estadoAtual = STATE_MENU;
+                    // Antes voltava ao MENU; agora segue para a CENA 3
+                    origemC3 = STATE_DESAFIO_IA;
+                    estadoAtual = STATE_C3_1;
                 }
                 break;
-
-
 
 
             case STATE_ACUSA_CAIO_1:
@@ -817,8 +731,6 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_ACUSA_CAIO_2:
                 if (BotaoClicado(btnVoltar, posMouse)) {
                     estadoAtual = STATE_ACUSA_CAIO_1;
@@ -827,8 +739,6 @@ int main(void) {
                     estadoAtual = STATE_ACUSA_CAIO_3;
                 }
                 break;
-
-
 
 
             case STATE_ACUSA_CAIO_3:
@@ -841,8 +751,6 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_VEREDITO_INCORRETO:
                 if (BotaoClicado(btnVoltar, posMouse) || BotaoClicado(btnTentarNovamente, posMouse) || IsKeyPressed(KEY_ESCAPE)) {
                     estadoAtual = STATE_MENU;
@@ -850,13 +758,127 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C2_28:
                 if (BotaoClicado(btnVoltar, posMouse)) {
                     estadoAtual = STATE_C2_26;
                 }
                 else if (BotaoClicado(btnContinuarInvestigacao, posMouse) || BotaoClicado(btnTentarNovamente, posMouse) || BotaoClicado(btnAvancarC2, posMouse)) {
+                    // Antes voltava ao MENU; agora segue para a CENA 3
+                    origemC3 = STATE_C2_28;
+                    estadoAtual = STATE_C3_1;
+                }
+                break;
+
+
+            // --- CENA 3 ---
+            case STATE_C3_1:
+                if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = origemC3;
+                else if (BotaoClicado(btnAvancarC3, posMouse)) estadoAtual = STATE_C3_2;
+                break;
+
+
+            case STATE_C3_2:
+                if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C3_1;
+                else if (BotaoClicado(btnAvancarC3, posMouse)) estadoAtual = STATE_C3_3;
+                break;
+
+
+            case STATE_C3_3:
+                if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C3_2;
+                else if (BotaoClicado(btnResolverC3, posMouse)) estadoAtual = STATE_C3_4;
+                break;
+
+
+            case STATE_C3_4:
+                if (BotaoClicado(btnVoltar, posMouse)) {
+                    estadoAtual = STATE_C3_3;
+                }
+                else if (BotaoClicado(btnC3OpcaoB, posMouse)) {
+                    // Resposta correta: a negação de (A e B) é (não A ou não B)
+                    estadoAtual = STATE_C3_DESBLOQUEADA;
+                }
+                else if (BotaoClicado(btnC3OpcaoA, posMouse) ||
+                         BotaoClicado(btnC3OpcaoC, posMouse) ||
+                         BotaoClicado(btnC3OpcaoD, posMouse)) {
+                    estadoAtual = STATE_C3_PERDIDA;
+                }
+                break;
+
+
+            case STATE_C3_PERDIDA:
+                if (BotaoClicado(btnVoltar, posMouse)) {
+                    estadoAtual = STATE_C3_4;
+                }
+                else if (BotaoClicado(btnContinuarPerdida, posMouse)) {
+                    // TODO: trocar pelo próximo estado quando a próxima cena existir
+                    estadoAtual = STATE_MENU;
+                }
+                break;
+
+
+            case STATE_C3_DESBLOQUEADA:
+                if (BotaoClicado(btnVoltar, posMouse)) {
+                    estadoAtual = STATE_C3_4;
+                }
+                else if (BotaoClicado(btnAcessarEvidC3, posMouse)) {
+                    // Entra no player de áudio
+                    audioTocando = true;
+                    audioMudo = false;
+                    audioTempo = 0.0f;
+                    if (temAudio) {
+                        StopMusicStream(audioProva);
+                        SetMusicVolume(audioProva, 1.0f);
+                        PlayMusicStream(audioProva);
+                    }
+                    estadoAtual = STATE_C3_AUDIO;
+                }
+                break;
+
+
+            case STATE_C3_AUDIO:
+                if (temAudio) UpdateMusicStream(audioProva);
+
+                // Tempo da faixa (só avança enquanto está tocando)
+                if (audioTocando) audioTempo += GetFrameTime();
+
+                if (BotaoClicado(btnVoltar, posMouse)) {
+                    if (temAudio) StopMusicStream(audioProva);
+                    estadoAtual = STATE_C3_DESBLOQUEADA;
+                }
+                else if (BotaoClicado(btnAudioPlay, posMouse)) {
+                    audioTocando = !audioTocando;
+                    if (temAudio) {
+                        if (audioTocando) ResumeMusicStream(audioProva);
+                        else PauseMusicStream(audioProva);
+                    }
+                }
+                else if (BotaoClicado(btnAudioMudo, posMouse)) {
+                    audioMudo = !audioMudo;
+                    if (temAudio) SetMusicVolume(audioProva, audioMudo ? 0.0f : 1.0f);
+                }
+                else if (BotaoClicado(btnContinuarC3, posMouse) || IsKeyPressed(KEY_ENTER)) {
+                    // Clique em "CLIQUE PARA CONTINUAR" (ou ENTER) -> pergunta final
+                    if (temAudio) StopMusicStream(audioProva);
+                    estadoAtual = STATE_C3_PERGUNTA;
+                }
+                break;
+
+
+            case STATE_C3_PERGUNTA:
+                if (BotaoClicado(btnVoltar, posMouse)) {
+                    audioTempo = 0.0f;
+                    audioTocando = true;
+                    audioMudo = false;
+                    if (temAudio) {
+                        SetMusicVolume(audioProva, 1.0f);
+                        PlayMusicStream(audioProva);
+                    }
+                    estadoAtual = STATE_C3_AUDIO;
+                }
+                else if (BotaoClicado(btnC3Verdadeira, posMouse) || BotaoClicado(btnC3Manipulada, posMouse) ||
+                         BotaoClicado(btnContinuarC3, posMouse)) {
+                    // TODO: definir qual resposta é a correta e para onde cada uma leva
+                    // (e qual é a próxima cena ao clicar em "CLIQUE PARA CONTINUAR")
                     estadoAtual = STATE_MENU;
                 }
                 break;
@@ -864,8 +886,6 @@ int main(void) {
         // ======= RENDERIZAÇÃO DAS TELAS =======
         BeginDrawing();
         ClearBackground(BLACK);
-
-
 
 
         switch (estadoAtual) {
@@ -883,8 +903,6 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_CONFIG: {
                 Texture2D texAtual = telaCheia ? texConfigAtivado : texConfigDesativado;
                 if (texAtual.id != 0) {
@@ -898,8 +916,6 @@ int main(void) {
             }
 
 
-
-
             case STATE_CREDITOS:
                 if (texCreditos.id != 0) {
                     origCreditos = (Rectangle){ 0.0f, 0.0f, (float)texCreditos.width, (float)texCreditos.height };
@@ -909,8 +925,6 @@ int main(void) {
                     DrawText("VOLTAR", btnVoltarMenu.x, btnVoltarMenu.y, 20, RAYWHITE);
                 }
                 break;
-
-
 
 
             case STATE_REGRAS:
@@ -925,8 +939,6 @@ int main(void) {
                 break;
 
 
-
-
             // --- CENA 1 ---
             case STATE_C1_1:
                 if (imgC1_1.id != 0) {
@@ -936,16 +948,12 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C1_2:
                 if (imgC1_2.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC1_2.width, (float)imgC1_2.height };
                     DrawTexturePro(imgC1_2, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
-
-
 
 
             case STATE_C1_3:
@@ -960,8 +968,6 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C1_4:
                 if (imgC1_4.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC1_4.width, (float)imgC1_4.height };
@@ -974,16 +980,12 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C1_5:
                 if (imgC1_5.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC1_5.width, (float)imgC1_5.height };
                     DrawTexturePro(imgC1_5, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
-
-
 
 
             case STATE_C1_6:
@@ -994,8 +996,6 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C1_7:
                 if (imgC1_7.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC1_7.width, (float)imgC1_7.height };
@@ -1004,16 +1004,12 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C1_8:
                 if (imgC1_8.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC1_8.width, (float)imgC1_8.height };
                     DrawTexturePro(imgC1_8, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
-
-
 
 
             // --- CENA 2 ---
@@ -1025,16 +1021,12 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C2_2:
                 if (imgC2_2.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC2_2.width, (float)imgC2_2.height };
                     DrawTexturePro(imgC2_2, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
-
-
 
 
             case STATE_C2_3:
@@ -1045,16 +1037,12 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C2_4:
                 if (imgC2_4.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC2_4.width, (float)imgC2_4.height };
                     DrawTexturePro(imgC2_4, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
-
-
 
 
             case STATE_C2_5:
@@ -1065,16 +1053,12 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C2_6:
                 if (imgC2_6.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC2_6.width, (float)imgC2_6.height };
                     DrawTexturePro(imgC2_6, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
-
-
 
 
             case STATE_C2_7:
@@ -1085,16 +1069,12 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C2_8:
                 if (imgC2_8.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC2_8.width, (float)imgC2_8.height };
                     DrawTexturePro(imgC2_8, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
-
-
 
 
             case STATE_C2_9:
@@ -1105,16 +1085,12 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C2_10:
                 if (imgC2_10.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC2_10.width, (float)imgC2_10.height };
                     DrawTexturePro(imgC2_10, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
-
-
 
 
             case STATE_C2_11:
@@ -1125,16 +1101,12 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C2_12:
                 if (imgC2_12.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC2_12.width, (float)imgC2_12.height };
                     DrawTexturePro(imgC2_12, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
-
-
 
 
             case STATE_C2_13:
@@ -1145,16 +1117,12 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C2_14:
                 if (imgC2_14.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC2_14.width, (float)imgC2_14.height };
                     DrawTexturePro(imgC2_14, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
-
-
 
 
             case STATE_C2_15:
@@ -1165,16 +1133,12 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C2_16:
                 if (imgC2_16.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC2_16.width, (float)imgC2_16.height };
                     DrawTexturePro(imgC2_16, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
-
-
 
 
             case STATE_C2_17:
@@ -1185,16 +1149,12 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C2_18:
                 if (imgC2_18.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC2_18.width, (float)imgC2_18.height };
                     DrawTexturePro(imgC2_18, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
-
-
 
 
             case STATE_C2_19:
@@ -1205,16 +1165,12 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C2_20:
                 if (imgC2_20.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC2_20.width, (float)imgC2_20.height };
                     DrawTexturePro(imgC2_20, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
-
-
 
 
             case STATE_C2_21:
@@ -1225,16 +1181,12 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C2_22:
                 if (imgC2_22.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC2_22.width, (float)imgC2_22.height };
                     DrawTexturePro(imgC2_22, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
-
-
 
 
             case STATE_C2_23:
@@ -1245,16 +1197,12 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C2_24:
                 if (imgC2_24.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC2_24.width, (float)imgC2_24.height };
                     DrawTexturePro(imgC2_24, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
-
-
 
 
             case STATE_C2_25:
@@ -1265,16 +1213,12 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C2_26:
                 if (imgC2_26.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC2_26.width, (float)imgC2_26.height };
                     DrawTexturePro(imgC2_26, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
-
-
 
 
             case STATE_CONFIRMA_CAIO:
@@ -1285,16 +1229,12 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_ACUSA_CAIO_1:
                 if (imgF1_1.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgF1_1.width, (float)imgF1_1.height };
                     DrawTexturePro(imgF1_1, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
-
-
 
 
             case STATE_ACUSA_CAIO_2:
@@ -1305,16 +1245,12 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_ACUSA_CAIO_3:
                 if (imgF1_3.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgF1_3.width, (float)imgF1_3.height };
                     DrawTexturePro(imgF1_3, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
-
-
 
 
             case STATE_VEREDITO_INCORRETO:
@@ -1325,16 +1261,12 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_EVIDENCIA_DESBLOQUEADA:
                 if (imgP1_1.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgP1_1.width, (float)imgP1_1.height };
                     DrawTexturePro(imgP1_1, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
-
-
 
 
             case STATE_DESAFIO_IA:
@@ -1345,23 +1277,86 @@ int main(void) {
                 break;
 
 
-
-
             case STATE_C2_28:
                 if (imgC2_28.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC2_28.width, (float)imgC2_28.height };
                     DrawTexturePro(imgC2_28, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
+
+
+            // --- CENA 3 ---
+            case STATE_C3_1:
+                if (imgC3_1.id != 0) {
+                    orig = (Rectangle){ 0.0f, 0.0f, (float)imgC3_1.width, (float)imgC3_1.height };
+                    DrawTexturePro(imgC3_1, orig, dest, pontoZero, 0.0f, WHITE);
+                }
+                break;
+
+
+            case STATE_C3_2:
+                if (imgC3_2.id != 0) {
+                    orig = (Rectangle){ 0.0f, 0.0f, (float)imgC3_2.width, (float)imgC3_2.height };
+                    DrawTexturePro(imgC3_2, orig, dest, pontoZero, 0.0f, WHITE);
+                }
+                break;
+
+
+            case STATE_C3_3:
+                if (imgC3_3.id != 0) {
+                    orig = (Rectangle){ 0.0f, 0.0f, (float)imgC3_3.width, (float)imgC3_3.height };
+                    DrawTexturePro(imgC3_3, orig, dest, pontoZero, 0.0f, WHITE);
+                }
+                break;
+
+
+            case STATE_C3_4:
+                if (imgC3_4.id != 0) {
+                    orig = (Rectangle){ 0.0f, 0.0f, (float)imgC3_4.width, (float)imgC3_4.height };
+                    DrawTexturePro(imgC3_4, orig, dest, pontoZero, 0.0f, WHITE);
+                }
+                break;
+
+
+            case STATE_C3_PERDIDA:
+                if (imgC3_5.id != 0) {
+                    orig = (Rectangle){ 0.0f, 0.0f, (float)imgC3_5.width, (float)imgC3_5.height };
+                    DrawTexturePro(imgC3_5, orig, dest, pontoZero, 0.0f, WHITE);
+                }
+                break;
+
+
+            case STATE_C3_DESBLOQUEADA:
+                if (imgP2.id != 0) {
+                    orig = (Rectangle){ 0.0f, 0.0f, (float)imgP2.width, (float)imgP2.height };
+                    DrawTexturePro(imgP2, orig, dest, pontoZero, 0.0f, WHITE);
+                }
+                break;
+
+
+            case STATE_C3_AUDIO: {
+                Texture2D texAudio;
+                if (audioTocando) texAudio = audioMudo ? imgAudioPlayMudo  : imgAudioPlaySom;
+                else              texAudio = audioMudo ? imgAudioPausaMudo : imgAudioPausaSom;
+                if (texAudio.id != 0) {
+                    orig = (Rectangle){ 0.0f, 0.0f, (float)texAudio.width, (float)texAudio.height };
+                    DrawTexturePro(texAudio, orig, dest, pontoZero, 0.0f, WHITE);
+                }
+                break;
+            }
+
+
+            case STATE_C3_PERGUNTA:
+                if (imgP2Pergunta.id != 0) {
+                    orig = (Rectangle){ 0.0f, 0.0f, (float)imgP2Pergunta.width, (float)imgP2Pergunta.height };
+                    DrawTexturePro(imgP2Pergunta, orig, dest, pontoZero, 0.0f, WHITE);
+                }
+                break;
         }
-
-
 
 
         EndDrawing();
     }
-
-
 
 
     // ======= UNLOAD TEXTURES =======
@@ -1374,8 +1369,6 @@ int main(void) {
     UnloadTexture(imgMenu);
 
 
-
-
     UnloadTexture(imgC1_1);
     UnloadTexture(imgC1_2);
     UnloadTexture(imgC1_3);
@@ -1386,12 +1379,8 @@ int main(void) {
     UnloadTexture(imgC1_8);
 
 
-
-
     UnloadTexture(imgGabriel);
     UnloadTexture(imgCaio);
-
-
 
 
     UnloadTexture(imgC2_1);
@@ -1424,8 +1413,6 @@ int main(void) {
     UnloadTexture(imgC2_28);
 
 
-
-
     UnloadTexture(imgF1_1);
     UnloadTexture(imgF1_2);
     UnloadTexture(imgF1_3);
@@ -1434,9 +1421,22 @@ int main(void) {
     UnloadTexture(imgP1_2);
 
 
+    UnloadTexture(imgC3_1);
+    UnloadTexture(imgC3_2);
+    UnloadTexture(imgC3_3);
+    UnloadTexture(imgC3_4);
+    UnloadTexture(imgC3_5);
+    UnloadTexture(imgP2);
+    UnloadTexture(imgAudioPlayMudo);
+    UnloadTexture(imgAudioPlaySom);
+    UnloadTexture(imgAudioPausaMudo);
+    UnloadTexture(imgAudioPausaSom);
+    UnloadTexture(imgP2Pergunta);
+
+    if (temAudio) UnloadMusicStream(audioProva);
+    CloseAudioDevice();
 
 
     CloseWindow();
     return 0;
 }
-
