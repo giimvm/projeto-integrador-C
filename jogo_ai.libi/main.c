@@ -1,12 +1,10 @@
 #include "raylib.h"
 
-
 typedef enum {
     STATE_MENU = 0,
     STATE_REGRAS,
     STATE_CONFIG,
     STATE_CREDITOS,
-
 
     // Subtelas da CENA 1
     STATE_C1_1,
@@ -17,7 +15,6 @@ typedef enum {
     STATE_C1_6,
     STATE_C1_7,
     STATE_C1_8,
-
 
     // CENA 2
     STATE_C2_1,
@@ -49,14 +46,50 @@ typedef enum {
     STATE_CONFIRMA_CAIO, // C2.26.png
     STATE_C2_28,         // C2.27.png
 
-
     // RAMIFICAÇÃO JUÍZA E VEREDITO
-    STATE_ACUSA_CAIO_1,          
-    STATE_ACUSA_CAIO_2,          
-    STATE_ACUSA_CAIO_3,          
-    STATE_VEREDITO_INCORRETO,    
+    STATE_ACUSA_CAIO_1,
+    STATE_ACUSA_CAIO_2,
+    STATE_ACUSA_CAIO_3,
+    STATE_VEREDITO_INCORRETO,
     STATE_EVIDENCIA_DESBLOQUEADA,
+<<<<<<< Updated upstream
     STATE_DESAFIO_IA              
+=======
+    STATE_DESAFIO_IA,
+
+    // CENA 3
+    STATE_C3_1,
+    STATE_C3_2,
+    STATE_C3_3,
+    STATE_C3_4,
+    STATE_C3_PERDIDA,
+    STATE_C3_DESBLOQUEADA,
+    STATE_C3_AUDIO,
+    STATE_C3_PERGUNTA,
+
+    // CENA 4
+        // CENA 4
+    STATE_C4_1,
+    STATE_C4_2,
+    STATE_C4_3,
+    STATE_C4_4,
+    STATE_C4_5,
+    STATE_C4_6,
+    STATE_C4_7,
+    STATE_C4_8,
+    STATE_C4_9,
+    STATE_C4_10,
+    STATE_C4_11,
+    STATE_C4_12,
+    STATE_C4_13,
+    STATE_C4_14,        // <-- NOVO (c4.14 é diálogo)
+    STATE_C4_EVIDENCIA, // c4.15 - nova evidência encontrada
+    STATE_C4_DESAFIO,   // c4.16 - questão de lógica
+    STATE_C4_PERDIDA,   // c4.17 - evidência perdida
+    STATE_C4_DESBLOQUEADA, // c4.18 - evidência desbloqueada (NOVO)
+    STATE_C4_ORIGEM,    // p4_1
+    STATE_C4_PERGUNTA   // p4_2
+>>>>>>> Stashed changes
 } GameState;
 
 
@@ -81,6 +114,45 @@ void DesenharEfeitoHover(Rectangle btn, Vector2 posMouse, Color cor) {
 }
 
 
+<<<<<<< Updated upstream
+=======
+// Tenta carregar uma imagem da Cena 3 em várias pastas e com dois nomes possíveis
+Texture2D CarregarCena3(const char* nome1, const char* nome2) {
+    const char* pastas[] = { "src/cena3/", "cena3/", "src/cena2/", "" };
+    const char* nomes[2] = { nome1, nome2 };
+    char caminho[256];
+
+    for (int n = 0; n < 2; n++) {
+        if (nomes[n] == NULL) continue;
+        for (int p = 0; p < 4; p++) {
+            snprintf(caminho, sizeof(caminho), "%s%s", pastas[p], nomes[n]);
+            if (FileExists(caminho)) return LoadTexture(caminho);
+        }
+    }
+    TraceLog(LOG_WARNING, "CENA3: imagem NAO encontrada: %s (nem %s)", nome1, nome2 ? nome2 : "-");
+    return (Texture2D){ 0 };
+}
+
+
+// Tenta carregar uma imagem da Cena 4 em várias pastas e com até 3 nomes possíveis
+Texture2D CarregarCena4(const char* nome1, const char* nome2, const char* nome3) {
+    const char* pastas[] = { "src/cena4/", "cena4/", "src/cena3/", "" };
+    const char* nomes[3] = { nome1, nome2, nome3 };
+    char caminho[256];
+
+    for (int n = 0; n < 3; n++) {
+        if (nomes[n] == NULL) continue;
+        for (int p = 0; p < 4; p++) {
+            snprintf(caminho, sizeof(caminho), "%s%s", pastas[p], nomes[n]);
+            if (FileExists(caminho)) return LoadTexture(caminho);
+        }
+    }
+    TraceLog(LOG_WARNING, "CENA4: imagem NAO encontrada: %s", nome1);
+    return (Texture2D){ 0 };
+}
+
+
+>>>>>>> Stashed changes
 int main(void) {
     const int larguraTela = 800;
     const int alturaTela = 600;
@@ -136,7 +208,7 @@ int main(void) {
     // ======= TEXTURAS DA CENA 1 =======
     Texture2D imgC1_1 = LoadTexture("src/cena1/C1.1.png");
     if (imgC1_1.id == 0) imgC1_1 = LoadTexture("cena1/C1.1.png");
-   
+
     Texture2D imgC1_2 = LoadTexture("src/cena1/C1.2.png");
     if (imgC1_2.id == 0) imgC1_2 = LoadTexture("src/cena1/C1 .2.png");
     if (imgC1_2.id == 0) imgC1_2 = LoadTexture("cena1/C1.2.png");
@@ -194,7 +266,7 @@ int main(void) {
     Texture2D imgC2_16   = LoadTexture("src/cena2/C2.15.png");
     Texture2D imgC2_17   = LoadTexture("src/cena2/C2.16.png");
     Texture2D imgC2_18   = LoadTexture("src/cena2/C2.17.png");
-    Texture2D imgC2_19   = LoadTexture("src/cena2/C2.18.png");    
+    Texture2D imgC2_19   = LoadTexture("src/cena2/C2.18.png");
     Texture2D imgC2_20   = LoadTexture("src/cena2/C2.19.png");
     Texture2D imgC2_21   = LoadTexture("src/cena2/C2.20.png");
     Texture2D imgC2_22   = LoadTexture("src/cena2/C2.21.png");
@@ -215,6 +287,54 @@ int main(void) {
     Texture2D imgP1_2    = LoadTexture("src/cena2/P1.2.png");
 
 
+<<<<<<< Updated upstream
+=======
+    // ======= TEXTURAS DA CENA 3 =======
+    // (coloque as imagens em src/cena3/ - o jogo também procura em cena3/, src/cena2/ e na raiz)
+    Texture2D imgC3_1 = CarregarCena3("C3.1.png", "C3_1.png");  // Chefe: dispositivo
+    Texture2D imgC3_2 = CarregarCena3("C3.2.png", "C3_2.png");  // Chefe: mensagem
+    Texture2D imgC3_3 = CarregarCena3("C3.3.png", "C3_3.png");  // Nova evidência encontrada
+    Texture2D imgC3_4 = CarregarCena3("C3.4.png", "C3_4.png");  // Desafio de lógica
+    Texture2D imgC3_5 = CarregarCena3("C3.5.png", "C3_5.png");  // Evidência perdida
+    Texture2D imgP2   = CarregarCena3("P2.png", "P2.1.png");    // Evidência desbloqueada
+
+    // Player de áudio (4 combinações de ícones)
+    Texture2D imgAudioPausaSom  = CarregarCena3("p2.(2.1).png", "p2_2_1_.png");  // pausado + com som
+    Texture2D imgAudioPausaMudo = CarregarCena3("p2.(2.2).png", "p2__2_2_.png"); // pausado + mudo
+    Texture2D imgAudioPlaySom   = CarregarCena3("p2.(2.3).png", "p2_2__3_.png"); // tocando + com som
+    Texture2D imgAudioPlayMudo  = CarregarCena3("p2.(2.4).png", "p2_2_4_.png");  // tocando + mudo
+    Texture2D imgP2Pergunta     = CarregarCena3("p2.3.png",     "p2_3.png");     // Verdadeira ou manipulada?
+
+    // Áudio opcional da prova (se o arquivo não existir, o jogo só simula o tempo)
+    Music audioProva = { 0 };
+    bool temAudio = false;
+    if (FileExists("src/cena3/audio_prova.mp3")) audioProva = LoadMusicStream("src/cena3/audio_prova.mp3");
+    else if (FileExists("src/cena3/audio_prova.wav")) audioProva = LoadMusicStream("src/cena3/audio_prova.wav");
+    else if (FileExists("src/cena3/audio_prova.ogg")) audioProva = LoadMusicStream("src/cena3/audio_prova.ogg");
+    if (audioProva.stream.buffer != NULL) {
+        temAudio = true;
+        audioProva.looping = false;
+    }
+
+    // ======= TEXTURAS DA CENA 4 =======
+    // c4.1 ... c4.14 = diálogos (CORRIGIDO: eram 13)
+    Texture2D imgC4[14];
+    char n1[64], n2[64];
+    for (int i = 0; i < 14; i++) {
+        snprintf(n1, sizeof(n1), "c4.%d.png", i + 1);
+        snprintf(n2, sizeof(n2), "C4.%d.png", i + 1);
+        imgC4[i] = CarregarCena4(n1, n2, NULL);
+    }
+    // CORRIGIDO: numeração nova (c4.15 evidência, c4.16 desafio, c4.17 perdida)
+    Texture2D imgC4Evidencia = CarregarCena4("c4.15.png", "C4.15.png", "c4_15.png"); // Nova evidência
+    Texture2D imgC4Desafio   = CarregarCena4("c4.16.png", "C4.16.png", "c4_16.png"); // Questão de lógica
+    Texture2D imgC4Perdida   = CarregarCena4("c4.17.png", "C4.17.png", "c4_17.png"); // Evidência perdida
+    Texture2D imgC4Desbloqueada = CarregarCena4("c4.18.png", "C4.18.png", "c4_18.png"); // Evidência desbloqueada (NOVO)
+    Texture2D imgP4_1        = CarregarCena4("p4_1.png",  "p4.1.png",  "P4.1.png");  // Origem da prova
+    Texture2D imgP4_2        = CarregarCena4("p4_2.png",  "p4.2.png",  "P4.2.png");  // Verdadeira ou manipulada
+
+
+>>>>>>> Stashed changes
     Texture2D* todasTexturas[] = {
         &imgMenu, &texConfigAtivado, &texConfigDesativado, &texCreditos,
         &texRegras[0], &texRegras[1], &texRegras[2], &texRegras[3], &texRegras[4],
@@ -222,7 +342,16 @@ int main(void) {
         &imgGabriel, &imgCaio, &imgC2_1, &imgC2_2, &imgC2_3, &imgC2_4, &imgC2_5, &imgC2_6, &imgC2_7, &imgC2_8,
         &imgC2_9, &imgC2_10, &imgC2_11, &imgC2_12, &imgC2_13, &imgC2_14, &imgC2_15, &imgC2_16, &imgC2_17,
         &imgC2_18, &imgC2_19, &imgC2_20, &imgC2_21, &imgC2_22, &imgC2_23, &imgC2_24, &imgC2_25, &imgC2_26, &imgC2_27, &imgC2_28,
+<<<<<<< Updated upstream
         &imgF1_1, &imgF1_2, &imgF1_3, &imgP1, &imgP1_1, &imgP1_2
+=======
+        &imgF1_1, &imgF1_2, &imgF1_3, &imgP1, &imgP1_1, &imgP1_2,
+        &imgC3_1, &imgC3_2, &imgC3_3, &imgC3_4, &imgC3_5, &imgP2,
+        &imgAudioPlayMudo, &imgAudioPlaySom, &imgAudioPausaMudo, &imgAudioPausaSom, &imgP2Pergunta,
+        &imgC4[0], &imgC4[1], &imgC4[2], &imgC4[3], &imgC4[4], &imgC4[5], &imgC4[6],
+        &imgC4[7], &imgC4[8], &imgC4[9], &imgC4[10], &imgC4[11], &imgC4[12], &imgC4[13],
+        &imgC4Evidencia, &imgC4Desafio, &imgC4Perdida, &imgC4Desbloqueada, &imgP4_1, &imgP4_2
+>>>>>>> Stashed changes
     };
     int totalTexturas = sizeof(todasTexturas) / sizeof(todasTexturas[0]);
 
@@ -296,6 +425,67 @@ int main(void) {
     Rectangle btnAcusaCaioNao = { 180, 325, 440, 40 };
 
 
+<<<<<<< Updated upstream
+=======
+    // ---- Botões da CENA 3 (coordenadas na janela 800x600) ----
+    Rectangle btnAvancarC3 = { 660, 450, 100, 100 };      // botão redondo "Avançar" (mesma posição do btnAvancarC2)
+
+    Rectangle btnResolverC3 = { 309, 384, 182, 38 };      // "Resolver desafio" (C3_3)
+
+    // CORRIGIDO: posições das opções da C3.4 conforme o print
+    Rectangle btnC3OpcaoA = { 139, 298, 497, 40 };        // a) não é ... e ... não é
+    Rectangle btnC3OpcaoB = { 139, 353, 497, 40 };        // b) não é ... OU ... não é  (CORRETA)
+    Rectangle btnC3OpcaoC = { 139, 407, 497, 40 };        // c) é ... ou ... não é
+    Rectangle btnC3OpcaoD = { 139, 456, 497, 40 };        // d) é ... e ... não é
+
+    // CORRIGIDO: y era 422, o botão fica em y ~383
+    Rectangle btnContinuarPerdida = { 301, 383, 197, 38 }; // "Continuar investigação" (C3_5)
+    Rectangle btnAcessarEvidC3    = { 309, 390, 182, 38 }; // "Acessar evidência" (P2)
+
+    Rectangle btnAudioPlay = { 150, 398, 46, 46 };        // botão play/pause
+    Rectangle btnAudioMudo = { 587, 398, 46, 46 };        // botão mudo/som
+
+    Rectangle btnC3Verdadeira = { 269, 398, 116, 39 };
+    Rectangle btnC3Manipulada = { 423, 398, 121, 39 };
+
+    Rectangle btnContinuarC3  = { 495, 462, 175, 34 };    // "CLIQUE PARA CONTINUAR" (player de áudio e pergunta final)
+
+    // Estado do player de áudio
+    bool  audioTocando = true;
+    bool  audioMudo = false;
+    float audioTempo = 0.0f;
+    const float audioDuracao = 18.0f;
+
+    // De onde o jogador veio ao entrar na Cena 3 (para o botão VOLTAR da C3_1)
+    GameState origemC3 = STATE_MENU;
+
+
+    // ---- Botões da CENA 4 (coordenadas na janela 800x600) ----
+    Rectangle btnAvancarC4 = { 615, 553, 130, 40 };       // "AVANÇAR" dos diálogos
+
+    Rectangle btnResolverC4 = { 309, 384, 182, 38 };      // "Desbloquear/Resolver desafio" (c4.15)
+
+    Rectangle btnC4OpcaoA = { 142, 326, 496, 40 };        // a) Gabriel vai contar
+    Rectangle btnC4OpcaoB = { 142, 381, 496, 40 };        // b) Gabriel NÃO vai contar (CORRETA)
+    Rectangle btnC4OpcaoC = { 142, 434, 496, 40 };        // c) É indeterminado
+    Rectangle btnC4OpcaoD = { 142, 484, 496, 40 };        // d) Gabriel já contou
+
+    // CORRIGIDO: y era 422
+    Rectangle btnContinuarPerdidaC4 = { 301, 383, 197, 38 }; // "Continuar investigação" (c4.17)
+    // CORRIGIDO: posição do "CLIQUE PARA CONTINUAR" da p4_1
+    Rectangle btnContinuarOrigemC4  = { 565, 538, 185, 36 };
+
+    // NOVO: botão "Acessar evidência" da c4.18 (mesma posição do botão da C3 desbloqueada)
+    Rectangle btnAcessarEvidC4 = { 309, 390, 182, 38 };
+
+    Rectangle btnC4Verdadeira = { 380, 311, 128, 40 };    // p4_2
+    Rectangle btnC4Manipulada = { 534, 311, 134, 40 };    // p4_2
+
+    // De onde o jogador veio ao entrar na Cena 4 (para o VOLTAR da primeira tela)
+    GameState origemC4 = STATE_MENU;
+
+
+>>>>>>> Stashed changes
     bool telaCheia = true;
     float volGeral = 0.75f;
     float volMusica = 0.55f;
@@ -669,7 +859,210 @@ int main(void) {
                     estadoAtual = STATE_C2_26;
                 }
                 else if (BotaoClicado(btnContinuarInvestigacao, posMouse) || BotaoClicado(btnTentarNovamente, posMouse) || BotaoClicado(btnAvancarC2, posMouse)) {
+<<<<<<< Updated upstream
+=======
+                    // Antes voltava ao MENU; agora segue para a CENA 3
+                    origemC3 = STATE_C2_28;
+                    estadoAtual = STATE_C3_1;
+                }
+                break;
+
+
+            // --- CENA 3 ---
+            case STATE_C3_1:
+                if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = origemC3;
+                else if (BotaoClicado(btnAvancarC3, posMouse)) estadoAtual = STATE_C3_2;
+                break;
+
+
+            case STATE_C3_2:
+                if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C3_1;
+                else if (BotaoClicado(btnAvancarC3, posMouse)) estadoAtual = STATE_C3_3;
+                break;
+
+
+            case STATE_C3_3:
+                if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C3_2;
+                else if (BotaoClicado(btnResolverC3, posMouse)) estadoAtual = STATE_C3_4;
+                break;
+
+
+            case STATE_C3_4:
+                if (BotaoClicado(btnVoltar, posMouse)) {
+                    estadoAtual = STATE_C3_3;
+                }
+                else if (BotaoClicado(btnC3OpcaoB, posMouse)) {
+                    // Resposta correta: a negação de (A e B) é (não A ou não B)
+                    estadoAtual = STATE_C3_DESBLOQUEADA;
+                }
+                else if (BotaoClicado(btnC3OpcaoA, posMouse) ||
+                         BotaoClicado(btnC3OpcaoC, posMouse) ||
+                         BotaoClicado(btnC3OpcaoD, posMouse)) {
+                    estadoAtual = STATE_C3_PERDIDA;
+                }
+                break;
+
+
+            case STATE_C3_PERDIDA:
+                if (BotaoClicado(btnVoltar, posMouse)) {
+                    estadoAtual = STATE_C3_4;
+                }
+                else if (BotaoClicado(btnContinuarPerdida, posMouse)) {
+                    // Segue para a CENA 4
+                    origemC4 = STATE_C3_PERDIDA;
+                    estadoAtual = STATE_C4_1;
+                }
+                break;
+
+
+            case STATE_C3_DESBLOQUEADA:
+                if (BotaoClicado(btnVoltar, posMouse)) {
+                    estadoAtual = STATE_C3_4;
+                }
+                else if (BotaoClicado(btnAcessarEvidC3, posMouse)) {
+                    // Entra no player de áudio
+                    audioTocando = true;
+                    audioMudo = false;
+                    audioTempo = 0.0f;
+                    if (temAudio) {
+                        StopMusicStream(audioProva);
+                        SetMusicVolume(audioProva, 1.0f);
+                        PlayMusicStream(audioProva);
+                    }
+                    estadoAtual = STATE_C3_AUDIO;
+                }
+                break;
+
+
+            case STATE_C3_AUDIO:
+                if (temAudio) UpdateMusicStream(audioProva);
+
+                // Tempo da faixa (só avança enquanto está tocando)
+                if (audioTocando) audioTempo += GetFrameTime();
+
+                if (BotaoClicado(btnVoltar, posMouse)) {
+                    if (temAudio) StopMusicStream(audioProva);
+                    estadoAtual = STATE_C3_DESBLOQUEADA;
+                }
+                else if (BotaoClicado(btnAudioPlay, posMouse)) {
+                    audioTocando = !audioTocando;
+                    if (temAudio) {
+                        if (audioTocando) ResumeMusicStream(audioProva);
+                        else PauseMusicStream(audioProva);
+                    }
+                }
+                else if (BotaoClicado(btnAudioMudo, posMouse)) {
+                    audioMudo = !audioMudo;
+                    if (temAudio) SetMusicVolume(audioProva, audioMudo ? 0.0f : 1.0f);
+                }
+                else if (BotaoClicado(btnContinuarC3, posMouse) || IsKeyPressed(KEY_ENTER)) {
+                    // Clique em "CLIQUE PARA CONTINUAR" (ou ENTER) -> pergunta final
+                    if (temAudio) StopMusicStream(audioProva);
+                    estadoAtual = STATE_C3_PERGUNTA;
+                }
+                break;
+
+
+            case STATE_C3_PERGUNTA:
+                if (BotaoClicado(btnVoltar, posMouse)) {
+                    audioTempo = 0.0f;
+                    audioTocando = true;
+                    audioMudo = false;
+                    if (temAudio) {
+                        SetMusicVolume(audioProva, 1.0f);
+                        PlayMusicStream(audioProva);
+                    }
+                    estadoAtual = STATE_C3_AUDIO;
+                }
+                else if (BotaoClicado(btnC3Verdadeira, posMouse) || BotaoClicado(btnC3Manipulada, posMouse) ||
+                         BotaoClicado(btnContinuarC3, posMouse)) {
+                    // Segue para a CENA 4
+                    origemC4 = STATE_C3_PERGUNTA;
+                    estadoAtual = STATE_C4_1;
+                }
+                break;
+
+
+            // --- CENA 4 ---
+            case STATE_C4_EVIDENCIA:   // c4.15
+                if (BotaoClicado(btnVoltar, posMouse)) {
+                    estadoAtual = STATE_C4_14;                 // CORRIGIDO: volta para o diálogo c4.14
+                }
+                else if (BotaoClicado(btnResolverC4, posMouse)) {   // CORRIGIDO: usa o botão central
+                    estadoAtual = STATE_C4_DESAFIO;            // vai para c4.16
+                }
+                break;
+
+            case STATE_C4_DESAFIO:     // c4.16
+                if (BotaoClicado(btnVoltar, posMouse)) {
+                    estadoAtual = STATE_C4_EVIDENCIA;
+                }
+                else if (BotaoClicado(btnC4OpcaoB, posMouse)) {
+                    // Única resposta correta -> tela "evidência desbloqueada" (c4.18)
+                    estadoAtual = STATE_C4_DESBLOQUEADA;
+                }
+                else if (BotaoClicado(btnC4OpcaoA, posMouse) ||
+                         BotaoClicado(btnC4OpcaoC, posMouse) ||
+                         BotaoClicado(btnC4OpcaoD, posMouse)) {
+                    // Qualquer erro -> evidência perdida (c4.17)
+                    estadoAtual = STATE_C4_PERDIDA;
+                }
+                break;
+
+
+            case STATE_C4_PERDIDA:     // c4.17
+                if (BotaoClicado(btnVoltar, posMouse)) {
+                    estadoAtual = STATE_C4_DESAFIO;
+                }
+                else if (BotaoClicado(btnContinuarPerdidaC4, posMouse)) {
+                    // TODO: trocar pelo próximo estado quando a próxima cena existir
+>>>>>>> Stashed changes
                     estadoAtual = STATE_MENU;
+                }
+                break;
+
+
+            case STATE_C4_DESBLOQUEADA: // c4.18
+                if (BotaoClicado(btnVoltar, posMouse)) {
+                    estadoAtual = STATE_C4_DESAFIO;
+                }
+                else if (BotaoClicado(btnAcessarEvidC4, posMouse)) {
+                    estadoAtual = STATE_C4_ORIGEM;         // vai para a prova (p4_1)
+                }
+                break;
+
+
+            case STATE_C4_ORIGEM:      // p4_1
+                if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C4_DESBLOQUEADA;
+                else if (BotaoClicado(btnContinuarOrigemC4, posMouse)) estadoAtual = STATE_C4_PERGUNTA;
+                break;
+
+
+            case STATE_C4_PERGUNTA:    // p4_2
+                if (BotaoClicado(btnVoltar, posMouse)) {
+                    estadoAtual = STATE_C4_ORIGEM;
+                }
+                else if (BotaoClicado(btnC4Verdadeira, posMouse) || BotaoClicado(btnC4Manipulada, posMouse)) {
+                    // TODO: definir qual é a correta e a próxima cena
+                    estadoAtual = STATE_MENU;
+                }
+                break;
+
+
+            // Telas de diálogo C4_1 ... C4_14 (voltar / avançar)
+            default:
+                if (estadoAtual >= STATE_C4_1 && estadoAtual <= STATE_C4_14) {   // CORRIGIDO: até C4_14
+                    if (BotaoClicado(btnVoltar, posMouse)) {
+                        if (estadoAtual == STATE_C4_1) {
+                            estadoAtual = origemC4;
+                        }
+                        else {
+                            estadoAtual = (GameState)(estadoAtual - 1);
+                        }
+                    }
+                    else if (BotaoClicado(btnAvancarC4, posMouse)) {
+                        estadoAtual = (GameState)(estadoAtual + 1);   // C4_14 -> C4_EVIDENCIA (c4.15)
+                    }
                 }
                 break;
         }
@@ -1073,6 +1466,141 @@ int main(void) {
                     DrawTexturePro(imgC2_28, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
+<<<<<<< Updated upstream
+=======
+
+
+            // --- CENA 3 ---
+            case STATE_C3_1:
+                if (imgC3_1.id != 0) {
+                    orig = (Rectangle){ 0.0f, 0.0f, (float)imgC3_1.width, (float)imgC3_1.height };
+                    DrawTexturePro(imgC3_1, orig, dest, pontoZero, 0.0f, WHITE);
+                }
+                break;
+
+
+            case STATE_C3_2:
+                if (imgC3_2.id != 0) {
+                    orig = (Rectangle){ 0.0f, 0.0f, (float)imgC3_2.width, (float)imgC3_2.height };
+                    DrawTexturePro(imgC3_2, orig, dest, pontoZero, 0.0f, WHITE);
+                }
+                break;
+
+
+            case STATE_C3_3:
+                if (imgC3_3.id != 0) {
+                    orig = (Rectangle){ 0.0f, 0.0f, (float)imgC3_3.width, (float)imgC3_3.height };
+                    DrawTexturePro(imgC3_3, orig, dest, pontoZero, 0.0f, WHITE);
+                }
+                break;
+
+
+            case STATE_C3_4:
+                if (imgC3_4.id != 0) {
+                    orig = (Rectangle){ 0.0f, 0.0f, (float)imgC3_4.width, (float)imgC3_4.height };
+                    DrawTexturePro(imgC3_4, orig, dest, pontoZero, 0.0f, WHITE);
+                }
+                break;
+
+
+            case STATE_C3_PERDIDA:
+                if (imgC3_5.id != 0) {
+                    orig = (Rectangle){ 0.0f, 0.0f, (float)imgC3_5.width, (float)imgC3_5.height };
+                    DrawTexturePro(imgC3_5, orig, dest, pontoZero, 0.0f, WHITE);
+                }
+                break;
+
+
+            case STATE_C3_DESBLOQUEADA:
+                if (imgP2.id != 0) {
+                    orig = (Rectangle){ 0.0f, 0.0f, (float)imgP2.width, (float)imgP2.height };
+                    DrawTexturePro(imgP2, orig, dest, pontoZero, 0.0f, WHITE);
+                }
+                break;
+
+
+            case STATE_C3_AUDIO: {
+                Texture2D texAudio;
+                if (audioTocando) texAudio = audioMudo ? imgAudioPlayMudo  : imgAudioPlaySom;
+                else              texAudio = audioMudo ? imgAudioPausaMudo : imgAudioPausaSom;
+                if (texAudio.id != 0) {
+                    orig = (Rectangle){ 0.0f, 0.0f, (float)texAudio.width, (float)texAudio.height };
+                    DrawTexturePro(texAudio, orig, dest, pontoZero, 0.0f, WHITE);
+                }
+                break;
+            }
+
+
+            case STATE_C3_PERGUNTA:
+                if (imgP2Pergunta.id != 0) {
+                    orig = (Rectangle){ 0.0f, 0.0f, (float)imgP2Pergunta.width, (float)imgP2Pergunta.height };
+                    DrawTexturePro(imgP2Pergunta, orig, dest, pontoZero, 0.0f, WHITE);
+                }
+                break;
+
+
+            // --- CENA 4 ---
+            case STATE_C4_EVIDENCIA:
+                if (imgC4Evidencia.id != 0) {
+                    orig = (Rectangle){ 0.0f, 0.0f, (float)imgC4Evidencia.width, (float)imgC4Evidencia.height };
+                    DrawTexturePro(imgC4Evidencia, orig, dest, pontoZero, 0.0f, WHITE);
+                }
+                break;
+
+
+            case STATE_C4_DESAFIO:
+                if (imgC4Desafio.id != 0) {
+                    orig = (Rectangle){ 0.0f, 0.0f, (float)imgC4Desafio.width, (float)imgC4Desafio.height };
+                    DrawTexturePro(imgC4Desafio, orig, dest, pontoZero, 0.0f, WHITE);
+                }
+                break;
+
+
+            case STATE_C4_PERDIDA:
+                if (imgC4Perdida.id != 0) {
+                    orig = (Rectangle){ 0.0f, 0.0f, (float)imgC4Perdida.width, (float)imgC4Perdida.height };
+                    DrawTexturePro(imgC4Perdida, orig, dest, pontoZero, 0.0f, WHITE);
+                }
+                break;
+
+
+            case STATE_C4_DESBLOQUEADA:
+                if (imgC4Desbloqueada.id != 0) {
+                    orig = (Rectangle){ 0.0f, 0.0f, (float)imgC4Desbloqueada.width, (float)imgC4Desbloqueada.height };
+                    DrawTexturePro(imgC4Desbloqueada, orig, dest, pontoZero, 0.0f, WHITE);
+                }
+                break;
+
+
+            case STATE_C4_ORIGEM:
+                if (imgP4_1.id != 0) {
+                    orig = (Rectangle){ 0.0f, 0.0f, (float)imgP4_1.width, (float)imgP4_1.height };
+                    DrawTexturePro(imgP4_1, orig, dest, pontoZero, 0.0f, WHITE);
+                }
+                break;
+
+
+            case STATE_C4_PERGUNTA:
+                if (imgP4_2.id != 0) {
+                    orig = (Rectangle){ 0.0f, 0.0f, (float)imgP4_2.width, (float)imgP4_2.height };
+                    DrawTexturePro(imgP4_2, orig, dest, pontoZero, 0.0f, WHITE);
+                }
+                break;
+
+
+            // Telas de diálogo C4_1 ... C4_14
+
+            default:
+                if (estadoAtual >= STATE_C4_1 && estadoAtual <= STATE_C4_14) {   // CORRIGIDO: até C4_14
+                    Texture2D t = imgC4[estadoAtual - STATE_C4_1];
+
+                    if (t.id != 0) {
+                        orig = (Rectangle){ 0.0f, 0.0f, (float)t.width, (float)t.height };
+                        DrawTexturePro(t, orig, dest, pontoZero, 0.0f, WHITE);
+                    }
+                }
+                break;
+>>>>>>> Stashed changes
         }
 
 
@@ -1142,6 +1670,34 @@ int main(void) {
     UnloadTexture(imgP1_2);
 
 
+<<<<<<< Updated upstream
+=======
+    UnloadTexture(imgC3_1);
+    UnloadTexture(imgC3_2);
+    UnloadTexture(imgC3_3);
+    UnloadTexture(imgC3_4);
+    UnloadTexture(imgC3_5);
+    UnloadTexture(imgP2);
+    UnloadTexture(imgAudioPlayMudo);
+    UnloadTexture(imgAudioPlaySom);
+    UnloadTexture(imgAudioPausaMudo);
+    UnloadTexture(imgAudioPausaSom);
+    UnloadTexture(imgP2Pergunta);
+
+
+    for (int i = 0; i < 14; i++) UnloadTexture(imgC4[i]);   // CORRIGIDO: 14
+    UnloadTexture(imgC4Evidencia);
+    UnloadTexture(imgC4Desafio);
+    UnloadTexture(imgC4Perdida);
+    UnloadTexture(imgC4Desbloqueada);
+    UnloadTexture(imgP4_1);
+    UnloadTexture(imgP4_2);
+
+    if (temAudio) UnloadMusicStream(audioProva);
+    CloseAudioDevice();
+
+
+>>>>>>> Stashed changes
     CloseWindow();
     return 0;
 }
