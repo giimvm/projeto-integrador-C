@@ -1,4 +1,5 @@
 #include "raylib.h"
+#include <stdio.h>
 
 typedef enum {
     STATE_MENU = 0,
@@ -52,9 +53,6 @@ typedef enum {
     STATE_ACUSA_CAIO_3,
     STATE_VEREDITO_INCORRETO,
     STATE_EVIDENCIA_DESBLOQUEADA,
-<<<<<<< Updated upstream
-    STATE_DESAFIO_IA              
-=======
     STATE_DESAFIO_IA,
 
     // CENA 3
@@ -89,7 +87,6 @@ typedef enum {
     STATE_C4_DESBLOQUEADA, // c4.18 - evidência desbloqueada (NOVO)
     STATE_C4_ORIGEM,    // p4_1
     STATE_C4_PERGUNTA   // p4_2
->>>>>>> Stashed changes
 } GameState;
 
 
@@ -114,8 +111,6 @@ void DesenharEfeitoHover(Rectangle btn, Vector2 posMouse, Color cor) {
 }
 
 
-<<<<<<< Updated upstream
-=======
 // Tenta carregar uma imagem da Cena 3 em várias pastas e com dois nomes possíveis
 Texture2D CarregarCena3(const char* nome1, const char* nome2) {
     const char* pastas[] = { "src/cena3/", "cena3/", "src/cena2/", "" };
@@ -152,13 +147,13 @@ Texture2D CarregarCena4(const char* nome1, const char* nome2, const char* nome3)
 }
 
 
->>>>>>> Stashed changes
 int main(void) {
     const int larguraTela = 800;
     const int alturaTela = 600;
 
 
     InitWindow(larguraTela, alturaTela, "Projeto Investigativo");
+    InitAudioDevice();
     SetTargetFPS(60);
 
 
@@ -287,8 +282,6 @@ int main(void) {
     Texture2D imgP1_2    = LoadTexture("src/cena2/P1.2.png");
 
 
-<<<<<<< Updated upstream
-=======
     // ======= TEXTURAS DA CENA 3 =======
     // (coloque as imagens em src/cena3/ - o jogo também procura em cena3/, src/cena2/ e na raiz)
     Texture2D imgC3_1 = CarregarCena3("C3.1.png", "C3_1.png");  // Chefe: dispositivo
@@ -334,7 +327,6 @@ int main(void) {
     Texture2D imgP4_2        = CarregarCena4("p4_2.png",  "p4.2.png",  "P4.2.png");  // Verdadeira ou manipulada
 
 
->>>>>>> Stashed changes
     Texture2D* todasTexturas[] = {
         &imgMenu, &texConfigAtivado, &texConfigDesativado, &texCreditos,
         &texRegras[0], &texRegras[1], &texRegras[2], &texRegras[3], &texRegras[4],
@@ -342,16 +334,12 @@ int main(void) {
         &imgGabriel, &imgCaio, &imgC2_1, &imgC2_2, &imgC2_3, &imgC2_4, &imgC2_5, &imgC2_6, &imgC2_7, &imgC2_8,
         &imgC2_9, &imgC2_10, &imgC2_11, &imgC2_12, &imgC2_13, &imgC2_14, &imgC2_15, &imgC2_16, &imgC2_17,
         &imgC2_18, &imgC2_19, &imgC2_20, &imgC2_21, &imgC2_22, &imgC2_23, &imgC2_24, &imgC2_25, &imgC2_26, &imgC2_27, &imgC2_28,
-<<<<<<< Updated upstream
-        &imgF1_1, &imgF1_2, &imgF1_3, &imgP1, &imgP1_1, &imgP1_2
-=======
         &imgF1_1, &imgF1_2, &imgF1_3, &imgP1, &imgP1_1, &imgP1_2,
         &imgC3_1, &imgC3_2, &imgC3_3, &imgC3_4, &imgC3_5, &imgP2,
         &imgAudioPlayMudo, &imgAudioPlaySom, &imgAudioPausaMudo, &imgAudioPausaSom, &imgP2Pergunta,
         &imgC4[0], &imgC4[1], &imgC4[2], &imgC4[3], &imgC4[4], &imgC4[5], &imgC4[6],
         &imgC4[7], &imgC4[8], &imgC4[9], &imgC4[10], &imgC4[11], &imgC4[12], &imgC4[13],
         &imgC4Evidencia, &imgC4Desafio, &imgC4Perdida, &imgC4Desbloqueada, &imgP4_1, &imgP4_2
->>>>>>> Stashed changes
     };
     int totalTexturas = sizeof(todasTexturas) / sizeof(todasTexturas[0]);
 
@@ -411,8 +399,8 @@ int main(void) {
     Rectangle btnTentarNovamente = { 320, 425, 160, 50 };
 
 
-    Rectangle btnProvaVerdadeira = { 250, 420, 140, 40 };
-    Rectangle btnProvaManipulada = { 405, 420, 140, 40 };
+    Rectangle btnProvaVerdadeira = { 265, 480, 125, 44 };  // botão "Verdadeira"
+    Rectangle btnProvaManipulada = { 422, 480, 125, 44 };  // botão "Manipulada"
 
 
     Rectangle btnOpcaoA = { 180, 270, 440, 40 };
@@ -425,8 +413,6 @@ int main(void) {
     Rectangle btnAcusaCaioNao = { 180, 325, 440, 40 };
 
 
-<<<<<<< Updated upstream
-=======
     // ---- Botões da CENA 3 (coordenadas na janela 800x600) ----
     Rectangle btnAvancarC3 = { 660, 450, 100, 100 };      // botão redondo "Avançar" (mesma posição do btnAvancarC2)
 
@@ -485,7 +471,6 @@ int main(void) {
     GameState origemC4 = STATE_MENU;
 
 
->>>>>>> Stashed changes
     bool telaCheia = true;
     float volGeral = 0.75f;
     float volMusica = 0.55f;
@@ -812,7 +797,9 @@ int main(void) {
                     estadoAtual = STATE_EVIDENCIA_DESBLOQUEADA;
                 }
                 else if (BotaoClicado(btnProvaVerdadeira, posMouse) || BotaoClicado(btnProvaManipulada, posMouse)) {
-                    estadoAtual = STATE_MENU;
+                    // Antes voltava ao MENU; agora segue para a CENA 3
+                    origemC3 = STATE_DESAFIO_IA;
+                    estadoAtual = STATE_C3_1;
                 }
                 break;
 
@@ -859,8 +846,6 @@ int main(void) {
                     estadoAtual = STATE_C2_26;
                 }
                 else if (BotaoClicado(btnContinuarInvestigacao, posMouse) || BotaoClicado(btnTentarNovamente, posMouse) || BotaoClicado(btnAvancarC2, posMouse)) {
-<<<<<<< Updated upstream
-=======
                     // Antes voltava ao MENU; agora segue para a CENA 3
                     origemC3 = STATE_C2_28;
                     estadoAtual = STATE_C3_1;
@@ -1016,7 +1001,6 @@ int main(void) {
                 }
                 else if (BotaoClicado(btnContinuarPerdidaC4, posMouse)) {
                     // TODO: trocar pelo próximo estado quando a próxima cena existir
->>>>>>> Stashed changes
                     estadoAtual = STATE_MENU;
                 }
                 break;
@@ -1466,8 +1450,6 @@ int main(void) {
                     DrawTexturePro(imgC2_28, orig, dest, pontoZero, 0.0f, WHITE);
                 }
                 break;
-<<<<<<< Updated upstream
-=======
 
 
             // --- CENA 3 ---
@@ -1600,7 +1582,6 @@ int main(void) {
                     }
                 }
                 break;
->>>>>>> Stashed changes
         }
 
 
@@ -1670,8 +1651,6 @@ int main(void) {
     UnloadTexture(imgP1_2);
 
 
-<<<<<<< Updated upstream
-=======
     UnloadTexture(imgC3_1);
     UnloadTexture(imgC3_2);
     UnloadTexture(imgC3_3);
@@ -1697,7 +1676,6 @@ int main(void) {
     CloseAudioDevice();
 
 
->>>>>>> Stashed changes
     CloseWindow();
     return 0;
 }
