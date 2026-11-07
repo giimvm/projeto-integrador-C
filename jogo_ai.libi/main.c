@@ -66,7 +66,11 @@ typedef enum {
     STATE_C3_PERGUNTA,
 
     // CENA 4
+<<<<<<< Updated upstream
         // CENA 4
+=======
+    // CENA 4
+>>>>>>> Stashed changes
     STATE_C4_1,
     STATE_C4_2,
     STATE_C4_3,
@@ -80,6 +84,7 @@ typedef enum {
     STATE_C4_11,
     STATE_C4_12,
     STATE_C4_13,
+<<<<<<< Updated upstream
     STATE_C4_14,        // <-- NOVO (c4.14 é diálogo)
     STATE_C4_EVIDENCIA, // c4.15 - nova evidência encontrada
     STATE_C4_DESAFIO,   // c4.16 - questão de lógica
@@ -87,6 +92,18 @@ typedef enum {
     STATE_C4_DESBLOQUEADA, // c4.18 - evidência desbloqueada (NOVO)
     STATE_C4_ORIGEM,    // p4_1
     STATE_C4_PERGUNTA   // p4_2
+=======
+    STATE_C4_14,           // 14º diálogo
+    STATE_C4_EVIDENCIA,    // c4.15.png - nova evidência
+    STATE_C4_DESAFIO,      // c4.16.png - questão de lógica
+    STATE_C4_PERDIDA,      // c4.17.png - evidência perdida
+    STATE_C4_DESBLOQUEADA, // c4.18.png - evidência desbloqueada
+    STATE_C4_ORIGEM,       // p4.1.png
+    STATE_C4_PERGUNTA,    // p4.2.png
+
+    // CENA 5
+    STATE_C5_1
+>>>>>>> Stashed changes
 } GameState;
 
 
@@ -243,6 +260,7 @@ int main(void) {
 
 
     // ======= TEXTURAS DA CENA 2 =======
+<<<<<<< Updated upstream
     Texture2D imgC2_1    = LoadTexture("src/cena2/C2.0.png");
     Texture2D imgC2_2    = LoadTexture("src/cena2/C2.1.png");
     Texture2D imgC2_3    = LoadTexture("src/cena2/C2.2.png");
@@ -271,6 +289,17 @@ int main(void) {
     Texture2D imgC2_26   = LoadTexture("src/cena2/C2.25.png");
     Texture2D imgC2_27   = LoadTexture("src/cena2/C2.26.png");
     Texture2D imgC2_28   = LoadTexture("src/cena2/C2.27.png");
+=======
+    Texture2D imgC2[12];
+    {
+        char a[64], b[64];
+        for (int i = 0; i < 12; i++) {
+            snprintf(a, sizeof(a), "C2.%d.png", i);
+            snprintf(b, sizeof(b), "C2_%d.png", i);
+            imgC2[i] = CarregarCena2(a, b);
+        }
+    }
+>>>>>>> Stashed changes
 
 
     // RAMIFICAÇÃO E RESULTADOS
@@ -283,7 +312,6 @@ int main(void) {
 
 
     // ======= TEXTURAS DA CENA 3 =======
-    // (coloque as imagens em src/cena3/ - o jogo também procura em cena3/, src/cena2/ e na raiz)
     Texture2D imgC3_1 = CarregarCena3("C3.1.png", "C3_1.png");  // Chefe: dispositivo
     Texture2D imgC3_2 = CarregarCena3("C3.2.png", "C3_2.png");  // Chefe: mensagem
     Texture2D imgC3_3 = CarregarCena3("C3.3.png", "C3_3.png");  // Nova evidência encontrada
@@ -310,14 +338,20 @@ int main(void) {
     }
 
     // ======= TEXTURAS DA CENA 4 =======
+<<<<<<< Updated upstream
     // c4.1 ... c4.14 = diálogos (CORRIGIDO: eram 13)
     Texture2D imgC4[14];
+=======
+    Texture2D imgC4[15];
+>>>>>>> Stashed changes
     char n1[64], n2[64];
-    for (int i = 0; i < 14; i++) {
+    int i;
+    for (i = 0; i < 14; i++) {
         snprintf(n1, sizeof(n1), "c4.%d.png", i + 1);
         snprintf(n2, sizeof(n2), "C4.%d.png", i + 1);
         imgC4[i] = CarregarCena4(n1, n2, NULL);
     }
+<<<<<<< Updated upstream
     // CORRIGIDO: numeração nova (c4.15 evidência, c4.16 desafio, c4.17 perdida)
     Texture2D imgC4Evidencia = CarregarCena4("c4.15.png", "C4.15.png", "c4_15.png"); // Nova evidência
     Texture2D imgC4Desafio   = CarregarCena4("c4.16.png", "C4.16.png", "c4_16.png"); // Questão de lógica
@@ -325,7 +359,23 @@ int main(void) {
     Texture2D imgC4Desbloqueada = CarregarCena4("c4.18.png", "C4.18.png", "c4_18.png"); // Evidência desbloqueada (NOVO)
     Texture2D imgP4_1        = CarregarCena4("p4_1.png",  "p4.1.png",  "P4.1.png");  // Origem da prova
     Texture2D imgP4_2        = CarregarCena4("p4_2.png",  "p4.2.png",  "P4.2.png");  // Verdadeira ou manipulada
+=======
+>>>>>>> Stashed changes
 
+    // Telas especiais da Cena 4
+    Texture2D imgC4Evidencia   = CarregarCena4("c4.15.png", "C4.15.png", "c4_15.png");
+    Texture2D imgC4Desafio     = CarregarCena4("c4.16.png", "C4.16.png", "c4_16.png");
+    Texture2D imgC4Perdida     = CarregarCena4("c4.17.png", "C4.17.png", "c4_17.png");
+    Texture2D imgC4Desbloqueada = CarregarCena4("c4.18.png", "C4.18.png", "c4_18.png");
+    Texture2D imgP4_1          = CarregarCena4("p4.1.png",  "p4_1.png",  "P4.1.png");
+    Texture2D imgP4_2          = CarregarCena4("p4.2.png",  "p4_2.png",  "P4.2.png");
+
+    // ======= TEXTURAS DA CENA 3 =======
+    Texture2D imgC5_1 = LoadTexture("src/cena5/c5.1.png");
+    if (imgC5_1.id == 0) imgC5_1 = LoadTexture("cena5/c5.1.png");
+    if (imgC5_1.id == 0) imgC5_1 = LoadTexture("c5.1.png");
+
+    PrepararTextura(&imgC5_1);
 
     Texture2D* todasTexturas[] = {
         &imgMenu, &texConfigAtivado, &texConfigDesativado, &texCreditos,
@@ -398,6 +448,11 @@ int main(void) {
     Rectangle btnAcessarEvidencia      = { 280, 370, 250, 70 };
     Rectangle btnTentarNovamente = { 320, 425, 160, 50 };
 
+<<<<<<< Updated upstream
+=======
+    // Evidência perdida (C2.11)
+    Rectangle btnContinuarPerdidaC2 = { 280, 415, 240, 40 };
+>>>>>>> Stashed changes
 
     Rectangle btnProvaVerdadeira = { 265, 480, 125, 44 };  // botão "Verdadeira"
     Rectangle btnProvaManipulada = { 422, 480, 125, 44 };  // botão "Manipulada"
@@ -424,8 +479,12 @@ int main(void) {
     Rectangle btnC3OpcaoC = { 139, 407, 497, 40 };        // c) é ... ou ... não é
     Rectangle btnC3OpcaoD = { 139, 456, 497, 40 };        // d) é ... e ... não é
 
+<<<<<<< Updated upstream
     // CORRIGIDO: y era 422, o botão fica em y ~383
     Rectangle btnContinuarPerdida = { 301, 383, 197, 38 }; // "Continuar investigação" (C3_5)
+=======
+    Rectangle btnContinuarPerdida = { 280, 415, 240, 40 }; // "Continuar investigação" (C3_5)
+>>>>>>> Stashed changes
     Rectangle btnAcessarEvidC3    = { 309, 390, 182, 38 }; // "Acessar evidência" (P2)
 
     Rectangle btnAudioPlay = { 150, 398, 46, 46 };        // botão play/pause
@@ -447,6 +506,8 @@ int main(void) {
 
 
     // ---- Botões da CENA 4 (coordenadas na janela 800x600) ----
+    Rectangle btnContinuarPerdidaC4 = { 280, 415, 240, 40 };
+
     Rectangle btnAvancarC4 = { 615, 553, 130, 40 };       // "AVANÇAR" dos diálogos
 
     Rectangle btnResolverC4 = { 309, 384, 182, 38 };      // "Desbloquear/Resolver desafio" (c4.15)
@@ -456,10 +517,14 @@ int main(void) {
     Rectangle btnC4OpcaoC = { 142, 434, 496, 40 };        // c) É indeterminado
     Rectangle btnC4OpcaoD = { 142, 484, 496, 40 };        // d) Gabriel já contou
 
+<<<<<<< Updated upstream
     // CORRIGIDO: y era 422
     Rectangle btnContinuarPerdidaC4 = { 301, 383, 197, 38 }; // "Continuar investigação" (c4.17)
     // CORRIGIDO: posição do "CLIQUE PARA CONTINUAR" da p4_1
     Rectangle btnContinuarOrigemC4  = { 565, 538, 185, 36 };
+=======
+    Rectangle btnContinuarOrigemC4  = { 565, 538, 185, 36 }; // "CLIQUE PARA CONTINUAR" da p4_1
+>>>>>>> Stashed changes
 
     // NOVO: botão "Acessar evidência" da c4.18 (mesma posição do botão da C3 desbloqueada)
     Rectangle btnAcessarEvidC4 = { 309, 390, 182, 38 };
@@ -873,10 +938,7 @@ int main(void) {
 
 
             case STATE_C3_4:
-                if (BotaoClicado(btnVoltar, posMouse)) {
-                    estadoAtual = STATE_C3_3;
-                }
-                else if (BotaoClicado(btnC3OpcaoB, posMouse)) {
+                if (BotaoClicado(btnC3OpcaoB, posMouse)) {
                     // Resposta correta: a negação de (A e B) é (não A ou não B)
                     estadoAtual = STATE_C3_DESBLOQUEADA;
                 }
@@ -889,10 +951,7 @@ int main(void) {
 
 
             case STATE_C3_PERDIDA:
-                if (BotaoClicado(btnVoltar, posMouse)) {
-                    estadoAtual = STATE_C3_4;
-                }
-                else if (BotaoClicado(btnContinuarPerdida, posMouse)) {
+                if (BotaoClicado(btnContinuarPerdida, posMouse)) {
                     // Segue para a CENA 4
                     origemC4 = STATE_C3_PERDIDA;
                     estadoAtual = STATE_C4_1;
@@ -967,6 +1026,7 @@ int main(void) {
                 }
                 break;
 
+<<<<<<< Updated upstream
 
             // --- CENA 4 ---
             case STATE_C4_EVIDENCIA:   // c4.15
@@ -979,21 +1039,107 @@ int main(void) {
                 break;
 
             case STATE_C4_DESAFIO:     // c4.16
+=======
+            // ==================== CENA 4 ====================
+            case STATE_C4_1:
+                if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = origemC4;
+                else if (BotaoClicado(btnAvancarC4, posMouse)) estadoAtual = STATE_C4_2;
+                break;
+
+            case STATE_C4_2:
+                if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C4_1;
+                else if (BotaoClicado(btnAvancarC4, posMouse)) estadoAtual = STATE_C4_3;
+                break;
+
+            case STATE_C4_3:
+                if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C4_2;
+                else if (BotaoClicado(btnAvancarC4, posMouse)) estadoAtual = STATE_C4_4;
+                break;
+
+            case STATE_C4_4:
+                if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C4_3;
+                else if (BotaoClicado(btnAvancarC4, posMouse)) estadoAtual = STATE_C4_5;
+                break;
+
+            case STATE_C4_5:
+                if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C4_4;
+                else if (BotaoClicado(btnAvancarC4, posMouse)) estadoAtual = STATE_C4_6;
+                break;
+
+            case STATE_C4_6:
+                if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C4_5;
+                else if (BotaoClicado(btnAvancarC4, posMouse)) estadoAtual = STATE_C4_7;
+                break;
+
+            case STATE_C4_7:
+                if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C4_6;
+                else if (BotaoClicado(btnAvancarC4, posMouse)) estadoAtual = STATE_C4_8;
+                break;
+
+            case STATE_C4_8:
+                if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C4_7;
+                else if (BotaoClicado(btnAvancarC4, posMouse)) estadoAtual = STATE_C4_9;
+                break;
+
+            case STATE_C4_9:
+                if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C4_8;
+                else if (BotaoClicado(btnAvancarC4, posMouse)) estadoAtual = STATE_C4_10;
+                break;
+
+            case STATE_C4_10:
+                if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C4_9;
+                else if (BotaoClicado(btnAvancarC4, posMouse)) estadoAtual = STATE_C4_11;
+                break;
+
+            case STATE_C4_11:
+                if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C4_10;
+                else if (BotaoClicado(btnAvancarC4, posMouse)) estadoAtual = STATE_C4_12;
+                break;
+
+            case STATE_C4_12:
+                if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C4_11;
+                else if (BotaoClicado(btnAvancarC4, posMouse)) estadoAtual = STATE_C4_13;
+                break;
+
+            case STATE_C4_13:
+                if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C4_12;
+                else if (BotaoClicado(btnAvancarC4, posMouse)) estadoAtual = STATE_C4_14;
+                break;
+
+            case STATE_C4_14:
+                if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C4_13;
+                else if (BotaoClicado(btnAvancarC4, posMouse)) estadoAtual = STATE_C4_EVIDENCIA;
+                break;
+
+            // --- c4.15: Nova evidência encontrada ---
+            case STATE_C4_EVIDENCIA:
+                if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C4_14;
+                else if (BotaoClicado(btnResolverC4, posMouse)) estadoAtual = STATE_C4_DESAFIO;
+                break;
+
+            // --- c4.16: Questão de lógica ---
+            case STATE_C4_DESAFIO:
+>>>>>>> Stashed changes
                 if (BotaoClicado(btnVoltar, posMouse)) {
                     estadoAtual = STATE_C4_EVIDENCIA;
                 }
                 else if (BotaoClicado(btnC4OpcaoB, posMouse)) {
+<<<<<<< Updated upstream
                     // Única resposta correta -> tela "evidência desbloqueada" (c4.18)
+=======
+                    // Resposta CORRETA -> Evidência Desbloqueada
+>>>>>>> Stashed changes
                     estadoAtual = STATE_C4_DESBLOQUEADA;
                 }
-                else if (BotaoClicado(btnC4OpcaoA, posMouse) ||
-                         BotaoClicado(btnC4OpcaoC, posMouse) ||
+                else if (BotaoClicado(btnC4OpcaoA, posMouse) || 
+                         BotaoClicado(btnC4OpcaoC, posMouse) || 
                          BotaoClicado(btnC4OpcaoD, posMouse)) {
-                    // Qualquer erro -> evidência perdida (c4.17)
+                    // Resposta ERRADA -> Evidência Perdida
                     estadoAtual = STATE_C4_PERDIDA;
                 }
                 break;
 
+<<<<<<< Updated upstream
 
             case STATE_C4_PERDIDA:     // c4.17
                 if (BotaoClicado(btnVoltar, posMouse)) {
@@ -1012,23 +1158,46 @@ int main(void) {
                 }
                 else if (BotaoClicado(btnAcessarEvidC4, posMouse)) {
                     estadoAtual = STATE_C4_ORIGEM;         // vai para a prova (p4_1)
-                }
-                break;
-
-
-            case STATE_C4_ORIGEM:      // p4_1
-                if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C4_DESBLOQUEADA;
-                else if (BotaoClicado(btnContinuarOrigemC4, posMouse)) estadoAtual = STATE_C4_PERGUNTA;
-                break;
-
-
-            case STATE_C4_PERGUNTA:    // p4_2
-                if (BotaoClicado(btnVoltar, posMouse)) {
+=======
+            // --- c4.18: Evidência Desbloqueada ---
+            case STATE_C4_DESBLOQUEADA:
+                if (BotaoClicado(btnAcessarEvidC4, posMouse)) {
+                    // Se acertou, vai analisar a prova (p4.1 -> p4.2 -> c5.1)
                     estadoAtual = STATE_C4_ORIGEM;
+>>>>>>> Stashed changes
                 }
-                else if (BotaoClicado(btnC4Verdadeira, posMouse) || BotaoClicado(btnC4Manipulada, posMouse)) {
-                    // TODO: definir qual é a correta e a próxima cena
+                break;
+
+            // --- c4.17: Evidência Perdida ---
+            case STATE_C4_PERDIDA:
+                if (BotaoClicado(btnContinuarPerdidaC4, posMouse)) {
+                    // Se errou a evidência foi perdida! Pula a prova e vai direto para a Cena 5.1
+                    estadoAtual = STATE_C5_1;
+                }
+                break;
+
+            // --- p4.1: Origem da prova ---
+            case STATE_C4_ORIGEM:
+                if (BotaoClicado(btnContinuarOrigemC4, posMouse)) {
+                    estadoAtual = STATE_C4_PERGUNTA;
+                }
+                break;
+
+            // --- p4.2: Veredito / Pergunta final ---
+            case STATE_C4_PERGUNTA:
+                if (BotaoClicado(btnC4Verdadeira, posMouse) || BotaoClicado(btnC4Manipulada, posMouse)) {
+                    estadoAtual = STATE_C5_1; // Avança para a Cena 5.1
+                }
+                break;
+
+            // --- CENA 5 ---
+            case STATE_C5_1:
+                if (BotaoClicado(btnVoltarMenu, posMouse) || IsKeyPressed(KEY_ESCAPE)) {
                     estadoAtual = STATE_MENU;
+                }
+                else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+                    // Exemplo: ao clicar avança para os créditos ou próximo diálogo
+                    estadoAtual = STATE_CREDITOS; 
                 }
                 break;
 
@@ -1522,10 +1691,41 @@ int main(void) {
 
 
             // --- CENA 4 ---
+<<<<<<< Updated upstream
             case STATE_C4_EVIDENCIA:
                 if (imgC4Evidencia.id != 0) {
                     orig = (Rectangle){ 0.0f, 0.0f, (float)imgC4Evidencia.width, (float)imgC4Evidencia.height };
                     DrawTexturePro(imgC4Evidencia, orig, dest, pontoZero, 0.0f, WHITE);
+=======
+            case STATE_C4_1:           DesenharTela(imgC4[0], dest); break;
+            case STATE_C4_2:           DesenharTela(imgC4[1], dest); break;
+            case STATE_C4_3:           DesenharTela(imgC4[2], dest); break;
+            case STATE_C4_4:           DesenharTela(imgC4[3], dest); break;
+            case STATE_C4_5:           DesenharTela(imgC4[4], dest); break;
+            case STATE_C4_6:           DesenharTela(imgC4[5], dest); break;
+            case STATE_C4_7:           DesenharTela(imgC4[6], dest); break;
+            case STATE_C4_8:           DesenharTela(imgC4[7], dest); break;
+            case STATE_C4_9:           DesenharTela(imgC4[8], dest); break;
+            case STATE_C4_10:          DesenharTela(imgC4[9], dest); break;
+            case STATE_C4_11:          DesenharTela(imgC4[10], dest); break;
+            case STATE_C4_12:          DesenharTela(imgC4[11], dest); break;
+            case STATE_C4_13:          DesenharTela(imgC4[12], dest); break;
+            case STATE_C4_14:          DesenharTela(imgC4[13], dest); break;
+            case STATE_C4_EVIDENCIA:   DesenharTela(imgC4Evidencia, dest); break;
+            case STATE_C4_DESAFIO:     DesenharTela(imgC4Desafio, dest); break;
+            case STATE_C4_PERDIDA:     DesenharTela(imgC4Perdida, dest); break;
+            case STATE_C4_DESBLOQUEADA: DesenharTela(imgC4Desbloqueada, dest); break;
+            case STATE_C4_ORIGEM:      DesenharTela(imgP4_1, dest); break;
+            case STATE_C4_PERGUNTA:    DesenharTela(imgP4_2, dest); break;
+
+            case STATE_C5_1:
+                DesenharTela(imgC5_1, dest);
+                break;
+            // Telas de diálogo: C2_0 ... C2_7 e C4_1 ... C4_14
+            default:
+                if (estadoAtual >= STATE_C2_0 && estadoAtual <= STATE_C2_7) {
+                    DesenharTela(imgC2[estadoAtual - STATE_C2_0], dest);
+>>>>>>> Stashed changes
                 }
                 break;
 
