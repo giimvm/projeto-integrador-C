@@ -1,5 +1,6 @@
 #include "raylib.h"
 #include <stdio.h>
+#include "progresso.h"
 
 typedef enum {
     STATE_MENU = 0,
@@ -479,6 +480,10 @@ int main(void) {
 
     Vector2 posMouse = { 0.0f, 0.0f };
 
+    //SALVAR PROGRESSO
+     PlayerStats jogador = { 0, 0, "Nenhuma" };
+    CarregarProgresso(&jogador);
+
 
     while (!WindowShouldClose()) {
         posMouse = GetMousePosition();
@@ -761,9 +766,14 @@ int main(void) {
                     estadoAtual = STATE_C2_25;
                 }
                 else if (BotaoClicado(btnOpcaoA, posMouse)) {
+                    jogador.acertos++;
+                    SalvarProgresso(jogador);
                     estadoAtual = STATE_EVIDENCIA_DESBLOQUEADA;
                 }
                 else if (BotaoClicado(btnOpcaoB, posMouse) || BotaoClicado(btnOpcaoC, posMouse)) {
+                    jogador.erros++;
+                    strcpy(jogador.evidenciaPerdida, "Registro da Câmera da Saída");
+                    SalvarProgresso(jogador);
                     estadoAtual = STATE_C2_28;
                 }
                 else if (BotaoClicado(btnOpcaoD, posMouse)) {
@@ -879,10 +889,16 @@ int main(void) {
                 else if (BotaoClicado(btnC3OpcaoB, posMouse)) {
                     // Resposta correta: a negação de (A e B) é (não A ou não B)
                     estadoAtual = STATE_C3_DESBLOQUEADA;
+                    jogador.acertos++;
+                    SalvarProgresso(jogador);
+                    estadoAtual = STATE_C3_DESBLOQUEADA;
                 }
                 else if (BotaoClicado(btnC3OpcaoA, posMouse) ||
                          BotaoClicado(btnC3OpcaoC, posMouse) ||
                          BotaoClicado(btnC3OpcaoD, posMouse)) {
+                    jogador.erros++;
+                    strcpy(jogador.evidenciaPerdida, "Gravação de audio ");
+                    SalvarProgresso(jogador);        
                     estadoAtual = STATE_C3_PERDIDA;
                 }
                 break;
@@ -984,12 +1000,17 @@ int main(void) {
                 }
                 else if (BotaoClicado(btnC4OpcaoB, posMouse)) {
                     // Única resposta correta -> tela "evidência desbloqueada" (c4.18)
+                    jogador.acertos++;
+                    SalvarProgresso(jogador);
                     estadoAtual = STATE_C4_DESBLOQUEADA;
                 }
                 else if (BotaoClicado(btnC4OpcaoA, posMouse) ||
                          BotaoClicado(btnC4OpcaoC, posMouse) ||
                          BotaoClicado(btnC4OpcaoD, posMouse)) {
                     // Qualquer erro -> evidência perdida (c4.17)
+                    jogador.erros++;
+                    strcpy(jogador.evidenciaPerdida, "Print da tela do celular de Gabriel");
+                    SalvarProgresso(jogador);
                     estadoAtual = STATE_C4_PERDIDA;
                 }
                 break;
