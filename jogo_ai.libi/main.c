@@ -1,13 +1,15 @@
 #include "raylib.h"
 #include <stdio.h>
 
+#define C4_FORCAR_DIALOGOS 0
+
 typedef enum {
     STATE_MENU = 0,
     STATE_REGRAS,
     STATE_CONFIG,
     STATE_CREDITOS,
 
-    // Subtelas da CENA 1
+    // CENA 1
     STATE_C1_1,
     STATE_C1_2,
     STATE_C1_3,
@@ -27,10 +29,10 @@ typedef enum {
     STATE_C2_6,
     STATE_C2_7,
 
-    STATE_C2_EVIDENCIA,   // C2.8  - nova evidência encontrada
-    STATE_C2_DESAFIO,     // C2.9  - desafio de lógica
-    STATE_CONFIRMA_CAIO,  // C2.10 - "Você selecionou: Caio é o culpado"
-    STATE_C2_PERDIDA,     // C2.11 - evidência perdida
+    STATE_C2_EVIDENCIA,
+    STATE_C2_DESAFIO,
+    STATE_CONFIRMA_CAIO,
+    STATE_C2_PERDIDA,
 
     // RAMIFICAÇÃO DELEGADO E VEREDITO
     STATE_ACUSA_CAIO_1,   // F1.1
@@ -65,18 +67,53 @@ typedef enum {
     STATE_C4_11,
     STATE_C4_12,
     STATE_C4_13,
-    STATE_C4_14,           // c4.14 é diálogo
-    STATE_C4_EVIDENCIA,    // c4.15 - nova evidência encontrada
-    STATE_C4_DESAFIO,      // c4.16 - questão de lógica
-    STATE_C4_PERDIDA,      // c4.17 - evidência perdida
-    STATE_C4_DESBLOQUEADA, // c4.18 - evidência desbloqueada
-    STATE_C4_ORIGEM,       // p4_1
-    STATE_C4_PERGUNTA      // p4_2
+    STATE_C4_14,
+    STATE_C4_15,
+
+    STATE_C4_EVIDENCIA,    // c4.16
+    STATE_C4_DESAFIO,      // c4.17
+    STATE_C4_PERDIDA,      // c4.18
+    STATE_C4_DESBLOQUEADA, // c4.19
+    STATE_C4_ORIGEM,       // p4.1
+    STATE_C4_PERGUNTA,
+
+    // CENA 5
+    STATE_C5_1,
+    STATE_C5_2,
+    STATE_C5_3,
+    STATE_C5_4,
+    STATE_C5_5,
+    STATE_C5_6,
+    STATE_C5_7,
+    STATE_C5_8,
+    STATE_C5_9,
+    STATE_C5_10,
+    STATE_C5_EVIDENCIA,   // c5_11
+    STATE_C5_DESAFIO,     // c5_12
+    STATE_C5_DESBLOQUEADA, // P5 (evidência desbloqueada)
+    STATE_C5_PERDIDA,     // c5_13
+    STATE_C5_PERGUNTA,    // P5_2
+
+    // CENA 6 (provisória)
+    STATE_C6_1
 } GameState;
 
+#define MAX_DEBUG_RECTS 32
+static Rectangle g_debugRects[MAX_DEBUG_RECTS];
+static int g_numDebugRects = 0;
+
+static void RegistrarDebug(Rectangle btn) {
+    if (g_numDebugRects < MAX_DEBUG_RECTS) g_debugRects[g_numDebugRects++] = btn;
+}
 
 bool BotaoClicado(Rectangle btn, Vector2 posMouse) {
+    RegistrarDebug(btn);
     return CheckCollisionPointRec(posMouse, btn) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+}
+
+// Avançar em telas de diálogo: SÓ avança ao clicar no botão específico da tela
+bool AvancarDialogo(Rectangle btnAvancar, Vector2 posMouse) {
+    return BotaoClicado(btnAvancar, posMouse);
 }
 
 
@@ -110,7 +147,6 @@ void PrepararTextura(Texture2D* t) {
 
 
 // Tenta carregar uma imagem da Cena 2 em várias pastas e com dois nomes possíveis
-// (ex.: "C2.0.png" ou "C2_0.png")
 Texture2D CarregarCena2(const char* nome1, const char* nome2) {
     const char* pastas[] = { "src/cena2/", "cena2/", "jogo_ai.libi/src/cena2/", "" };
     const char* nomes[2] = { nome1, nome2 };
@@ -156,11 +192,63 @@ Texture2D CarregarCena4(const char* nome1, const char* nome2, const char* nome3)
         if (nomes[n] == NULL) continue;
         for (int p = 0; p < 4; p++) {
             snprintf(caminho, sizeof(caminho), "%s%s", pastas[p], nomes[n]);
-            if (FileExists(caminho)) return LoadTexture(caminho);
+            if (FileExists(caminho)) { TraceLog(LOG_INFO, "CENA4: carregou %s", caminho); return LoadTexture(caminho); }
         }
     }
     TraceLog(LOG_WARNING, "CENA4: imagem NAO encontrada: %s", nome1);
     return (Texture2D){ 0 };
+}
+
+
+// Verifica se existe uma imagem da Cena 4 (sem carregar)
+bool ExisteCena4(int numero) {
+    const char* pastas[] = { "src/cena4/", "cena4/", "src/cena3/", "" };
+    const char* formatos[] = { "c4.%d.png", "C4.%d.png", "c4_%d.png" };
+    char caminho[256], nome[64];
+
+    for (int f = 0; f < 3; f++) {
+        snprintf(nome, sizeof(nome), formatos[f], numero);
+        for (int p = 0; p < 4; p++) {
+            snprintf(caminho, sizeof(caminho), "%s%s", pastas[p], nome);
+            if (FileExists(caminho)) return true;
+        }
+    }
+    return false;
+}
+
+Texture2D CarregarCena4Num(int numero) {
+    char a[64], b[64], c[64];
+    snprintf(a, sizeof(a), "c4.%d.png", numero);
+    snprintf(b, sizeof(b), "C4.%d.png", numero);
+    snprintf(c, sizeof(c), "c4_%d.png", numero);
+    return CarregarCena4(a, b, c);
+}
+
+
+// Tenta carregar uma imagem da Cena 5 em várias pastas e com até 4 nomes possíveis
+Texture2D CarregarCena5(const char* n1, const char* n2, const char* n3, const char* n4) {
+    const char* pastas[] = { "src/cena5/", "cena5/", "jogo_ai.libi/src/cena5/", "" };
+    const char* nomes[4] = { n1, n2, n3, n4 };
+    char caminho[256];
+
+    for (int n = 0; n < 4; n++) {
+        if (nomes[n] == NULL) continue;
+        for (int p = 0; p < 4; p++) {
+            snprintf(caminho, sizeof(caminho), "%s%s", pastas[p], nomes[n]);
+            if (FileExists(caminho)) return LoadTexture(caminho);
+        }
+    }
+    TraceLog(LOG_WARNING, "CENA5: imagem NAO encontrada: %s", n1);
+    return (Texture2D){ 0 };
+}
+
+Texture2D CarregarCena5Num(int numero) {
+    char a[64], b[64], c[64], d[64];
+    snprintf(a, sizeof(a), "c5_%d.png", numero);
+    snprintf(b, sizeof(b), "c5.%d.png", numero);
+    snprintf(c, sizeof(c), "C5_%d.png", numero);
+    snprintf(d, sizeof(d), "C5.%d.png", numero);
+    return CarregarCena5(a, b, c, d);
 }
 
 
@@ -172,7 +260,10 @@ int main(void) {
     InitWindow(larguraTela, alturaTela, "Projeto Investigativo");
     InitAudioDevice();
     SetTargetFPS(60);
+    SetExitKey(KEY_NULL);   // ESC não fecha mais o jogo (ESC é usado para voltar ao menu)
 
+    RenderTexture2D alvo = LoadRenderTexture(larguraTela, alturaTela);
+    SetTextureFilter(alvo.texture, TEXTURE_FILTER_BILINEAR);
 
     GameState estadoAtual = STATE_MENU;
 
@@ -216,7 +307,6 @@ int main(void) {
 
     int paginaRegras = 0;
 
-
     // ======= TEXTURAS DA CENA 1 =======
     Texture2D imgC1_1 = LoadTexture("src/cena1/C1.1.png");
     if (imgC1_1.id == 0) imgC1_1 = LoadTexture("cena1/C1.1.png");
@@ -253,46 +343,35 @@ int main(void) {
 
 
     // ======= TEXTURAS DA CENA 2 =======
-    // (aceita nomes com ponto ou underline: C2.0.png / C2_0.png)
-    // 0..7  = diálogos
-    // 8     = nova evidência encontrada
-    // 9     = desafio de lógica
-    // 10    = confirmação "Caio é o culpado"
-    // 11    = evidência perdida
     Texture2D imgC2[12];
-    {
+    for (int k = 0; k < 12; k++) {
         char a[64], b[64];
-        for (int i = 0; i < 12; i++) {
-            snprintf(a, sizeof(a), "C2.%d.png", i);
-            snprintf(b, sizeof(b), "C2_%d.png", i);
-            imgC2[i] = CarregarCena2(a, b);
-        }
+        snprintf(a, sizeof(a), "C2.%d.png", k);
+        snprintf(b, sizeof(b), "C2_%d.png", k);
+        imgC2[k] = CarregarCena2(a, b);
     }
 
-    // RAMIFICAÇÃO DELEGADO (F1.1 ... F1.4)
+    // RAMIFICAÇÃO DELEGADO
     Texture2D imgF1[4];
-    {
+    for (int k = 0; k < 4; k++) {
         char a[64], b[64];
-        for (int i = 0; i < 4; i++) {
-            snprintf(a, sizeof(a), "F1.%d.png", i + 1);
-            snprintf(b, sizeof(b), "F1_%d.png", i + 1);
-            imgF1[i] = CarregarCena2(a, b);
-        }
+        snprintf(a, sizeof(a), "F1.%d.png", k + 1);
+        snprintf(b, sizeof(b), "F1_%d.png", k + 1);
+        imgF1[k] = CarregarCena2(a, b);
     }
 
-    Texture2D imgP1   = CarregarCena2("P1.png",   "P1_0.png");   // Veredito incorreto
-    Texture2D imgP1_1 = CarregarCena2("P1.1.png", "P1_1.png");   // Evidência desbloqueada
-    Texture2D imgP1_2 = CarregarCena2("P1.2.png", "P1_2.png");   // Verdadeira ou manipulada por IA?
+    Texture2D imgP1   = CarregarCena2("P1.png",   "P1_0.png");
+    Texture2D imgP1_1 = CarregarCena2("P1.1.png", "P1_1.png");
+    Texture2D imgP1_2 = CarregarCena2("P1.2.png", "P1_2.png");
 
 
     // ======= TEXTURAS DA CENA 3 =======
-    // (coloque as imagens em src/cena3/ - o jogo também procura em cena3/, src/cena2/ e na raiz)
-    Texture2D imgC3_1 = CarregarCena3("C3.1.png", "C3_1.png");  // Chefe: dispositivo
-    Texture2D imgC3_2 = CarregarCena3("C3.2.png", "C3_2.png");  // Chefe: mensagem
-    Texture2D imgC3_3 = CarregarCena3("C3.3.png", "C3_3.png");  // Nova evidência encontrada
-    Texture2D imgC3_4 = CarregarCena3("C3.4.png", "C3_4.png");  // Desafio de lógica
-    Texture2D imgC3_5 = CarregarCena3("C3.5.png", "C3_5.png");  // Evidência perdida
-    Texture2D imgP2   = CarregarCena3("P2.png", "P2.1.png");    // Evidência desbloqueada
+    Texture2D imgC3_1 = CarregarCena3("C3.1.png", "C3_1.png");
+    Texture2D imgC3_2 = CarregarCena3("C3.2.png", "C3_2.png");
+    Texture2D imgC3_3 = CarregarCena3("C3.3.png", "C3_3.png");
+    Texture2D imgC3_4 = CarregarCena3("C3.4.png", "C3_4.png");
+    Texture2D imgC3_5 = CarregarCena3("C3.5.png", "C3_5.png");
+    Texture2D imgP2   = CarregarCena3("P2.png", "P2.1.png");
 
     // Player de áudio (4 combinações de ícones)
     Texture2D imgAudioPausaSom  = CarregarCena3("p2.(2.1).png", "p2_2_1_.png");  // pausado + com som
@@ -313,21 +392,29 @@ int main(void) {
     }
 
     // ======= TEXTURAS DA CENA 4 =======
-    // c4.1 ... c4.14 = diálogos
-    Texture2D imgC4[14];
-    char n1[64], n2[64];
-    for (int i = 0; i < 14; i++) {
-        snprintf(n1, sizeof(n1), "c4.%d.png", i + 1);
-        snprintf(n2, sizeof(n2), "C4.%d.png", i + 1);
-        imgC4[i] = CarregarCena4(n1, n2, NULL);
-    }
-    Texture2D imgC4Evidencia    = CarregarCena4("c4.15.png", "C4.15.png", "c4_15.png"); // Nova evidência
+    int numDialogosC4 = C4_FORCAR_DIALOGOS ? C4_FORCAR_DIALOGOS : (ExisteCena4(19) ? 15 : 14);
+    TraceLog(LOG_INFO, "CENA4: %d dialogos detectados", numDialogosC4);
+
+    Texture2D imgC4[15] = { 0 };
+    for (int k = 0; k < numDialogosC4; k++) imgC4[k] = CarregarCena4Num(k + 1);
+
+    // Telas especiais da Cena 4
+    Texture2D imgC4Evidencia    = CarregarCena4("c4.15.png", "C4.15.png", "c4_15.png"); // Evidência encontrada
     Texture2D imgC4Desafio      = CarregarCena4("c4.16.png", "C4.16.png", "c4_16.png"); // Questão de lógica
     Texture2D imgC4Perdida      = CarregarCena4("c4.17.png", "C4.17.png", "c4_17.png"); // Evidência perdida
     Texture2D imgC4Desbloqueada = CarregarCena4("c4.18.png", "C4.18.png", "c4_18.png"); // Evidência desbloqueada
-    Texture2D imgP4_1           = CarregarCena4("p4_1.png",  "p4.1.png",  "P4.1.png");  // Origem da prova
-    Texture2D imgP4_2           = CarregarCena4("p4_2.png",  "p4.2.png",  "P4.2.png");  // Verdadeira ou manipulada
+    Texture2D imgP4_1           = CarregarCena4("p4.1.png",  "p4_1.png",  "P4.1.png");   // Prova 1
+    Texture2D imgP4_2           = CarregarCena4("p4.2.png",  "p4_2.png",  "P4.2.png");   // Prova 2
 
+    // ======= TEXTURAS DA CENA 5 =======
+    Texture2D imgC5[10] = { 0 };
+    for (int k = 0; k < 10; k++) imgC5[k] = CarregarCena5Num(k + 1);
+
+    Texture2D imgC5Evidencia = CarregarCena5Num(11);   // Nova evidência encontrada
+    Texture2D imgC5Desafio   = CarregarCena5Num(12);   // Desafio de lógica
+    Texture2D imgC5Perdida   = CarregarCena5Num(13);   // Evidência perdida
+    Texture2D imgC5Pergunta  = CarregarCena5("P5_2.png", "p5_2.png", "P5.2.png", "p5.2.png"); // Verdadeira ou manipulada
+    Texture2D imgC5Desbloqueada = CarregarCena5("P5.png", "p5.png", "P5_1.png", "p5_1.png");  // Evidência desbloqueada
 
     // ======= MIPMAPS + FILTRO =======
     Texture2D* todasTexturas[] = {
@@ -342,16 +429,22 @@ int main(void) {
     };
     int totalTexturas = sizeof(todasTexturas) / sizeof(todasTexturas[0]);
 
-    for (int i = 0; i < totalTexturas; i++) PrepararTextura(todasTexturas[i]);
-    for (int i = 0; i < 12; i++) PrepararTextura(&imgC2[i]);
-    for (int i = 0; i < 4;  i++) PrepararTextura(&imgF1[i]);
-    for (int i = 0; i < 14; i++) PrepararTextura(&imgC4[i]);
+    for (int k = 0; k < totalTexturas; k++) PrepararTextura(todasTexturas[k]);
+    for (int k = 0; k < 12; k++) PrepararTextura(&imgC2[k]);
+    for (int k = 0; k < 4;  k++) PrepararTextura(&imgF1[k]);
+    for (int k = 0; k < 15; k++) PrepararTextura(&imgC4[k]);
+
+    for (int k = 0; k < 10; k++) PrepararTextura(&imgC5[k]);
+    PrepararTextura(&imgC5Evidencia);
+    PrepararTextura(&imgC5Desafio);
+    PrepararTextura(&imgC5Perdida);
+    PrepararTextura(&imgC5Pergunta);
+    PrepararTextura(&imgC5Desbloqueada);
 
 
     Rectangle dest = { 0.0f, 0.0f, (float)larguraTela, (float)alturaTela };
 
-
-    // ======= BOTÕES E ÁREAS DE CLIQUE =======
+    // ======= BOTÕES E ÁREAS DE CLIQUE (coordenadas na tela virtual 800x600) =======
     Rectangle btnJogar    = { 115, 271, 106, 35 };
     Rectangle btnRegras   = { 137, 321, 104, 37 };
     Rectangle btnConfig   = { 102, 372, 181, 43 };
@@ -370,7 +463,7 @@ int main(void) {
 
 
     Rectangle btnLogin  = { 340, 400, 120, 45 };
-    Rectangle btnVoltar = { 15, 20, 160, 60 }; // Botão de Voltar no canto superior esquerdo
+    Rectangle btnVoltar = { 15, 20, 160, 60 };
 
 
     Rectangle destFotoGabriel = { 440, 160, 230, 270 };
@@ -378,22 +471,22 @@ int main(void) {
     Rectangle btnFotoCaio     = { 440, 160, 230, 270 };
 
 
-    // ---- Botões da CENA 2 (coordenadas na janela 800x600) ----
-    Rectangle btnAvancarC2  = { 615, 553, 130, 40 };   // "AVANÇAR" dos diálogos (C2.0 ... C2.7 e F1.1 ... F1.4)
-    Rectangle btnResolverC2 = { 309, 384, 182, 38 };   // "Resolver desafio" (C2.8)
+    // ---- CENA 2 ----
+    Rectangle btnAvancarC2  = { 615, 553, 130, 40 };
+    Rectangle btnResolverC2 = { 309, 384, 182, 38 };
 
     // Opções do desafio (C2.9)
-    Rectangle btnC2OpcaoA = { 140, 296, 497, 40 };     // a) A câmera deve ter registrado Caio saindo. (CORRETA)
-    Rectangle btnC2OpcaoB = { 140, 350, 497, 40 };     // b) A câmera não registrou Caio.
-    Rectangle btnC2OpcaoC = { 140, 403, 497, 40 };     // c) Nada se conclui.
-    Rectangle btnC2OpcaoD = { 140, 454, 497, 40 };     // d) Caio é o culpado.
+    Rectangle btnC2OpcaoA = { 140, 296, 497, 40 };
+    Rectangle btnC2OpcaoB = { 140, 350, 497, 40 };
+    Rectangle btnC2OpcaoC = { 140, 403, 497, 40 };
+    Rectangle btnC2OpcaoD = { 140, 454, 497, 40 };
 
     // Confirmação (C2.10)
-    Rectangle btnAcusaCaioSim = { 142, 319, 496, 40 }; // a) Sim, quero acusar Caio.
-    Rectangle btnAcusaCaioNao = { 142, 373, 496, 40 }; // b) Não, quero continuar a investigação.
+    Rectangle btnAcusaCaioSim = { 142, 319, 496, 40 };
+    Rectangle btnAcusaCaioNao = { 142, 373, 496, 40 };
 
     // Evidência perdida (C2.11)
-    Rectangle btnContinuarPerdidaC2 = { 297, 410, 197, 38 }; // "Continuar investigação"
+    Rectangle btnContinuarPerdidaC2 = { 290, 408, 220, 44 };
 
     // Veredito incorreto (P1)
     Rectangle btnTentarNovamente = { 311, 462, 182, 38 };
@@ -406,71 +499,100 @@ int main(void) {
     Rectangle btnProvaManipulada = { 423, 482, 120, 40 };
 
 
-    // ---- Botões da CENA 3 (coordenadas na janela 800x600) ----
+    // ---- CENA 3 ----
     Rectangle btnAvancarC3 = { 615, 553, 130, 40 };
 
-    Rectangle btnResolverC3 = { 309, 384, 182, 38 };      // "Resolver desafio" (C3_3)
+    Rectangle btnResolverC3 = { 309, 384, 182, 38 };
 
-    Rectangle btnC3OpcaoA = { 139, 298, 497, 40 };        // a) não é ... e ... não é
-    Rectangle btnC3OpcaoB = { 139, 353, 497, 40 };        // b) não é ... OU ... não é  (CORRETA)
-    Rectangle btnC3OpcaoC = { 139, 407, 497, 40 };        // c) é ... ou ... não é
-    Rectangle btnC3OpcaoD = { 139, 456, 497, 40 };        // d) é ... e ... não é
+    Rectangle btnC3OpcaoA = { 139, 298, 497, 40 };
+    Rectangle btnC3OpcaoB = { 139, 353, 497, 40 };
+    Rectangle btnC3OpcaoC = { 139, 407, 497, 40 };
+    Rectangle btnC3OpcaoD = { 139, 456, 497, 40 };
 
-    Rectangle btnContinuarPerdida = { 301, 383, 197, 38 }; // "Continuar investigação" (C3_5)
-    Rectangle btnAcessarEvidC3    = { 309, 390, 182, 38 }; // "Acessar evidência" (P2)
+    Rectangle btnContinuarPerdida = { 290, 408, 220, 44 };
+    Rectangle btnAcessarEvidC3    = { 309, 390, 182, 38 };
 
-    Rectangle btnAudioPlay = { 150, 398, 46, 46 };        // botão play/pause
-    Rectangle btnAudioMudo = { 587, 398, 46, 46 };        // botão mudo/som
+    Rectangle btnAudioPlay = { 150, 398, 46, 46 };
+    Rectangle btnAudioMudo = { 587, 398, 46, 46 };
 
     Rectangle btnC3Verdadeira = { 269, 398, 116, 39 };
     Rectangle btnC3Manipulada = { 423, 398, 121, 39 };
 
-    Rectangle btnContinuarC3  = { 495, 462, 175, 34 };    // "CLIQUE PARA CONTINUAR"
+    Rectangle btnContinuarC3  = { 495, 462, 175, 34 };
 
     // Estado do player de áudio
     bool  audioTocando = true;
     bool  audioMudo = false;
     float audioTempo = 0.0f;
 
-    // De onde o jogador veio ao entrar na Cena 3 (para o botão VOLTAR da C3_1)
     GameState origemC3 = STATE_MENU;
 
+    // ---- CENA 4 ----
+    Rectangle btnAvancarC4 = { 615, 553, 130, 40 };
 
-    // ---- Botões da CENA 4 (coordenadas na janela 800x600) ----
-    Rectangle btnAvancarC4 = { 615, 553, 130, 40 };       // "AVANÇAR" dos diálogos
+    Rectangle btnResolverC4 = { 310, 392, 180, 40 };
 
-    Rectangle btnResolverC4 = { 309, 384, 182, 38 };      // "Resolver desafio" (c4.15)
+    Rectangle btnC4OpcaoA = { 142, 326, 496, 40 };
+    Rectangle btnC4OpcaoB = { 142, 381, 496, 40 };
+    Rectangle btnC4OpcaoC = { 142, 434, 496, 40 };
+    Rectangle btnC4OpcaoD = { 142, 484, 496, 40 };
 
-    Rectangle btnC4OpcaoA = { 142, 326, 496, 40 };        // a) Gabriel vai contar
-    Rectangle btnC4OpcaoB = { 142, 381, 496, 40 };        // b) Gabriel NÃO vai contar (CORRETA)
-    Rectangle btnC4OpcaoC = { 142, 434, 496, 40 };        // c) É indeterminado
-    Rectangle btnC4OpcaoD = { 142, 484, 496, 40 };        // d) Gabriel já contou
+    Rectangle btnAcessarEvidC4      = { 309, 390, 182, 38 };
+    Rectangle btnContinuarPerdidaC4 = { 280, 415, 240, 40 };
+    Rectangle btnContinuarOrigemC4  = { 565, 538, 185, 36 };
 
-    Rectangle btnContinuarPerdidaC4 = { 301, 383, 197, 38 }; // "Continuar investigação" (c4.17)
-    Rectangle btnContinuarOrigemC4  = { 565, 538, 185, 36 }; // "CLIQUE PARA CONTINUAR" da p4_1
-
-    Rectangle btnAcessarEvidC4 = { 309, 390, 182, 38 };   // "Acessar evidência" da c4.18
-
-    Rectangle btnC4Verdadeira = { 380, 311, 128, 40 };    // p4_2
-    Rectangle btnC4Manipulada = { 534, 311, 134, 40 };    // p4_2
+    Rectangle btnC4Verdadeira = { 380, 311, 128, 40 };
+    Rectangle btnC4Manipulada = { 534, 311, 134, 40 };
 
     // De onde o jogador veio ao entrar na Cena 4 (para o VOLTAR da primeira tela)
     GameState origemC4 = STATE_MENU;
 
+    // De onde o jogador veio ao entrar na Cena 5
+    GameState origemC5 = STATE_MENU;
 
-    bool telaCheia = true;
+    // ---- CENA 5 ---- (coordenadas calculadas a partir das imagens 1440x1024)
+    Rectangle btnAvancarC5   = { 615, 553, 130, 40 };
+    Rectangle btnResolverC5  = { 309, 384, 182, 38 };
+
+    Rectangle btnC5OpcaoA = { 142, 326, 496, 40 };
+    Rectangle btnC5OpcaoB = { 142, 381, 496, 40 };
+    Rectangle btnC5OpcaoC = { 142, 434, 496, 40 };
+    Rectangle btnC5OpcaoD = { 142, 484, 496, 40 };
+
+    Rectangle btnContinuarPerdidaC5 = { 298, 420, 204, 42 };
+    Rectangle btnAcessarEvidC5      = { 309, 390, 182, 38 };   // Acessar evidência (P5)
+
+    Rectangle btnC5Verdadeira = { 419, 297, 129, 40 };
+    Rectangle btnC5Manipulada = { 574, 297, 134, 40 };
+
+
+    bool telaCheia = false;
+    bool debugBotoes = false;
     float volGeral = 0.75f;
     float volMusica = 0.55f;
     float volEfeitos = 0.65f;
 
-
     Vector2 posMouse = { 0.0f, 0.0f };
 
-
     while (!WindowShouldClose()) {
+
+        float telaW = (float)GetScreenWidth();
+        float telaH = (float)GetScreenHeight();
+        float escala = telaW / (float)larguraTela;
+        if (telaH / (float)alturaTela < escala) escala = telaH / (float)alturaTela;
+        float offX = (telaW - larguraTela * escala) * 0.5f;
+        float offY = (telaH - alturaTela * escala) * 0.5f;
+
+        SetMouseOffset((int)(-offX), (int)(-offY));
+        SetMouseScale(1.0f / escala, 1.0f / escala);
+
         posMouse = GetMousePosition();
 
+        g_numDebugRects = 0;
+        if (IsKeyPressed(KEY_F1)) debugBotoes = !debugBotoes;
 
+
+        // ======================= LÓGICA =======================
         switch (estadoAtual) {
             case STATE_MENU:
                 if (BotaoClicado(btnJogar, posMouse)) estadoAtual = STATE_C1_1;
@@ -485,8 +607,8 @@ int main(void) {
 
             case STATE_CONFIG:
                 if (BotaoClicado(btnTelaCheia, posMouse)) {
-                    telaCheia = !telaCheia;
                     ToggleFullscreen();
+                    telaCheia = !telaCheia;
                 }
 
                 volGeral   = AtualizarSlider(sliderVolumeGeral, posMouse, volGeral);
@@ -517,16 +639,14 @@ int main(void) {
                         estadoAtual = STATE_C1_1;
                     }
                 }
-
-                if (BotaoClicado(btnVoltarRegras, posMouse)) {
+                else if (BotaoClicado(btnVoltarRegras, posMouse)) {
                     if (paginaRegras > 0) {
                         paginaRegras--;
                     } else {
                         estadoAtual = STATE_MENU;
                     }
                 }
-
-                if (IsKeyPressed(KEY_ESCAPE)) {
+                else if (IsKeyPressed(KEY_ESCAPE)) {
                     paginaRegras = 0;
                     estadoAtual = STATE_MENU;
                 }
@@ -540,42 +660,35 @@ int main(void) {
                 else if (BotaoClicado(btnLogin, posMouse)) estadoAtual = STATE_C1_2;
                 break;
 
-
             case STATE_C1_2:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C1_1;
                 else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) estadoAtual = STATE_C1_3;
                 break;
-
 
             case STATE_C1_3:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C1_2;
                 else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) estadoAtual = STATE_C1_4;
                 break;
 
-
             case STATE_C1_4:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C1_3;
                 else if (BotaoClicado(btnFotoCaio, posMouse)) estadoAtual = STATE_C1_5;
                 break;
-
 
             case STATE_C1_5:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C1_4;
                 else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) estadoAtual = STATE_C1_6;
                 break;
 
-
             case STATE_C1_6:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C1_5;
                 else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) estadoAtual = STATE_C1_7;
                 break;
 
-
             case STATE_C1_7:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C1_6;
                 else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) estadoAtual = STATE_C1_8;
                 break;
-
 
             case STATE_C1_8:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C1_7;
@@ -584,8 +697,7 @@ int main(void) {
 
 
             // --- CENA 2 ---
-
-            case STATE_C2_EVIDENCIA:   // C2.8 - nova evidência encontrada
+            case STATE_C2_EVIDENCIA:
                 if (BotaoClicado(btnVoltar, posMouse)) {
                     estadoAtual = STATE_C2_7;
                 }
@@ -595,23 +707,20 @@ int main(void) {
                 break;
 
 
-            case STATE_C2_DESAFIO:     // C2.9 - desafio de lógica
+            case STATE_C2_DESAFIO:
                 if (BotaoClicado(btnC2OpcaoA, posMouse)) {
-                    // Resposta correta (modus ponens) -> evidência desbloqueada
                     estadoAtual = STATE_EVIDENCIA_DESBLOQUEADA;
                 }
                 else if (BotaoClicado(btnC2OpcaoB, posMouse) || BotaoClicado(btnC2OpcaoC, posMouse)) {
-                    // Erro -> evidência perdida
                     estadoAtual = STATE_C2_PERDIDA;
                 }
                 else if (BotaoClicado(btnC2OpcaoD, posMouse)) {
-                    // "Caio é o culpado" -> pede confirmação
                     estadoAtual = STATE_CONFIRMA_CAIO;
                 }
                 break;
 
 
-            case STATE_CONFIRMA_CAIO:  // C2.10 - "Você selecionou: Caio é o culpado"
+            case STATE_CONFIRMA_CAIO:
                 if (BotaoClicado(btnAcusaCaioNao, posMouse)) {
                     estadoAtual = STATE_C2_DESAFIO;
                 }
@@ -621,7 +730,7 @@ int main(void) {
                 break;
 
 
-            case STATE_C2_PERDIDA:     // C2.11 - evidência perdida
+            case STATE_C2_PERDIDA:
                 if (BotaoClicado(btnContinuarPerdidaC2, posMouse)) {
                     // Segue para a CENA 3
                     origemC3 = STATE_C2_PERDIDA;
@@ -630,63 +739,43 @@ int main(void) {
                 break;
 
 
-            case STATE_ACUSA_CAIO_1:   // F1.1
-                if (BotaoClicado(btnVoltar, posMouse)) {
-                    estadoAtual = STATE_CONFIRMA_CAIO;
-                }
-                else if (BotaoClicado(btnAvancarC2, posMouse)) {
-                    estadoAtual = STATE_ACUSA_CAIO_2;
+            case STATE_ACUSA_CAIO_1:
+                if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_CONFIRMA_CAIO;
+                else if (AvancarDialogo(btnAvancarC2, posMouse)) estadoAtual = STATE_ACUSA_CAIO_2;
+                break;
+
+            case STATE_ACUSA_CAIO_2:
+                if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_ACUSA_CAIO_1;
+                else if (AvancarDialogo(btnAvancarC2, posMouse)) estadoAtual = STATE_ACUSA_CAIO_3;
+                break;
+
+            case STATE_ACUSA_CAIO_3:
+                if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_ACUSA_CAIO_2;
+                else if (AvancarDialogo(btnAvancarC2, posMouse)) estadoAtual = STATE_ACUSA_CAIO_4;
+                break;
+
+            case STATE_ACUSA_CAIO_4:
+                if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_ACUSA_CAIO_3;
+                else if (AvancarDialogo(btnAvancarC2, posMouse)) estadoAtual = STATE_VEREDITO_INCORRETO;
+                break;
+
+
+            case STATE_VEREDITO_INCORRETO:
+                if (BotaoClicado(btnTentarNovamente, posMouse)) {
+                    estadoAtual = STATE_C2_DESAFIO;
                 }
                 break;
 
 
-            case STATE_ACUSA_CAIO_2:   // F1.2
-                if (BotaoClicado(btnVoltar, posMouse)) {
-                    estadoAtual = STATE_ACUSA_CAIO_1;
-                }
-                else if (BotaoClicado(btnAvancarC2, posMouse)) {
-                    estadoAtual = STATE_ACUSA_CAIO_3;
-                }
-                break;
-
-
-            case STATE_ACUSA_CAIO_3:   // F1.3
-                if (BotaoClicado(btnVoltar, posMouse)) {
-                    estadoAtual = STATE_ACUSA_CAIO_2;
-                }
-                else if (BotaoClicado(btnAvancarC2, posMouse)) {
-                    estadoAtual = STATE_ACUSA_CAIO_4;
-                }
-                break;
-
-
-            case STATE_ACUSA_CAIO_4:   // F1.4
-                if (BotaoClicado(btnVoltar, posMouse)) {
-                    estadoAtual = STATE_ACUSA_CAIO_3;
-                }
-                else if (BotaoClicado(btnAvancarC2, posMouse)) {
-                    estadoAtual = STATE_VEREDITO_INCORRETO;
-                }
-                break;
-
-
-            case STATE_VEREDITO_INCORRETO:   // P1
-                if (BotaoClicado(btnTentarNovamente, posMouse) || IsKeyPressed(KEY_ESCAPE)) {
-                    estadoAtual = STATE_MENU;
-                }
-                break;
-
-
-            case STATE_EVIDENCIA_DESBLOQUEADA:   // P1.1
+            case STATE_EVIDENCIA_DESBLOQUEADA:
                 if (BotaoClicado(btnAcessarEvidencia, posMouse)) {
                     estadoAtual = STATE_DESAFIO_IA;
                 }
                 break;
 
 
-            case STATE_DESAFIO_IA:   // P1.2
+            case STATE_DESAFIO_IA:
                 if (BotaoClicado(btnProvaVerdadeira, posMouse) || BotaoClicado(btnProvaManipulada, posMouse)) {
-                    // Segue para a CENA 3
                     origemC3 = STATE_DESAFIO_IA;
                     estadoAtual = STATE_C3_1;
                 }
@@ -696,28 +785,21 @@ int main(void) {
             // --- CENA 3 ---
             case STATE_C3_1:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = origemC3;
-                else if (BotaoClicado(btnAvancarC3, posMouse)) estadoAtual = STATE_C3_2;
+                else if (AvancarDialogo(btnAvancarC3, posMouse)) estadoAtual = STATE_C3_2;
                 break;
-
 
             case STATE_C3_2:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C3_1;
-                else if (BotaoClicado(btnAvancarC3, posMouse)) estadoAtual = STATE_C3_3;
+                else if (AvancarDialogo(btnAvancarC3, posMouse)) estadoAtual = STATE_C3_3;
                 break;
-
 
             case STATE_C3_3:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C3_2;
                 else if (BotaoClicado(btnResolverC3, posMouse)) estadoAtual = STATE_C3_4;
                 break;
 
-
             case STATE_C3_4:
-                if (BotaoClicado(btnVoltar, posMouse)) {
-                    estadoAtual = STATE_C3_3;
-                }
-                else if (BotaoClicado(btnC3OpcaoB, posMouse)) {
-                    // Resposta correta: a negação de (A e B) é (não A ou não B)
+                if (BotaoClicado(btnC3OpcaoB, posMouse)) {
                     estadoAtual = STATE_C3_DESBLOQUEADA;
                 }
                 else if (BotaoClicado(btnC3OpcaoA, posMouse) ||
@@ -727,18 +809,13 @@ int main(void) {
                 }
                 break;
 
-
             case STATE_C3_PERDIDA:
-                if (BotaoClicado(btnVoltar, posMouse)) {
-                    estadoAtual = STATE_C3_4;
-                }
-                else if (BotaoClicado(btnContinuarPerdida, posMouse)) {
+                if (BotaoClicado(btnContinuarPerdida, posMouse)) {
                     // Segue para a CENA 4
                     origemC4 = STATE_C3_PERDIDA;
                     estadoAtual = STATE_C4_1;
                 }
                 break;
-
 
             case STATE_C3_DESBLOQUEADA:
                 if (BotaoClicado(btnVoltar, posMouse)) {
@@ -757,7 +834,6 @@ int main(void) {
                     estadoAtual = STATE_C3_AUDIO;
                 }
                 break;
-
 
             case STATE_C3_AUDIO:
                 if (temAudio) UpdateMusicStream(audioProva);
@@ -781,12 +857,10 @@ int main(void) {
                     if (temAudio) SetMusicVolume(audioProva, audioMudo ? 0.0f : 1.0f);
                 }
                 else if (BotaoClicado(btnContinuarC3, posMouse) || IsKeyPressed(KEY_ENTER)) {
-                    // Clique em "CLIQUE PARA CONTINUAR" (ou ENTER) -> pergunta final
                     if (temAudio) StopMusicStream(audioProva);
                     estadoAtual = STATE_C3_PERGUNTA;
                 }
                 break;
-
 
             case STATE_C3_PERGUNTA:
                 if (BotaoClicado(btnVoltar, posMouse)) {
@@ -801,7 +875,6 @@ int main(void) {
                 }
                 else if (BotaoClicado(btnC3Verdadeira, posMouse) || BotaoClicado(btnC3Manipulada, posMouse) ||
                          BotaoClicado(btnContinuarC3, posMouse)) {
-                    // Segue para a CENA 4
                     origemC4 = STATE_C3_PERGUNTA;
                     estadoAtual = STATE_C4_1;
                 }
@@ -809,45 +882,21 @@ int main(void) {
 
 
             // --- CENA 4 ---
-            case STATE_C4_EVIDENCIA:   // c4.15
-                if (BotaoClicado(btnVoltar, posMouse)) {
-                    estadoAtual = STATE_C4_14;
-                }
-                else if (BotaoClicado(btnResolverC4, posMouse)) {
-                    estadoAtual = STATE_C4_DESAFIO;
-                }
-                break;
-
-
-            case STATE_C4_DESAFIO:     // c4.16
+            case STATE_C4_DESAFIO:
                 if (BotaoClicado(btnVoltar, posMouse)) {
                     estadoAtual = STATE_C4_EVIDENCIA;
                 }
-                else if (BotaoClicado(btnC4OpcaoB, posMouse)) {
-                    // Única resposta correta -> evidência desbloqueada (c4.18)
+                else if (BotaoClicado(btnC4OpcaoC, posMouse)) {
                     estadoAtual = STATE_C4_DESBLOQUEADA;
                 }
                 else if (BotaoClicado(btnC4OpcaoA, posMouse) ||
-                         BotaoClicado(btnC4OpcaoC, posMouse) ||
+                         BotaoClicado(btnC4OpcaoB, posMouse) ||
                          BotaoClicado(btnC4OpcaoD, posMouse)) {
-                    // Qualquer erro -> evidência perdida (c4.17)
                     estadoAtual = STATE_C4_PERDIDA;
                 }
                 break;
 
-
-            case STATE_C4_PERDIDA:     // c4.17
-                if (BotaoClicado(btnVoltar, posMouse)) {
-                    estadoAtual = STATE_C4_DESAFIO;
-                }
-                else if (BotaoClicado(btnContinuarPerdidaC4, posMouse)) {
-                    // TODO: trocar pelo próximo estado quando a próxima cena existir
-                    estadoAtual = STATE_MENU;
-                }
-                break;
-
-
-            case STATE_C4_DESBLOQUEADA: // c4.18
+            case STATE_C4_DESBLOQUEADA:
                 if (BotaoClicado(btnVoltar, posMouse)) {
                     estadoAtual = STATE_C4_DESAFIO;
                 }
@@ -856,60 +905,123 @@ int main(void) {
                 }
                 break;
 
-
-            case STATE_C4_ORIGEM:      // p4_1
-                if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C4_DESBLOQUEADA;
-                else if (BotaoClicado(btnContinuarOrigemC4, posMouse)) estadoAtual = STATE_C4_PERGUNTA;
+            case STATE_C4_PERDIDA:
+                if (BotaoClicado(btnContinuarPerdidaC4, posMouse)) {
+                    origemC5 = STATE_C4_PERDIDA;
+                    estadoAtual = STATE_C5_1;
+                }
                 break;
 
+            case STATE_C4_EVIDENCIA:
+                if (BotaoClicado(btnVoltar, posMouse)) {
+                    estadoAtual = STATE_C4_14;
+                }
+                else if (BotaoClicado(btnResolverC4, posMouse)) {
+                    estadoAtual = STATE_C4_DESAFIO;
+                }
+                break;
 
-            case STATE_C4_PERGUNTA:    // p4_2
+            case STATE_C4_ORIGEM:
+                if (AvancarDialogo(btnContinuarOrigemC4, posMouse)) {
+                    estadoAtual = STATE_C4_PERGUNTA;
+                }
+                break;
+
+            case STATE_C4_PERGUNTA:
                 if (BotaoClicado(btnVoltar, posMouse)) {
                     estadoAtual = STATE_C4_ORIGEM;
                 }
                 else if (BotaoClicado(btnC4Verdadeira, posMouse) || BotaoClicado(btnC4Manipulada, posMouse)) {
-                    // TODO: definir qual é a correta e a próxima cena
-                    estadoAtual = STATE_MENU;
+                    origemC5 = STATE_C4_PERGUNTA;
+                    estadoAtual = STATE_C5_1;
                 }
                 break;
 
 
-            // Telas de diálogo: C2_0 ... C2_7 e C4_1 ... C4_14 (voltar / avançar)
+            // --- CENA 5 ---
+            case STATE_C5_EVIDENCIA:
+                if (BotaoClicado(btnVoltar, posMouse)) {
+                    estadoAtual = STATE_C5_10;
+                }
+                else if (BotaoClicado(btnResolverC5, posMouse)) {
+                    estadoAtual = STATE_C5_DESAFIO;
+                }
+                break;
+
+            case STATE_C5_DESAFIO:
+                if (BotaoClicado(btnC5OpcaoC, posMouse)) {          // c) A frase dela é falsa
+                    estadoAtual = STATE_C5_DESBLOQUEADA;
+                }
+                else if (BotaoClicado(btnC5OpcaoA, posMouse) ||
+                         BotaoClicado(btnC5OpcaoB, posMouse) ||
+                         BotaoClicado(btnC5OpcaoD, posMouse)) {
+                    estadoAtual = STATE_C5_PERDIDA;
+                }
+                break;
+
+            case STATE_C5_DESBLOQUEADA:
+                if (BotaoClicado(btnVoltar, posMouse)) {
+                    estadoAtual = STATE_C5_DESAFIO;
+                }
+                else if (BotaoClicado(btnAcessarEvidC5, posMouse)) {
+                    estadoAtual = STATE_C5_PERGUNTA;
+                }
+                break;
+
+            case STATE_C5_PERDIDA:
+                if (BotaoClicado(btnContinuarPerdidaC5, posMouse)) {
+                    estadoAtual = STATE_C6_1;
+                }
+                break;
+
+            case STATE_C5_PERGUNTA:
+                if (BotaoClicado(btnC5Verdadeira, posMouse) || BotaoClicado(btnC5Manipulada, posMouse)) {
+                    estadoAtual = STATE_C6_1;
+                }
+                break;
+
+            case STATE_C6_1:
+                if (BotaoClicado(btnVoltar, posMouse) || IsKeyPressed(KEY_ESCAPE)) {
+                    estadoAtual = STATE_MENU;
+                }
+                break;
+
             default:
                 if (estadoAtual >= STATE_C2_0 && estadoAtual <= STATE_C2_7) {
                     if (BotaoClicado(btnVoltar, posMouse)) {
-                        if (estadoAtual == STATE_C2_0) {
-                            estadoAtual = STATE_C1_8;
-                        }
-                        else {
-                            estadoAtual = (GameState)(estadoAtual - 1);
-                        }
+                        if (estadoAtual == STATE_C2_0) estadoAtual = STATE_C1_8;
+                        else estadoAtual = (GameState)(estadoAtual - 1);
                     }
-                    else if (BotaoClicado(btnAvancarC2, posMouse)) {
-                        estadoAtual = (GameState)(estadoAtual + 1);   // C2_7 -> STATE_C2_EVIDENCIA
+                    else if (AvancarDialogo(btnAvancarC2, posMouse)) {
+                        estadoAtual = (GameState)(estadoAtual + 1);
                     }
                 }
-                else if (estadoAtual >= STATE_C4_1 && estadoAtual <= STATE_C4_14) {
+                else if (estadoAtual >= STATE_C4_1 && estadoAtual < (GameState)(STATE_C4_1 + numDialogosC4)) {
                     if (BotaoClicado(btnVoltar, posMouse)) {
-                        if (estadoAtual == STATE_C4_1) {
-                            estadoAtual = origemC4;
-                        }
-                        else {
-                            estadoAtual = (GameState)(estadoAtual - 1);
-                        }
+                        if (estadoAtual == STATE_C4_1) estadoAtual = origemC4;
+                        else estadoAtual = (GameState)(estadoAtual - 1);
                     }
-                    else if (BotaoClicado(btnAvancarC4, posMouse)) {
-                        estadoAtual = (GameState)(estadoAtual + 1);   // C4_14 -> C4_EVIDENCIA (c4.15)
+                    else if (AvancarDialogo(btnAvancarC4, posMouse)) {
+                        if (estadoAtual == (GameState)(STATE_C4_1 + numDialogosC4 - 1)) estadoAtual = STATE_C4_EVIDENCIA;
+                        else estadoAtual = (GameState)(estadoAtual + 1);
+                    }
+                }
+                else if (estadoAtual >= STATE_C5_1 && estadoAtual <= STATE_C5_10) {
+                    if (BotaoClicado(btnVoltar, posMouse)) {
+                        if (estadoAtual == STATE_C5_1) estadoAtual = origemC5;
+                        else estadoAtual = (GameState)(estadoAtual - 1);
+                    }
+                    else if (AvancarDialogo(btnAvancarC5, posMouse)) {
+                        if (estadoAtual == STATE_C5_10) estadoAtual = STATE_C5_EVIDENCIA;
+                        else estadoAtual = (GameState)(estadoAtual + 1);
                     }
                 }
                 break;
         }
 
-
-        // ======= RENDERIZAÇÃO DAS TELAS =======
-        BeginDrawing();
+        // ======================= RENDERIZAÇÃO =======================
+        BeginTextureMode(alvo);
         ClearBackground(BLACK);
-
 
         switch (estadoAtual) {
             case STATE_MENU:
@@ -978,7 +1090,7 @@ int main(void) {
             case STATE_C1_8: DesenharTela(imgC1_8, dest); break;
 
 
-            // --- CENA 2 (as telas de diálogo C2_0 ... C2_7 são desenhadas no "default") ---
+            // --- CENA 2 ---
             case STATE_C2_EVIDENCIA:  DesenharTela(imgC2[8],  dest); break;
             case STATE_C2_DESAFIO:    DesenharTela(imgC2[9],  dest); break;
             case STATE_CONFIRMA_CAIO: DesenharTela(imgC2[10], dest); break;
@@ -1022,24 +1134,56 @@ int main(void) {
             case STATE_C4_PERGUNTA:     DesenharTela(imgP4_2, dest); break;
 
 
-            // Telas de diálogo: C2_0 ... C2_7 e C4_1 ... C4_14
+            // --- CENA 5 ---
+            case STATE_C5_EVIDENCIA: DesenharTela(imgC5Evidencia, dest); break;
+            case STATE_C5_DESAFIO:   DesenharTela(imgC5Desafio,   dest); break;
+            case STATE_C5_DESBLOQUEADA: DesenharTela(imgC5Desbloqueada, dest); break;
+            case STATE_C5_PERDIDA:   DesenharTela(imgC5Perdida,   dest); break;
+            case STATE_C5_PERGUNTA:  DesenharTela(imgC5Pergunta,  dest); break;
+
+            case STATE_C6_1:
+                DrawText("CENA 6 - EM CONSTRUCAO", 220, 280, 28, RAYWHITE);
+                DrawText("ESC para voltar ao menu", 270, 330, 20, GRAY);
+                break;
+
             default:
                 if (estadoAtual >= STATE_C2_0 && estadoAtual <= STATE_C2_7) {
                     DesenharTela(imgC2[estadoAtual - STATE_C2_0], dest);
                 }
-                else if (estadoAtual >= STATE_C4_1 && estadoAtual <= STATE_C4_14) {
+                else if (estadoAtual >= STATE_C4_1 && estadoAtual < (GameState)(STATE_C4_1 + numDialogosC4)) {
                     DesenharTela(imgC4[estadoAtual - STATE_C4_1], dest);
+                }
+                else if (estadoAtual >= STATE_C5_1 && estadoAtual <= STATE_C5_10) {
+                    DesenharTela(imgC5[estadoAtual - STATE_C5_1], dest);
                 }
                 break;
         }
 
+        if (debugBotoes) {
+            for (int k = 0; k < g_numDebugRects; k++) {
+                DrawRectangleRec(g_debugRects[k], (Color){ 0, 255, 0, 50 });
+                DrawRectangleLinesEx(g_debugRects[k], 2.0f, LIME);
+            }
+            DrawText("DEBUG (F1)", 10, 580, 16, LIME);
+            DrawText(TextFormat("estado=%d  (C4_1=%d  C5_1=%d)  mouse=%d,%d",
+                     (int)estadoAtual, (int)STATE_C4_1, (int)STATE_C5_1,
+                     (int)posMouse.x, (int)posMouse.y), 10, 560, 16, LIME);
+        }
 
+        EndTextureMode();
+
+
+        BeginDrawing();
+        ClearBackground(BLACK);
+        Rectangle origAlvo = { 0.0f, 0.0f, (float)larguraTela, -(float)alturaTela };
+        Rectangle destAlvo = { offX, offY, larguraTela * escala, alturaTela * escala };
+        DrawTexturePro(alvo.texture, origAlvo, destAlvo, (Vector2){ 0.0f, 0.0f }, 0.0f, WHITE);
         EndDrawing();
     }
 
 
-    // ======= UNLOAD TEXTURES =======
-    for (int i = 0; i < 5; i++) UnloadTexture(texRegras[i]);
+    // ======= UNLOAD =======
+    for (int k = 0; k < 5; k++) UnloadTexture(texRegras[k]);
     UnloadTexture(texConfigAtivado);
     UnloadTexture(texConfigDesativado);
     UnloadTexture(texCreditos);
@@ -1057,8 +1201,8 @@ int main(void) {
     UnloadTexture(imgGabriel);
     UnloadTexture(imgCaio);
 
-    for (int i = 0; i < 12; i++) UnloadTexture(imgC2[i]);
-    for (int i = 0; i < 4;  i++) UnloadTexture(imgF1[i]);
+    for (int k = 0; k < 12; k++) UnloadTexture(imgC2[k]);
+    for (int k = 0; k < 4;  k++) UnloadTexture(imgF1[k]);
     UnloadTexture(imgP1);
     UnloadTexture(imgP1_1);
     UnloadTexture(imgP1_2);
@@ -1075,13 +1219,22 @@ int main(void) {
     UnloadTexture(imgAudioPausaSom);
     UnloadTexture(imgP2Pergunta);
 
-    for (int i = 0; i < 14; i++) UnloadTexture(imgC4[i]);
+    for (int k = 0; k < 15; k++) UnloadTexture(imgC4[k]);
     UnloadTexture(imgC4Evidencia);
     UnloadTexture(imgC4Desafio);
     UnloadTexture(imgC4Perdida);
     UnloadTexture(imgC4Desbloqueada);
     UnloadTexture(imgP4_1);
     UnloadTexture(imgP4_2);
+
+    for (int k = 0; k < 10; k++) UnloadTexture(imgC5[k]);
+    UnloadTexture(imgC5Evidencia);
+    UnloadTexture(imgC5Desafio);
+    UnloadTexture(imgC5Perdida);
+    UnloadTexture(imgC5Pergunta);
+    UnloadTexture(imgC5Desbloqueada);
+
+    UnloadRenderTexture(alvo);
 
     if (temAudio) UnloadMusicStream(audioProva);
     CloseAudioDevice();
