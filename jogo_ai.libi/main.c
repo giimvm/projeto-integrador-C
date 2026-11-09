@@ -1,5 +1,12 @@
+//gcc main.c -o main.exe -lraylib -lopengl32 -lgdi32 -lwinmm && ./main.exe
+
 #include "raylib.h"
 #include <stdio.h>
+#include <string.h>
+
+// 0 = detecta automaticamente quantos diálogos a Cena 4 tem
+// (se quiser forçar um número, troque o 0 pelo número de diálogos)
+#define C4_FORCAR_DIALOGOS 0
 
 typedef enum {
     STATE_MENU = 0,
@@ -96,6 +103,28 @@ typedef enum {
     STATE_C6_1
 } GameState;
 
+
+// ======================================================================
+// PROGRESSO DO JOGADOR
+// ATENÇÃO: este bloco é um ESBOÇO para o código compilar.
+// Se a struct do jogador e a função SalvarProgresso já existirem em outro
+// arquivo do projeto (.h/.c), APAGUE este bloco e use um #include no lugar,
+// senão vai dar erro de declaração duplicada.
+// ======================================================================
+typedef struct {
+    int acertos;
+    int erros;
+    char evidenciaPerdida[128];
+} Jogador;
+
+void SalvarProgresso(Jogador j) {
+    FILE* f = fopen("progresso.txt", "w");
+    if (!f) return;
+    fprintf(f, "acertos=%d\nerros=%d\nperdida=%s\n", j.acertos, j.erros, j.evidenciaPerdida);
+    fclose(f);
+}
+
+
 #define MAX_DEBUG_RECTS 32
 static Rectangle g_debugRects[MAX_DEBUG_RECTS];
 static int g_numDebugRects = 0;
@@ -104,10 +133,53 @@ static void RegistrarDebug(Rectangle btn) {
     if (g_numDebugRects < MAX_DEBUG_RECTS) g_debugRects[g_numDebugRects++] = btn;
 }
 
+
+// ======= SONS GLOBAIS (usados dentro de BotaoClicado / CliqueQualquerLugar / telas de evidência) =======
+Sound sfxClick = { 0 };      // ai.libi_3_click
+bool temSfxClick = false;
+
+Sound sfxBrilho = { 0 };     // ai.libi_4_brilho (evidência desbloqueada)
+bool temSfxBrilho = false;
+
+
+// Retorna o primeiro caminho existente entre as variações de pasta (menu e todas as cenas)
+const char* AcharArquivoAudio(const char* nomes[], int qtd) {
+    const char* pastas[] = {
+        "src/menu_inicial/", "jogo_ai.libi/src/menu_inicial/", "menu_inicial/",
+        "src/cena1/",        "jogo_ai.libi/src/cena1/",        "cena1/",
+        "src/cena2/",        "jogo_ai.libi/src/cena2/",        "cena2/",
+        "src/cena3/",        "jogo_ai.libi/src/cena3/",        "cena3/",
+        "src/cena4/",        "jogo_ai.libi/src/cena4/",        "cena4/",
+        "src/cena5/",        "jogo_ai.libi/src/cena5/",        "cena5/",
+        ""
+    };
+    const int qtdPastas = sizeof(pastas) / sizeof(pastas[0]);
+    static char caminho[256];
+    for (int n = 0; n < qtd; n++) {
+        for (int p = 0; p < qtdPastas; p++) {
+            snprintf(caminho, sizeof(caminho), "%s%s", pastas[p], nomes[n]);
+            if (FileExists(caminho)) return caminho;
+        }
+    }
+    return NULL;
+}
+
+
 bool BotaoClicado(Rectangle btn, Vector2 posMouse) {
     RegistrarDebug(btn);
-    return CheckCollisionPointRec(posMouse, btn) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+    bool clicou = CheckCollisionPointRec(posMouse, btn) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+    if (clicou && temSfxClick) PlaySound(sfxClick);
+    return clicou;
 }
+
+
+// Clique em qualquer lugar da tela (usado para avançar a Cena 1) + som de clique
+bool CliqueQualquerLugar(void) {
+    bool clicou = IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+    if (clicou && temSfxClick) PlaySound(sfxClick);
+    return clicou;
+}
+
 
 // Avançar em telas de diálogo: SÓ avança ao clicar no botão específico da tela
 bool AvancarDialogo(Rectangle btnAvancar, Vector2 posMouse) {
@@ -139,7 +211,7 @@ void DesenharTela(Texture2D t, Rectangle dest) {
 void PrepararTextura(Texture2D* t) {
     if (t->id != 0) {
         GenTextureMipmaps(t);
-        SetTextureFilter(*t, TEXTURE_FILTER_BILINEAR);
+        SetTextureFilter(*t, TEXTURE_FILTER_TRILINEAR);
     }
 }
 
@@ -250,6 +322,29 @@ Texture2D CarregarCena5Num(int numero) {
 }
 
 
+// Liga/desliga a tela cheia mantendo o jogo proporcional (barras pretas nas laterais).
+// Truque importante: ao entrar, ajusta a janela para o tamanho do monitor ANTES do ToggleFullscreen;
+// assim o raylib não troca a resolução do monitor para 800x600.
+void DefinirTelaCheia(bool ativar, int larguraJanela, int alturaJanela) {
+    if (ativar == IsWindowFullscreen()) return;
+
+    int monitor = GetCurrentMonitor();
+
+    if (ativar) {
+        SetWindowSize(GetMonitorWidth(monitor), GetMonitorHeight(monitor));
+        ToggleFullscreen();
+    } else {
+        ToggleFullscreen();
+        SetWindowSize(larguraJanela, alturaJanela);
+
+        // Centraliza a janela no monitor atual
+        Vector2 posMonitor = GetMonitorPosition(monitor);
+        SetWindowPosition((int)posMonitor.x + (GetMonitorWidth(monitor) - larguraJanela) / 2,
+                          (int)posMonitor.y + (GetMonitorHeight(monitor) - alturaJanela) / 2);
+    }
+}
+
+
 int main(void) {
     const int larguraTela = 800;
     const int alturaTela = 600;
@@ -260,10 +355,10 @@ int main(void) {
     SetTargetFPS(60);
     SetExitKey(KEY_NULL);   // ESC não fecha mais o jogo (ESC é usado para voltar ao menu)
 
-    RenderTexture2D alvo = LoadRenderTexture(larguraTela, alturaTela);
-    SetTextureFilter(alvo.texture, TEXTURE_FILTER_BILINEAR);
-
     GameState estadoAtual = STATE_MENU;
+
+    // Progresso do jogador (acertos, erros, evidência perdida)
+    Jogador jogador = {0};
 
     // ======= CARREGAMENTO DE TEXTURAS COM SUPORTE MULTI-CAMINHO =======
     Texture2D imgMenu = LoadTexture("src/menu_inicial/menu.png");
@@ -389,6 +484,69 @@ int main(void) {
         audioProva.looping = false;
     }
 
+    // ======= ÁUDIO DO MENU E DO JOGO =======
+    // ai.libi_1 = trilha do menu (loop) | ai.libi_2 = trilha do jogo (loop)
+    // ai.libi_3_click = clique de botão  | ai.libi_4_brilho = evidência desbloqueada
+    Music musicaMenu = { 0 };
+    bool temMusicaMenu = false;
+
+    const char* nomesTrilha[] = {
+        "ai.libi_1.wav", "ai.libi_1.wav.wav", "ai.libi_1.mp3", "ai.libi_1.mp3.mp3", "ai.libi_1.ogg"
+    };
+    const char* caminhoTrilha = AcharArquivoAudio(nomesTrilha, sizeof(nomesTrilha) / sizeof(nomesTrilha[0]));
+    if (caminhoTrilha != NULL) {
+        musicaMenu = LoadMusicStream(caminhoTrilha);
+        if (musicaMenu.stream.buffer != NULL) {
+            temMusicaMenu = true;
+            musicaMenu.looping = true;   // loop infinito
+        }
+    }
+    if (!temMusicaMenu) TraceLog(LOG_WARNING, "MENU: trilha ai.libi_1 NAO encontrada");
+
+    Music musicaJogo = { 0 };
+    bool temMusicaJogo = false;
+    bool musicaJogoPausada = false;
+    float duckMusica = 1.0f;   // 1.0 = volume normal; abaixa enquanto o "brilho" toca
+
+    const char* nomesJogo[] = {
+        "ai.libi_2.wav", "ai.libi_2.wav.wav", "ai.libi_2.mp3", "ai.libi_2.mp3.mp3", "ai.libi_2.ogg"
+    };
+    const char* caminhoJogo = AcharArquivoAudio(nomesJogo, sizeof(nomesJogo) / sizeof(nomesJogo[0]));
+    if (caminhoJogo != NULL) {
+        musicaJogo = LoadMusicStream(caminhoJogo);
+        if (musicaJogo.stream.buffer != NULL) {
+            temMusicaJogo = true;
+            musicaJogo.looping = true;   // loop infinito
+            SetMusicVolume(musicaJogo, 0.0f);
+        }
+    }
+    if (!temMusicaJogo) TraceLog(LOG_WARNING, "JOGO: trilha ai.libi_2 NAO encontrada");
+
+    const char* nomesClick[] = {
+        "ai.libi_3_click.mp3", "ai.libi_3_click.mp3.mp3", "ai.libi_3_click.wav", "ai.libi_3_click.ogg"
+    };
+    const char* caminhoClick = AcharArquivoAudio(nomesClick, sizeof(nomesClick) / sizeof(nomesClick[0]));
+    if (caminhoClick != NULL) {
+        sfxClick = LoadSound(caminhoClick);
+        temSfxClick = (sfxClick.stream.buffer != NULL);
+    }
+    if (!temSfxClick) TraceLog(LOG_WARNING, "MENU: som ai.libi_3_click NAO encontrado");
+
+    const char* nomesBrilho[] = {
+        "ai.libi_4_brilho.mp3", "ai.libi_4_brilho.mp3.mp3", "ai.libi_4_brilho.wav", "ai.libi_4_brilho.ogg"
+    };
+    const char* caminhoBrilho = AcharArquivoAudio(nomesBrilho, sizeof(nomesBrilho) / sizeof(nomesBrilho[0]));
+    if (caminhoBrilho != NULL) {
+        sfxBrilho = LoadSound(caminhoBrilho);
+        temSfxBrilho = (sfxBrilho.stream.buffer != NULL);
+    }
+    if (!temSfxBrilho) TraceLog(LOG_WARNING, "JOGO: som ai.libi_4_brilho NAO encontrado");
+
+    // Crossfade entre a trilha do menu e a do jogo
+    const float duracaoFade = 1.5f;   // duração da transição, em segundos
+    float gananciaMenu = 1.0f;        // 0.0 a 1.0 (começa no máximo para o menu tocar normal ao abrir o jogo)
+    float gananciaJogo = 0.0f;        // 0.0 a 1.0
+
     // ======= TEXTURAS DA CENA 4 =======
     int numDialogosC4 = C4_FORCAR_DIALOGOS ? C4_FORCAR_DIALOGOS : (ExisteCena4(19) ? 15 : 14);
     TraceLog(LOG_INFO, "CENA4: %d dialogos detectados", numDialogosC4);
@@ -450,7 +608,7 @@ int main(void) {
 
 
     Rectangle btnVoltarMenu = { 100, 520, 90, 30 };
-    Rectangle btnTelaCheia  = { 610, 415, 70, 25 };
+    Rectangle btnTelaCheia  = { 578, 408, 105, 30 };   // cobre o botão "ATIVADO" e o "DESATIVADO"
     Rectangle sliderVolumeGeral = { 250, 245, 385, 15 };
     Rectangle sliderMusica      = { 250, 283, 385, 15 };
     Rectangle sliderEfeitos     = { 250, 323, 385, 15 };
@@ -522,6 +680,7 @@ int main(void) {
     bool  audioTocando = true;
     bool  audioMudo = false;
     float audioTempo = 0.0f;
+    const float audioDuracao = 18.0f;   // duração simulada quando não há arquivo audio_prova
 
     GameState origemC3 = STATE_MENU;
 
@@ -585,10 +744,105 @@ int main(void) {
         SetMouseOffset((int)(-offX), (int)(-offY));
         SetMouseScale(1.0f / escala, 1.0f / escala);
 
+        // Câmera: o jogo continua sendo desenhado em coordenadas 800x600, mas cada imagem é
+        // escalada direto para a resolução real da tela (sem passar por uma imagem 800x600).
+        Camera2D camera = { 0 };
+        camera.offset = (Vector2){ offX, offY };
+        camera.target = (Vector2){ 0.0f, 0.0f };
+        camera.rotation = 0.0f;
+        camera.zoom = escala;
+
         posMouse = GetMousePosition();
 
         g_numDebugRects = 0;
         if (IsKeyPressed(KEY_F1)) debugBotoes = !debugBotoes;
+
+        telaCheia = IsWindowFullscreen();   // define qual imagem de configurações aparece (ATIVADO / DESATIVADO)
+
+
+        // ======================= ÁUDIO =======================
+        // Volume dos efeitos segue o slider "Efeitos"
+        if (temSfxClick)  SetSoundVolume(sfxClick, volEfeitos);
+        if (temSfxBrilho) SetSoundVolume(sfxBrilho, volEfeitos);
+
+        bool naAreaMenu = (estadoAtual == STATE_MENU   ||
+                           estadoAtual == STATE_REGRAS ||
+                           estadoAtual == STATE_CONFIG ||
+                           estadoAtual == STATE_CREDITOS);
+
+        // O audio_prova está realmente tocando? (player aberto + em play + faixa ainda não terminou)
+        bool provaTocando = (estadoAtual == STATE_C3_AUDIO) && audioTocando &&
+                            (temAudio ? IsMusicStreamPlaying(audioProva) : (audioTempo < audioDuracao));
+
+        // Quanto o fade avança por frame
+        float passoFade = GetFrameTime() / duracaoFade;
+
+        // Trilha do jogo (ai.libi_2): fade-in ao sair do menu, fade-out ao voltar a ele.
+        // Pausa só enquanto o audio_prova toca (volta quando ele pausa/termina/sai).
+        if (temMusicaJogo) {
+            if (naAreaMenu) {
+                // Voltou ao menu: faz fade-out e só então para a faixa
+                if (musicaJogoPausada) {
+                    StopMusicStream(musicaJogo);
+                    musicaJogoPausada = false;
+                    gananciaJogo = 0.0f;
+                }
+                gananciaJogo -= passoFade;
+                if (gananciaJogo <= 0.0f) {
+                    gananciaJogo = 0.0f;
+                    if (IsMusicStreamPlaying(musicaJogo)) StopMusicStream(musicaJogo);
+                }
+                duckMusica = 1.0f;
+            } else if (provaTocando) {
+                if (IsMusicStreamPlaying(musicaJogo)) {
+                    PauseMusicStream(musicaJogo);
+                    musicaJogoPausada = true;
+                }
+            } else {
+                if (musicaJogoPausada) {
+                    ResumeMusicStream(musicaJogo);
+                    musicaJogoPausada = false;
+                } else if (!IsMusicStreamPlaying(musicaJogo)) {
+                    PlayMusicStream(musicaJogo);
+                }
+
+                // Fade-in da trilha do jogo
+                gananciaJogo += passoFade;
+                if (gananciaJogo > 1.0f) gananciaJogo = 1.0f;
+
+                // Abaixa o volume (com transição suave) enquanto o "brilho" está tocando
+                float alvoDuck = (temSfxBrilho && IsSoundPlaying(sfxBrilho)) ? 0.25f : 1.0f;
+                float passo = 8.0f * GetFrameTime();
+                if (passo > 1.0f) passo = 1.0f;
+                duckMusica += (alvoDuck - duckMusica) * passo;
+            }
+
+            // Atualiza o stream sempre que estiver tocando (inclusive durante o fade-out)
+            if (IsMusicStreamPlaying(musicaJogo)) {
+                SetMusicVolume(musicaJogo, volMusica * gananciaJogo * duckMusica);   // slider "Música"
+                UpdateMusicStream(musicaJogo);
+            }
+        }
+
+        // Trilha do menu (ai.libi_1): fade-out ao começar o jogo, fade-in ao voltar ao menu
+        if (temMusicaMenu) {
+            if (naAreaMenu) {
+                if (!IsMusicStreamPlaying(musicaMenu)) PlayMusicStream(musicaMenu);
+                gananciaMenu += passoFade;
+                if (gananciaMenu > 1.0f) gananciaMenu = 1.0f;
+            } else {
+                gananciaMenu -= passoFade;
+                if (gananciaMenu <= 0.0f) {
+                    gananciaMenu = 0.0f;
+                    if (IsMusicStreamPlaying(musicaMenu)) StopMusicStream(musicaMenu);
+                }
+            }
+
+            if (IsMusicStreamPlaying(musicaMenu)) {
+                SetMusicVolume(musicaMenu, volMusica * gananciaMenu);   // slider "Música"
+                UpdateMusicStream(musicaMenu);
+            }
+        }
 
 
         // ======================= LÓGICA =======================
@@ -606,8 +860,7 @@ int main(void) {
 
             case STATE_CONFIG:
                 if (BotaoClicado(btnTelaCheia, posMouse)) {
-                    ToggleFullscreen();
-                    telaCheia = !telaCheia;
+                    DefinirTelaCheia(!IsWindowFullscreen(), larguraTela, alturaTela);
                 }
 
                 volGeral   = AtualizarSlider(sliderVolumeGeral, posMouse, volGeral);
@@ -661,12 +914,12 @@ int main(void) {
 
             case STATE_C1_2:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C1_1;
-                else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) estadoAtual = STATE_C1_3;
+                else if (CliqueQualquerLugar()) estadoAtual = STATE_C1_3;
                 break;
 
             case STATE_C1_3:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C1_2;
-                else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) estadoAtual = STATE_C1_4;
+                else if (CliqueQualquerLugar()) estadoAtual = STATE_C1_4;
                 break;
 
             case STATE_C1_4:
@@ -676,22 +929,22 @@ int main(void) {
 
             case STATE_C1_5:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C1_4;
-                else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) estadoAtual = STATE_C1_6;
+                else if (CliqueQualquerLugar()) estadoAtual = STATE_C1_6;
                 break;
 
             case STATE_C1_6:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C1_5;
-                else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) estadoAtual = STATE_C1_7;
+                else if (CliqueQualquerLugar()) estadoAtual = STATE_C1_7;
                 break;
 
             case STATE_C1_7:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C1_6;
-                else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) estadoAtual = STATE_C1_8;
+                else if (CliqueQualquerLugar()) estadoAtual = STATE_C1_8;
                 break;
 
             case STATE_C1_8:
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C1_7;
-                else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) estadoAtual = STATE_C2_0;
+                else if (CliqueQualquerLugar()) estadoAtual = STATE_C2_0;
                 break;
 
 
@@ -706,15 +959,17 @@ int main(void) {
                 break;
 
 
-            case STATE_C2_26:
+            // (antes: STATE_C2_26, com nomes antigos que não existem mais)
+            case STATE_C2_DESAFIO:
                 if (BotaoClicado(btnVoltar, posMouse)) {
-                    estadoAtual = STATE_C2_25;
+                    estadoAtual = STATE_C2_EVIDENCIA;
                 }
-                else if (BotaoClicado(btnOpcaoA, posMouse)) {
+                else if (BotaoClicado(btnC2OpcaoA, posMouse)) {
+                    if (temSfxBrilho) PlaySound(sfxBrilho);   // evidência desbloqueada
                     estadoAtual = STATE_EVIDENCIA_DESBLOQUEADA;
                 }
-                else if (BotaoClicado(btnOpcaoB, posMouse) || BotaoClicado(btnOpcaoC, posMouse)) {
-                    estadoAtual = STATE_C2_28;
+                else if (BotaoClicado(btnC2OpcaoB, posMouse) || BotaoClicado(btnC2OpcaoC, posMouse)) {
+                    estadoAtual = STATE_C2_PERDIDA;
                 }
                 else if (BotaoClicado(btnC2OpcaoD, posMouse)) {
                     estadoAtual = STATE_CONFIRMA_CAIO;
@@ -802,7 +1057,7 @@ int main(void) {
 
             case STATE_C3_4:
                 if (BotaoClicado(btnC3OpcaoB, posMouse)) {
-                    estadoAtual = STATE_C3_DESBLOQUEADA;
+                    if (temSfxBrilho) PlaySound(sfxBrilho);   // evidência desbloqueada
                     jogador.acertos++;
                     SalvarProgresso(jogador);
                     estadoAtual = STATE_C3_DESBLOQUEADA;
@@ -812,7 +1067,7 @@ int main(void) {
                          BotaoClicado(btnC3OpcaoD, posMouse)) {
                     jogador.erros++;
                     strcpy(jogador.evidenciaPerdida, "Gravação de audio ");
-                    SalvarProgresso(jogador);        
+                    SalvarProgresso(jogador);
                     estadoAtual = STATE_C3_PERDIDA;
                 }
                 break;
@@ -896,10 +1151,11 @@ int main(void) {
                 }
                 else if (BotaoClicado(btnC4OpcaoB, posMouse)) {
                     // Única resposta correta -> tela "evidência desbloqueada" (c4.18)
+                    if (temSfxBrilho) PlaySound(sfxBrilho);   // evidência desbloqueada
                     estadoAtual = STATE_C4_DESBLOQUEADA;
                 }
                 else if (BotaoClicado(btnC4OpcaoA, posMouse) ||
-                         BotaoClicado(btnC4OpcaoB, posMouse) ||
+                         BotaoClicado(btnC4OpcaoC, posMouse) ||
                          BotaoClicado(btnC4OpcaoD, posMouse)) {
                     // Qualquer erro -> evidência perdida (c4.17)
                     estadoAtual = STATE_C4_PERDIDA;
@@ -960,6 +1216,7 @@ int main(void) {
 
             case STATE_C5_DESAFIO:
                 if (BotaoClicado(btnC5OpcaoC, posMouse)) {          // c) A frase dela é falsa
+                    if (temSfxBrilho) PlaySound(sfxBrilho);   // evidência desbloqueada
                     estadoAtual = STATE_C5_DESBLOQUEADA;
                 }
                 else if (BotaoClicado(btnC5OpcaoA, posMouse) ||
@@ -1030,8 +1287,9 @@ int main(void) {
         }
 
         // ======================= RENDERIZAÇÃO =======================
-        BeginTextureMode(alvo);
+        BeginDrawing();
         ClearBackground(BLACK);
+        BeginMode2D(camera);
 
         switch (estadoAtual) {
             case STATE_MENU:
@@ -1180,14 +1438,7 @@ int main(void) {
                      (int)posMouse.x, (int)posMouse.y), 10, 560, 16, LIME);
         }
 
-        EndTextureMode();
-
-
-        BeginDrawing();
-        ClearBackground(BLACK);
-        Rectangle origAlvo = { 0.0f, 0.0f, (float)larguraTela, -(float)alturaTela };
-        Rectangle destAlvo = { offX, offY, larguraTela * escala, alturaTela * escala };
-        DrawTexturePro(alvo.texture, origAlvo, destAlvo, (Vector2){ 0.0f, 0.0f }, 0.0f, WHITE);
+        EndMode2D();
         EndDrawing();
     }
 
@@ -1244,9 +1495,11 @@ int main(void) {
     UnloadTexture(imgC5Pergunta);
     UnloadTexture(imgC5Desbloqueada);
 
-    UnloadRenderTexture(alvo);
-
     if (temAudio) UnloadMusicStream(audioProva);
+    if (temMusicaMenu) UnloadMusicStream(musicaMenu);
+    if (temMusicaJogo) UnloadMusicStream(musicaJogo);
+    if (temSfxClick) UnloadSound(sfxClick);
+    if (temSfxBrilho) UnloadSound(sfxBrilho);
     CloseAudioDevice();
 
     CloseWindow();
