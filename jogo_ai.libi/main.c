@@ -1,11 +1,7 @@
-//gcc main.c -o main.exe -lraylib -lopengl32 -lgdi32 -lwinmm && ./main.exe
-
 #include "raylib.h"
 #include <stdio.h>
 #include <string.h>
 
-// 0 = detecta automaticamente quantos diálogos a Cena 4 tem
-// (se quiser forçar um número, troque o 0 pelo número de diálogos)
 #define C4_FORCAR_DIALOGOS 0
 
 typedef enum {
@@ -93,32 +89,32 @@ typedef enum {
     STATE_C5_8,
     STATE_C5_9,
     STATE_C5_10,
-    STATE_C5_EVIDENCIA,    // c5_11 Nova evidência encontrada
-    STATE_C5_DESAFIO,      // c5_12 Desafio de lógica
-    STATE_C5_PERDIDA,      // c5_13 Evidência perdida
-    STATE_C5_DESBLOQUEADA, // P5_1  Evidência desbloqueada
-    STATE_C5_ORIGEM,       // P5_2  Origem (clique para continuar)
-    STATE_C5_PERGUNTA,     // P5_3  Verdadeira ou manipulada?
+    STATE_C5_EVIDENCIA,   
+    STATE_C5_DESAFIO,    
+    STATE_C5_PERDIDA,    
+    STATE_C5_DESBLOQUEADA,
+    STATE_C5_ORIGEM,     
+    STATE_C5_PERGUNTA,    
 
-    // CENA 6 (os 12 primeiros estados precisam ficar seguidos: são usados como intervalo)
-    STATE_C6_1,            // c6_1  Chefe
-    STATE_C6_2,            // c6_2  Você
-    STATE_C6_3,            // c6_3  Chefe
-    STATE_C6_4,            // c6_4  Você
-    STATE_C6_5,            // c6_5  Chefe
-    STATE_C6_6,            // c6_6  Chefe
-    STATE_C6_7,            // c6_7  Chefe
-    STATE_C6_8,            // c6_8  "Algumas horas depois" (botão Continuar)
-    STATE_C6_9,            // c6_9  Policial
-    STATE_C6_10,           // c6_10 Você
-    STATE_C6_11,           // c6_11 Policial
-    STATE_C6_12,           // c6_12 Policial
-    STATE_C6_EVIDENCIA,    // c6_13 Nova evidência encontrada
-    STATE_C6_DESAFIO,      // c6_14 Desafio de lógica
-    STATE_C6_PERDIDA,      // c6_15 Evidência perdida
-    STATE_C6_DESBLOQUEADA, // Evidência desbloqueada
-    STATE_C6_ORIGEM,       // p6_1  Origem (clique para continuar)
-    STATE_C6_PERGUNTA,     // p6_2  Verdadeira ou manipulada?
+    // CENA 6
+    STATE_C6_1,  
+    STATE_C6_2,         
+    STATE_C6_3,            
+    STATE_C6_4,          
+    STATE_C6_5,       
+    STATE_C6_6,     
+    STATE_C6_7,    
+    STATE_C6_8,     
+    STATE_C6_9,      
+    STATE_C6_10,     
+    STATE_C6_11,     
+    STATE_C6_12,       
+    STATE_C6_EVIDENCIA,   
+    STATE_C6_DESAFIO,     
+    STATE_C6_PERDIDA,    
+    STATE_C6_DESBLOQUEADA, 
+    STATE_C6_ORIGEM,      
+    STATE_C6_PERGUNTA,
 
     // CENA 7 (provisória)
     STATE_C7_1
