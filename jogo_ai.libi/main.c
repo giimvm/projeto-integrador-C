@@ -93,14 +93,35 @@ typedef enum {
     STATE_C5_8,
     STATE_C5_9,
     STATE_C5_10,
-    STATE_C5_EVIDENCIA,   // c5_11
-    STATE_C5_DESAFIO,     // c5_12
-    STATE_C5_DESBLOQUEADA, // P5 (evidência desbloqueada)
-    STATE_C5_PERDIDA,     // c5_13
-    STATE_C5_PERGUNTA,    // P5_2
+    STATE_C5_EVIDENCIA,    // c5_11 Nova evidência encontrada
+    STATE_C5_DESAFIO,      // c5_12 Desafio de lógica
+    STATE_C5_PERDIDA,      // c5_13 Evidência perdida
+    STATE_C5_DESBLOQUEADA, // P5_1  Evidência desbloqueada
+    STATE_C5_ORIGEM,       // P5_2  Origem (clique para continuar)
+    STATE_C5_PERGUNTA,     // P5_3  Verdadeira ou manipulada?
 
-    // CENA 6 (provisória)
-    STATE_C6_1
+    // CENA 6 (os 12 primeiros estados precisam ficar seguidos: são usados como intervalo)
+    STATE_C6_1,            // c6_1  Chefe
+    STATE_C6_2,            // c6_2  Você
+    STATE_C6_3,            // c6_3  Chefe
+    STATE_C6_4,            // c6_4  Você
+    STATE_C6_5,            // c6_5  Chefe
+    STATE_C6_6,            // c6_6  Chefe
+    STATE_C6_7,            // c6_7  Chefe
+    STATE_C6_8,            // c6_8  "Algumas horas depois" (botão Continuar)
+    STATE_C6_9,            // c6_9  Policial
+    STATE_C6_10,           // c6_10 Você
+    STATE_C6_11,           // c6_11 Policial
+    STATE_C6_12,           // c6_12 Policial
+    STATE_C6_EVIDENCIA,    // c6_13 Nova evidência encontrada
+    STATE_C6_DESAFIO,      // c6_14 Desafio de lógica
+    STATE_C6_PERDIDA,      // c6_15 Evidência perdida
+    STATE_C6_DESBLOQUEADA, // Evidência desbloqueada
+    STATE_C6_ORIGEM,       // p6_1  Origem (clique para continuar)
+    STATE_C6_PERGUNTA,     // p6_2  Verdadeira ou manipulada?
+
+    // CENA 7 (provisória)
+    STATE_C7_1
 } GameState;
 
 
@@ -151,6 +172,7 @@ const char* AcharArquivoAudio(const char* nomes[], int qtd) {
         "src/cena3/",        "jogo_ai.libi/src/cena3/",        "cena3/",
         "src/cena4/",        "jogo_ai.libi/src/cena4/",        "cena4/",
         "src/cena5/",        "jogo_ai.libi/src/cena5/",        "cena5/",
+        "src/cena6/",        "jogo_ai.libi/src/cena6/",        "cena6/",
         ""
     };
     const int qtdPastas = sizeof(pastas) / sizeof(pastas[0]);
@@ -198,9 +220,18 @@ float AtualizarSlider(Rectangle slider, Vector2 posMouse, float valorAtual) {
 }
 
 
-// Desenha uma textura esticada na área "dest" (se a textura existir)
+// Desenha uma textura esticada na área "dest".
+// Se a textura NÃO carregou e a área é a tela inteira, mostra um aviso roxo em vez de tela preta.
 void DesenharTela(Texture2D t, Rectangle dest) {
-    if (t.id == 0) return;
+    if (t.id == 0) {
+        if (dest.width >= 700.0f) {
+            DrawRectangleRec(dest, (Color){ 40, 20, 70, 255 });
+            DrawText("IMAGEM NAO ENCONTRADA", 190, 250, 30, RAYWHITE);
+            DrawText("Veja o terminal (WARNING) para o nome do arquivo.", 150, 300, 18, LIGHTGRAY);
+            DrawText("Os botoes desta tela continuam funcionando. F1 mostra as areas.", 110, 330, 18, LIGHTGRAY);
+        }
+        return;
+    }
     Rectangle orig = { 0.0f, 0.0f, (float)t.width, (float)t.height };
     Vector2 zero = { 0.0f, 0.0f };
     DrawTexturePro(t, orig, dest, zero, 0.0f, WHITE);
@@ -296,6 +327,7 @@ Texture2D CarregarCena4Num(int numero) {
 
 
 // Tenta carregar uma imagem da Cena 5 em várias pastas e com até 4 nomes possíveis
+// (procura SÓ nas pastas da cena 5, para não pegar imagem de outra cena por engano)
 Texture2D CarregarCena5(const char* n1, const char* n2, const char* n3, const char* n4) {
     const char* pastas[] = { "src/cena5/", "cena5/", "jogo_ai.libi/src/cena5/", "" };
     const char* nomes[4] = { n1, n2, n3, n4 };
@@ -305,7 +337,10 @@ Texture2D CarregarCena5(const char* n1, const char* n2, const char* n3, const ch
         if (nomes[n] == NULL) continue;
         for (int p = 0; p < 4; p++) {
             snprintf(caminho, sizeof(caminho), "%s%s", pastas[p], nomes[n]);
-            if (FileExists(caminho)) return LoadTexture(caminho);
+            if (FileExists(caminho)) {
+                TraceLog(LOG_INFO, "CENA5: carregou %s", caminho);
+                return LoadTexture(caminho);
+            }
         }
     }
     TraceLog(LOG_WARNING, "CENA5: imagem NAO encontrada: %s", n1);
@@ -319,6 +354,60 @@ Texture2D CarregarCena5Num(int numero) {
     snprintf(c, sizeof(c), "C5_%d.png", numero);
     snprintf(d, sizeof(d), "C5.%d.png", numero);
     return CarregarCena5(a, b, c, d);
+}
+
+// Telas "P5_X" da Cena 5 (P5_1 = desbloqueada, P5_2 = origem, P5_3 = pergunta)
+Texture2D CarregarCena5P(int numero) {
+    char a[64], b[64], c[64], d[64];
+    snprintf(a, sizeof(a), "P5_%d.png", numero);
+    snprintf(b, sizeof(b), "p5_%d.png", numero);
+    snprintf(c, sizeof(c), "P5.%d.png", numero);
+    snprintf(d, sizeof(d), "p5.%d.png", numero);
+    return CarregarCena5(a, b, c, d);
+}
+
+
+// Tenta carregar uma imagem da Cena 6 em várias pastas e com até 5 nomes possíveis
+// (procura SÓ nas pastas da cena 6, para não pegar imagem de outra cena por engano)
+Texture2D CarregarCena6(const char* n1, const char* n2, const char* n3, const char* n4, const char* n5) {
+    const char* pastas[] = { "src/cena6/", "cena6/", "jogo_ai.libi/src/cena6/", "" };
+    const char* nomes[5] = { n1, n2, n3, n4, n5 };
+    char caminho[256];
+
+    for (int n = 0; n < 5; n++) {
+        if (nomes[n] == NULL) continue;
+        for (int p = 0; p < 4; p++) {
+            snprintf(caminho, sizeof(caminho), "%s%s", pastas[p], nomes[n]);
+            if (FileExists(caminho)) {
+                TraceLog(LOG_INFO, "CENA6: carregou %s", caminho);
+                return LoadTexture(caminho);
+            }
+        }
+    }
+    TraceLog(LOG_WARNING, "CENA6: imagem NAO encontrada: %s", n1);
+    return (Texture2D){ 0 };
+}
+
+// c6.N.png / c6_N.png / C6.N.png / C6_N.png
+Texture2D CarregarCena6Num(int numero) {
+    char a[64], b[64], c[64], d[64], e[64];
+    snprintf(a, sizeof(a), "c6.%d.png", numero);
+    snprintf(b, sizeof(b), "c6_%d.png", numero);
+    snprintf(c, sizeof(c), "C6.%d.png", numero);
+    snprintf(d, sizeof(d), "C6_%d.png", numero);
+    snprintf(e, sizeof(e), "c6_%d_1.png", numero);
+    return CarregarCena6(a, b, c, d, e);
+}
+
+// Telas "p6_X" da Cena 6 (p6_1 = origem, p6_2 = pergunta)
+Texture2D CarregarCena6P(int numero) {
+    char a[64], b[64], c[64], d[64], e[64];
+    snprintf(a, sizeof(a), "p6.%d.png", numero);
+    snprintf(b, sizeof(b), "p6_%d.png", numero);
+    snprintf(c, sizeof(c), "P6.%d.png", numero);
+    snprintf(d, sizeof(d), "P6_%d.png", numero);
+    snprintf(e, sizeof(e), "p6_%d_1.png", numero);
+    return CarregarCena6(a, b, c, d, e);
 }
 
 
@@ -566,11 +655,25 @@ int main(void) {
     Texture2D imgC5[10] = { 0 };
     for (int k = 0; k < 10; k++) imgC5[k] = CarregarCena5Num(k + 1);
 
-    Texture2D imgC5Evidencia = CarregarCena5Num(11);   // Nova evidência encontrada
-    Texture2D imgC5Desafio   = CarregarCena5Num(12);   // Desafio de lógica
-    Texture2D imgC5Perdida   = CarregarCena5Num(13);   // Evidência perdida
-    Texture2D imgC5Pergunta  = CarregarCena5("P5_2.png", "p5_2.png", "P5.2.png", "p5.2.png"); // Verdadeira ou manipulada
-    Texture2D imgC5Desbloqueada = CarregarCena5("P5.png", "p5.png", "P5_1.png", "p5_1.png");  // Evidência desbloqueada
+    Texture2D imgC5Evidencia    = CarregarCena5Num(11);   // c5_11: Nova evidência encontrada
+    Texture2D imgC5Desafio      = CarregarCena5Num(12);   // c5_12: Desafio de lógica
+    Texture2D imgC5Perdida      = CarregarCena5Num(13);   // c5_13: Evidência perdida
+    Texture2D imgC5Desbloqueada = CarregarCena5P(1);      // P5_1: Evidência desbloqueada
+    Texture2D imgC5Origem       = CarregarCena5P(2);      // P5_2: Origem (clique para continuar)
+    Texture2D imgC5Pergunta     = CarregarCena5P(3);      // P5_3: Verdadeira ou manipulada?
+
+    // ======= TEXTURAS DA CENA 6 =======
+    // c6_1..c6_12 = diálogos (o c6_8 é o "Algumas horas depois")
+    Texture2D imgC6[12] = { 0 };
+    for (int k = 0; k < 12; k++) imgC6[k] = CarregarCena6Num(k + 1);
+
+    Texture2D imgC6Evidencia = CarregarCena6Num(13);   // c6_13: Nova evidência encontrada
+    Texture2D imgC6Desafio   = CarregarCena6Num(14);   // c6_14: Desafio de lógica
+    Texture2D imgC6Perdida   = CarregarCena6Num(15);   // c6_15: Evidência perdida
+    Texture2D imgC6Origem    = CarregarCena6P(1);      // p6_1: Origem (clique para continuar)
+    Texture2D imgC6Pergunta  = CarregarCena6P(2);      // p6_2: Verdadeira ou manipulada?
+    // Evidência desbloqueada da Cena 6 (opcional: se não existir, usa a da Cena 5)
+    Texture2D imgC6Desbloqueada = CarregarCena6("P6.png", "p6.png", "P6_0.png", "p6_0.png", "P6.0.png");
 
     // ======= MIPMAPS + FILTRO =======
     Texture2D* todasTexturas[] = {
@@ -594,8 +697,17 @@ int main(void) {
     PrepararTextura(&imgC5Evidencia);
     PrepararTextura(&imgC5Desafio);
     PrepararTextura(&imgC5Perdida);
-    PrepararTextura(&imgC5Pergunta);
     PrepararTextura(&imgC5Desbloqueada);
+    PrepararTextura(&imgC5Origem);
+    PrepararTextura(&imgC5Pergunta);
+
+    for (int k = 0; k < 12; k++) PrepararTextura(&imgC6[k]);
+    PrepararTextura(&imgC6Evidencia);
+    PrepararTextura(&imgC6Desafio);
+    PrepararTextura(&imgC6Perdida);
+    PrepararTextura(&imgC6Origem);
+    PrepararTextura(&imgC6Pergunta);
+    PrepararTextura(&imgC6Desbloqueada);
 
 
     Rectangle dest = { 0.0f, 0.0f, (float)larguraTela, (float)alturaTela };
@@ -707,20 +819,62 @@ int main(void) {
     // De onde o jogador veio ao entrar na Cena 5
     GameState origemC5 = STATE_MENU;
 
+    // De onde o jogador veio ao entrar na Cena 6
+    GameState origemC6 = STATE_MENU;
+
     // ---- CENA 5 ---- (coordenadas calculadas a partir das imagens 1440x1024)
     Rectangle btnAvancarC5   = { 615, 553, 130, 40 };
     Rectangle btnResolverC5  = { 309, 384, 182, 38 };
 
-    Rectangle btnC5OpcaoA = { 142, 326, 496, 40 };
-    Rectangle btnC5OpcaoB = { 142, 381, 496, 40 };
-    Rectangle btnC5OpcaoC = { 142, 434, 496, 40 };
-    Rectangle btnC5OpcaoD = { 142, 484, 496, 40 };
+    // Opções do desafio (c5_12): 0=a, 1=b, 2=c, 3=d
+    Rectangle btnC5Opcao[4] = {
+        { 142, 326, 496, 40 },   // a)
+        { 142, 381, 496, 40 },   // b)
+        { 142, 434, 496, 40 },   // c)
+        { 142, 484, 496, 40 }    // d)
+    };
+    // Resposta CERTA do desafio da Cena 5 (0=a, 1=b, 2=c, 3=d). Troque aqui se for outra.
+    const int respostaCertaC5 = 2;
 
+    // c5_13 Evidência perdida -> Continuar investigação
     Rectangle btnContinuarPerdidaC5 = { 298, 420, 204, 42 };
-    Rectangle btnAcessarEvidC5      = { 309, 390, 182, 38 };   // Acessar evidência (P5)
 
+    // P5_1 Evidência desbloqueada -> Acessar evidência
+    Rectangle btnAcessarEvidC5 = { 304, 388, 191, 44 };
+
+    // P5_3 Verdadeira ou manipulada?
     Rectangle btnC5Verdadeira = { 419, 297, 129, 40 };
     Rectangle btnC5Manipulada = { 574, 297, 134, 40 };
+
+    // ---- CENA 6 ---- (coordenadas calculadas a partir das imagens 1440x1024)
+    Rectangle btnAvancarC6 = { 615, 553, 130, 40 };
+
+    // c6_8 "Algumas horas depois" -> botão Continuar
+    Rectangle btnContinuarHorasC6 = { 304, 316, 190, 42 };
+
+    // c6_13 Nova evidência encontrada -> Resolver desafio
+    Rectangle btnResolverC6 = { 309, 387, 182, 41 };
+
+    // c6_14 Desafio de lógica: 0=a, 1=b, 2=c, 3=d
+    Rectangle btnC6Opcao[4] = {
+        { 142, 326, 496, 40 },   // a)
+        { 142, 381, 496, 40 },   // b)
+        { 142, 434, 496, 40 },   // c)
+        { 142, 484, 496, 40 }    // d)
+    };
+    // Resposta CERTA do desafio da Cena 6 (0=a, 1=b, 2=c, 3=d).
+    // b) "O celular não estava perto da estrada às 3h20" (contrapositiva). Troque aqui se for outra.
+    const int respostaCertaC6 = 1;
+
+    // c6_15 Evidência perdida -> Continuar investigação
+    Rectangle btnContinuarPerdidaC6 = { 286, 403, 220, 49 };
+
+    // Evidência desbloqueada -> Acessar evidência
+    Rectangle btnAcessarEvidC6 = { 304, 388, 191, 44 };
+
+    // p6_2 Verdadeira ou manipulada?
+    Rectangle btnC6Verdadeira = { 271, 500, 115, 39 };
+    Rectangle btnC6Manipulada = { 425, 500, 120, 39 };
 
 
     bool telaCheia = false;
@@ -959,7 +1113,6 @@ int main(void) {
                 break;
 
 
-            // (antes: STATE_C2_26, com nomes antigos que não existem mais)
             case STATE_C2_DESAFIO:
                 if (BotaoClicado(btnVoltar, posMouse)) {
                     estadoAtual = STATE_C2_EVIDENCIA;
@@ -1206,6 +1359,7 @@ int main(void) {
 
             // --- CENA 5 ---
             case STATE_C5_EVIDENCIA:
+                // c5_11 Nova evidência encontrada
                 if (BotaoClicado(btnVoltar, posMouse)) {
                     estadoAtual = STATE_C5_10;
                 }
@@ -1214,44 +1368,119 @@ int main(void) {
                 }
                 break;
 
-            case STATE_C5_DESAFIO:
-                if (BotaoClicado(btnC5OpcaoC, posMouse)) {          // c) A frase dela é falsa
+            case STATE_C5_DESAFIO: {
+                // c5_12 Desafio de lógica: acertou -> P5_1 | errou (qualquer outra) -> c5_13
+                int escolhida = -1;
+                for (int k = 0; k < 4; k++) {
+                    if (BotaoClicado(btnC5Opcao[k], posMouse)) { escolhida = k; break; }
+                }
+                if (escolhida == respostaCertaC5) {
                     if (temSfxBrilho) PlaySound(sfxBrilho);   // evidência desbloqueada
                     estadoAtual = STATE_C5_DESBLOQUEADA;
                 }
-                else if (BotaoClicado(btnC5OpcaoA, posMouse) ||
-                         BotaoClicado(btnC5OpcaoB, posMouse) ||
-                         BotaoClicado(btnC5OpcaoD, posMouse)) {
+                else if (escolhida >= 0) {
                     estadoAtual = STATE_C5_PERDIDA;
+                }
+                break;
+            }
+
+            case STATE_C5_PERDIDA:
+                // c5_13 Evidência perdida -> segue para a Cena 6
+                if (BotaoClicado(btnContinuarPerdidaC5, posMouse)) {
+                    origemC6 = STATE_C5_PERDIDA;
+                    estadoAtual = STATE_C6_1;
                 }
                 break;
 
             case STATE_C5_DESBLOQUEADA:
-                if (BotaoClicado(btnVoltar, posMouse)) {
-                    estadoAtual = STATE_C5_DESAFIO;
+                // P5_1 Evidência desbloqueada -> botão Acessar evidência -> P5_2
+                if (BotaoClicado(btnAcessarEvidC5, posMouse)) {
+                    estadoAtual = STATE_C5_ORIGEM;
                 }
-                else if (BotaoClicado(btnAcessarEvidC5, posMouse)) {
+                break;
+
+            case STATE_C5_ORIGEM:
+                // P5_2 "CLIQUE PARA CONTINUAR" -> P5_3
+                if (CliqueQualquerLugar()) {
                     estadoAtual = STATE_C5_PERGUNTA;
                 }
                 break;
 
-            case STATE_C5_PERDIDA:
-                if (BotaoClicado(btnContinuarPerdidaC5, posMouse)) {
-                    estadoAtual = STATE_C6_1;
-                }
-                break;
-
             case STATE_C5_PERGUNTA:
+                // P5_3 Verdadeira ou manipulada? -> Cena 6
                 if (BotaoClicado(btnC5Verdadeira, posMouse) || BotaoClicado(btnC5Manipulada, posMouse)) {
+                    origemC6 = STATE_C5_PERGUNTA;
                     estadoAtual = STATE_C6_1;
                 }
                 break;
 
-            case STATE_C6_1:
-                if (BotaoClicado(btnVoltar, posMouse) || IsKeyPressed(KEY_ESCAPE)) {
+
+            // --- CENA 6 ---
+            case STATE_C6_EVIDENCIA:
+                // c6_13 Nova evidência encontrada
+                if (BotaoClicado(btnVoltar, posMouse)) {
+                    estadoAtual = STATE_C6_12;
+                }
+                else if (BotaoClicado(btnResolverC6, posMouse)) {
+                    estadoAtual = STATE_C6_DESAFIO;
+                }
+                break;
+
+            case STATE_C6_DESAFIO: {
+                // c6_14 Desafio de lógica: acertou -> evidência desbloqueada | errou -> c6_15
+                int escolhida = -1;
+                for (int k = 0; k < 4; k++) {
+                    if (BotaoClicado(btnC6Opcao[k], posMouse)) { escolhida = k; break; }
+                }
+                if (escolhida == respostaCertaC6) {
+                    if (temSfxBrilho) PlaySound(sfxBrilho);   // evidência desbloqueada
+                    estadoAtual = STATE_C6_DESBLOQUEADA;
+                }
+                else if (escolhida >= 0) {
+                    estadoAtual = STATE_C6_PERDIDA;
+                }
+                break;
+            }
+
+            case STATE_C6_PERDIDA:
+                // c6_15 Evidência perdida -> segue para a Cena 7
+                if (BotaoClicado(btnContinuarPerdidaC6, posMouse)) {
+                    estadoAtual = STATE_C7_1;
+                }
+                break;
+
+            case STATE_C6_DESBLOQUEADA:
+                // Evidência desbloqueada -> botão Acessar evidência -> p6_1
+                if (BotaoClicado(btnVoltar, posMouse)) {
+                    estadoAtual = STATE_C6_DESAFIO;
+                }
+                else if (BotaoClicado(btnAcessarEvidC6, posMouse)) {
+                    estadoAtual = STATE_C6_ORIGEM;
+                }
+                break;
+
+            case STATE_C6_ORIGEM:
+                // p6_1 "CLIQUE PARA CONTINUAR" -> p6_2
+                if (CliqueQualquerLugar()) {
+                    estadoAtual = STATE_C6_PERGUNTA;
+                }
+                break;
+
+            case STATE_C6_PERGUNTA:
+                // p6_2 Verdadeira ou manipulada? -> Cena 7
+                if (BotaoClicado(btnC6Verdadeira, posMouse) || BotaoClicado(btnC6Manipulada, posMouse)) {
+                    estadoAtual = STATE_C7_1;
+                }
+                break;
+
+
+            // --- CENA 7 (provisória) ---
+            case STATE_C7_1:
+                if (IsKeyPressed(KEY_ESCAPE)) {
                     estadoAtual = STATE_MENU;
                 }
                 break;
+
 
             default:
                 if (estadoAtual >= STATE_C2_0 && estadoAtual <= STATE_C2_7) {
@@ -1280,6 +1509,20 @@ int main(void) {
                     }
                     else if (AvancarDialogo(btnAvancarC5, posMouse)) {
                         if (estadoAtual == STATE_C5_10) estadoAtual = STATE_C5_EVIDENCIA;
+                        else estadoAtual = (GameState)(estadoAtual + 1);
+                    }
+                }
+                else if (estadoAtual >= STATE_C6_1 && estadoAtual <= STATE_C6_12) {
+                    if (BotaoClicado(btnVoltar, posMouse)) {
+                        if (estadoAtual == STATE_C6_1) estadoAtual = origemC6;
+                        else estadoAtual = (GameState)(estadoAtual - 1);
+                    }
+                    else if (estadoAtual == STATE_C6_8) {
+                        // Tela "Algumas horas depois": botão Continuar no centro
+                        if (BotaoClicado(btnContinuarHorasC6, posMouse)) estadoAtual = STATE_C6_9;
+                    }
+                    else if (AvancarDialogo(btnAvancarC6, posMouse)) {
+                        if (estadoAtual == STATE_C6_12) estadoAtual = STATE_C6_EVIDENCIA;
                         else estadoAtual = (GameState)(estadoAtual + 1);
                     }
                 }
@@ -1403,14 +1646,29 @@ int main(void) {
 
 
             // --- CENA 5 ---
-            case STATE_C5_EVIDENCIA: DesenharTela(imgC5Evidencia, dest); break;
-            case STATE_C5_DESAFIO:   DesenharTela(imgC5Desafio,   dest); break;
-            case STATE_C5_DESBLOQUEADA: DesenharTela(imgC5Desbloqueada, dest); break;
-            case STATE_C5_PERDIDA:   DesenharTela(imgC5Perdida,   dest); break;
-            case STATE_C5_PERGUNTA:  DesenharTela(imgC5Pergunta,  dest); break;
+            case STATE_C5_EVIDENCIA:    DesenharTela(imgC5Evidencia,    dest); break;   // c5_11
+            case STATE_C5_DESAFIO:      DesenharTela(imgC5Desafio,      dest); break;   // c5_12
+            case STATE_C5_PERDIDA:      DesenharTela(imgC5Perdida,      dest); break;   // c5_13
+            case STATE_C5_DESBLOQUEADA: DesenharTela(imgC5Desbloqueada, dest); break;   // P5_1
+            case STATE_C5_ORIGEM:       DesenharTela(imgC5Origem,       dest); break;   // P5_2
+            case STATE_C5_PERGUNTA:     DesenharTela(imgC5Pergunta,     dest); break;   // P5_3
 
-            case STATE_C6_1:
-                DrawText("CENA 6 - EM CONSTRUCAO", 220, 280, 28, RAYWHITE);
+
+            // --- CENA 6 ---
+            case STATE_C6_EVIDENCIA: DesenharTela(imgC6Evidencia, dest); break;   // c6_13
+            case STATE_C6_DESAFIO:   DesenharTela(imgC6Desafio,   dest); break;   // c6_14
+            case STATE_C6_PERDIDA:   DesenharTela(imgC6Perdida,   dest); break;   // c6_15
+            case STATE_C6_DESBLOQUEADA:
+                // Usa a tela própria da Cena 6 (P6.png) se existir; senão reaproveita a da Cena 5 (P5_1)
+                DesenharTela(imgC6Desbloqueada.id != 0 ? imgC6Desbloqueada : imgC5Desbloqueada, dest);
+                break;
+            case STATE_C6_ORIGEM:    DesenharTela(imgC6Origem,    dest); break;   // p6_1
+            case STATE_C6_PERGUNTA:  DesenharTela(imgC6Pergunta,  dest); break;   // p6_2
+
+
+            // --- CENA 7 (provisória) ---
+            case STATE_C7_1:
+                DrawText("CENA 7 - EM CONSTRUCAO", 220, 280, 28, RAYWHITE);
                 DrawText("ESC para voltar ao menu", 270, 330, 20, GRAY);
                 break;
 
@@ -1424,6 +1682,9 @@ int main(void) {
                 else if (estadoAtual >= STATE_C5_1 && estadoAtual <= STATE_C5_10) {
                     DesenharTela(imgC5[estadoAtual - STATE_C5_1], dest);
                 }
+                else if (estadoAtual >= STATE_C6_1 && estadoAtual <= STATE_C6_12) {
+                    DesenharTela(imgC6[estadoAtual - STATE_C6_1], dest);
+                }
                 break;
         }
 
@@ -1433,8 +1694,8 @@ int main(void) {
                 DrawRectangleLinesEx(g_debugRects[k], 2.0f, LIME);
             }
             DrawText("DEBUG (F1)", 10, 580, 16, LIME);
-            DrawText(TextFormat("estado=%d  (C4_1=%d  C5_1=%d)  mouse=%d,%d",
-                     (int)estadoAtual, (int)STATE_C4_1, (int)STATE_C5_1,
+            DrawText(TextFormat("estado=%d  (C4_1=%d  C5_1=%d  C6_1=%d)  mouse=%d,%d",
+                     (int)estadoAtual, (int)STATE_C4_1, (int)STATE_C5_1, (int)STATE_C6_1,
                      (int)posMouse.x, (int)posMouse.y), 10, 560, 16, LIME);
         }
 
@@ -1492,8 +1753,17 @@ int main(void) {
     UnloadTexture(imgC5Evidencia);
     UnloadTexture(imgC5Desafio);
     UnloadTexture(imgC5Perdida);
-    UnloadTexture(imgC5Pergunta);
     UnloadTexture(imgC5Desbloqueada);
+    UnloadTexture(imgC5Origem);
+    UnloadTexture(imgC5Pergunta);
+
+    for (int k = 0; k < 12; k++) UnloadTexture(imgC6[k]);
+    UnloadTexture(imgC6Evidencia);
+    UnloadTexture(imgC6Desafio);
+    UnloadTexture(imgC6Perdida);
+    UnloadTexture(imgC6Origem);
+    UnloadTexture(imgC6Pergunta);
+    UnloadTexture(imgC6Desbloqueada);
 
     if (temAudio) UnloadMusicStream(audioProva);
     if (temMusicaMenu) UnloadMusicStream(musicaMenu);
