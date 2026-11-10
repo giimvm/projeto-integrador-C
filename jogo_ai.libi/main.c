@@ -876,6 +876,7 @@ int main(void) {
 
 
     // ---- CENA 1 ---- (calculados a partir das imagens 1440x1024: x * 0.5556, y * 0.5859)
+    Rectangle btnVoltarC1_1       = { 28, 36, 92, 32 };      // C1_1 "VOLTAR" (seta + texto, topo esquerdo) -> menu
     Rectangle btnAcessarCaso      = { 287, 397, 225, 51 };   // C1_1 "Acessar caso"
     Rectangle btnFotoCaio         = { 533, 167, 194, 284 };  // C1_3 caixa "Clique para acessar uma foto do Caio"
     Rectangle btnNovasMensagens   = { 114, 340, 242, 40 };   // C1_4 "Acessar novas mensagens"
@@ -895,6 +896,9 @@ int main(void) {
     Rectangle btnC2OpcaoB = { 140, 350, 497, 40 };
     Rectangle btnC2OpcaoC = { 140, 403, 497, 40 };
     Rectangle btnC2OpcaoD = { 140, 454, 497, 40 };
+
+    // C2.9: VOLTAR invisível (a imagem não desenha o botão, mas o clique funciona no topo esquerdo)
+    Rectangle btnVoltarC2_9 = { 28, 36, 92, 32 };
 
     // Confirmação (C2.10)
     Rectangle btnAcusaCaioSim = { 142, 319, 496, 40 };
@@ -933,7 +937,9 @@ int main(void) {
     Rectangle btnC3Verdadeira = { 269, 398, 116, 39 };
     Rectangle btnC3Manipulada = { 423, 398, 121, 39 };
 
-    Rectangle btnContinuarC3  = { 495, 462, 175, 34 };
+    // "Toque para continuar" invisível (p2.3): canto inferior direito do cartão, abaixo dos botões
+    // Verdadeira/Manipulada. Área um pouco maior para facilitar o toque.
+    Rectangle btnContinuarC3  = { 480, 455, 200, 45 };
 
     // Estado do player de áudio
     bool  audioTocando = true;
@@ -1274,8 +1280,9 @@ int main(void) {
 
             // --- CENA 1 ---
             case STATE_C1_1:
-                // Nova ocorrência: botão "Acessar caso" (esta tela não tem VOLTAR; ESC volta ao menu)
+                // Nova ocorrência: botão "VOLTAR" (topo esquerdo) -> menu | "Acessar caso" -> C1_2 | ESC também volta ao menu
                 if (IsKeyPressed(KEY_ESCAPE)) estadoAtual = STATE_MENU;
+                else if (BotaoClicado(btnVoltarC1_1, posMouse)) estadoAtual = STATE_MENU;
                 else if (BotaoClicado(btnAcessarCaso, posMouse)) estadoAtual = STATE_C1_2;
                 break;
 
@@ -1326,7 +1333,8 @@ int main(void) {
 
 
             case STATE_C2_DESAFIO:
-                if (BotaoClicado(btnVoltar, posMouse)) {
+                // C2.9: VOLTAR invisível (topo esquerdo) -> volta para a evidência
+                if (BotaoClicado(btnVoltarC2_9, posMouse)) {
                     estadoAtual = STATE_C2_EVIDENCIA;
                 }
                 else if (BotaoClicado(btnC2OpcaoA, posMouse)) {
@@ -1492,6 +1500,7 @@ int main(void) {
                 break;
 
             case STATE_C3_PERGUNTA:
+                // p2.3: VOLTAR invisível (topo esquerdo) -> player de áudio
                 if (BotaoClicado(btnVoltar, posMouse)) {
                     audioTempo = 0.0f;
                     audioTocando = true;
@@ -1502,6 +1511,7 @@ int main(void) {
                     }
                     estadoAtual = STATE_C3_AUDIO;
                 }
+                // Verdadeira / Manipulada / "toque para continuar" invisível -> Cena 4
                 else if (BotaoClicado(btnC3Verdadeira, posMouse) || BotaoClicado(btnC3Manipulada, posMouse) ||
                          BotaoClicado(btnContinuarC3, posMouse)) {
                     origemC4 = STATE_C3_PERGUNTA;
