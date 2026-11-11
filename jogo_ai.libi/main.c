@@ -849,6 +849,7 @@ int main(void) {
 
     // ======= TEXTURAS DA CENA 8 (decisão final) =======
     // c8_1 A decisão final | c8_2 Delegado | c8_3 Você | c8_4 Delegado | c8_5 Escolha o veredito
+    // (a c8_5 foi substituída pela nova imagem: coloque o novo c8_5.png em src/cena8/)
     Texture2D imgC8[5] = { 0 };
     for (int k = 0; k < 5; k++) imgC8[k] = CarregarGenerica("c8", k + 1);
 
@@ -1161,10 +1162,13 @@ int main(void) {
     // c8_1 "Tomar a decisão"
     Rectangle btnTomarDecisao = { 306, 356, 181, 42 };
 
-    // c8_5 Escolha o seu veredito
-    Rectangle btnVeredCaio     = { 122, 256, 464, 43 };   // a) Caio Vasconcelos é o culpado.
-    Rectangle btnVeredJuliana  = { 122, 320, 464, 43 };   // b) Juliana Costa é a culpada.
-    Rectangle btnVeredDossie   = { 122, 384, 464, 43 };   // c) Ver o dossiê de evidências.
+    // c8_5 Escolha o seu veredito (NOVA imagem 1440x1024 -> x * 0.5556, y * 0.5859)
+    //   a) caixa em x 267-1171, y 397-490
+    //   b) caixa em x 270-1173, y 503-595
+    //   c) caixa em x 267-1171, y 607-700
+    Rectangle btnVeredCaio     = { 148, 233, 502, 54 };   // a) Caio Vasconcelos é o culpado.
+    Rectangle btnVeredJuliana  = { 150, 295, 502, 54 };   // b) Juliana Costa é a culpada.
+    Rectangle btnVeredDossie   = { 148, 356, 502, 54 };   // c) Ver o dossiê de evidências.
 
 
     // ---- FINAL 2 ---- (acusou o Caio)
