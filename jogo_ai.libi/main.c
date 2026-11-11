@@ -143,9 +143,11 @@ typedef enum {
     STATE_F3_2,            // F3_2  DELEGADO: "Você tem certeza dessa decisão?" (Sim / Não)
     STATE_F3_3,            // F3_3  Veredito correto
     STATE_F3_4,            // F3_4  Escaneie a explicação (Jogar novamente)
+    
+    // DOSSIÊ (acessado em c8_5 -> "Ver o dossiê de evidências")
+    STATE_DOSSIE,          // lista os suspeitos com evidências
+    STATE_DOSSIE_EVID      // visualizando uma evidência de um suspeito
 
-    // Provisório (ainda sem imagem)
-    STATE_DOSSIE_PROV      // veredito: Ver o dossiê (a fazer)
 } GameState;
 
 
@@ -572,6 +574,64 @@ void DefinirTelaCheia(bool ativar, int larguraJanela, int alturaJanela) {
 }
 
 
+// ================= DOSSIÊ =====================
+
+#define DOS_QTD_EVID 3   // cada suspeito tem 3 evidências possíveis
+
+// Quais evidências o jogador já desbloqueou.
+// caio[0] = câmera (Cena 2) | caio[1] = áudio (Cena 3) | caio[2] = conversa (Cena 4)
+// juliana[0] = foto (Cena 5) | juliana[1] = mapa (Cena 6) | juliana[2] = foto (Cena 7)
+typedef struct {
+    bool caio[DOS_QTD_EVID];
+    bool juliana[DOS_QTD_EVID];
+} Dossie;
+
+// Devolve flags do suspeito (0 = Caio, 1 = Juliana).
+static bool* DossieEvidencias(Dossie* d, int suspeito) {
+    return (suspeito == 0) ? d->caio : d->juliana;
+}
+
+// Quantas evidências desbloqueadas existem no vetor.
+static int DossieContar(const bool* ev) {
+    int total = 0;
+    for (int i = 0; i < DOS_QTD_EVID; i++) if (ev[i]) total++;
+    return total;
+}
+
+// Procura a próxima evidência DESBLOQUEADA a partir de "atual", andando na
+// "direcao" (+1 = para frente, -1 = para trás). Pula as bloqueadas.
+// Retorna o índice achado ou -1 se não houver mais nenhuma nessa direção.
+// Para achar a primeira do suspeito: DossieProxima(ev, -1, +1).
+static int DossieProxima(const bool* ev, int atual, int direcao) {
+    for (int i = atual + direcao; i >= 0 && i < DOS_QTD_EVID; i += direcao) {
+        if (ev[i]) return i;
+    }
+    return -1;
+}
+
+// Carrega uma imagem do dossiê procurando em várias pastas e com até 3 nomes
+// alternativos (o nome sem acento primeiro, depois os nomes originais).
+Texture2D CarregarDossie(const char* n1, const char* n2, const char* n3) {
+    const char* pastas[] = { "src/dossie/", "dossie/", "jogo_ai.libi/src/dossie/", "" };
+    const char* nomes[3] = { n1, n2, n3 };
+    char caminho[256];
+
+    for (int n = 0; n < 3; n++) {
+        if (nomes[n] == NULL) continue;
+        for (int p = 0; p < 4; p++) {
+            snprintf(caminho, sizeof(caminho), "%s%s", pastas[p], nomes[n]);
+            if (FileExists(caminho)) {
+                TraceLog(LOG_INFO, "DOSSIE: carregou %s", caminho);
+                return LoadTexture(caminho);
+            }
+        }
+    }
+    TraceLog(LOG_WARNING, "DOSSIE: imagem NAO encontrada: %s", n1);
+    return (Texture2D){ 0 };
+}
+
+//===== LOOP PRINCIPAL =====
+
 int main(void) {
     const int larguraTela = 800;
     const int alturaTela = 600;
@@ -801,6 +861,31 @@ int main(void) {
     // F3_1 Você | F3_2 Tem certeza? | F3_3 Veredito correto | F3_4 Escaneie a explicação
     Texture2D imgF3[4] = { 0 };
     for (int k = 0; k < 4; k++) imgF3[k] = CarregarGenerica("F3", k + 1);
+     
+    // ======= TEXTURAS DO DOSSIÊ =======
+    // Hub: 0 = nenhuma evidência | 1 = ambos | 2 = só Caio | 3 = só Juliana
+    Texture2D texDossieHub[4] = { 0 };
+    texDossieHub[0] = CarregarDossie("dossie_vazio.png",   "dossie.png",   "dossiê.png");
+    texDossieHub[1] = CarregarDossie("dossie_ambos.png",   "dossie-1.png", "dossiê-1.png");
+    texDossieHub[2] = CarregarDossie("dossie_caio.png",    "dossie-2.png", "dossiê-2.png");
+    texDossieHub[3] = CarregarDossie("dossie_juliana.png", "dossie-3.png", "dossiê-3.png");
+
+    // Evidências do Caio. A [1] é o áudio PAUSADO; o áudio TOCANDO tem textura própria.
+    Texture2D texDosCaio[DOS_QTD_EVID] = { 0 };
+    texDosCaio[0] = CarregarDossie("dossie_caio_1.png",         "Wireframe - 76.png", NULL);
+    texDosCaio[1] = CarregarDossie("dossie_caio_2_pausado.png", "Wireframe - 77.png", NULL);
+    texDosCaio[2] = CarregarDossie("dossie_caio_3.png",         "Wireframe - 79.png", NULL);
+    Texture2D texDosCaioAudioPlay = CarregarDossie("dossie_caio_2_tocando.png", "Wireframe - 78.png", NULL);
+
+    // Evidências da Juliana
+    Texture2D texDosJul[DOS_QTD_EVID] = { 0 };
+    texDosJul[0] = CarregarDossie("dossie_juliana_1.png", "Wireframe - 80.png", NULL);
+    texDosJul[1] = CarregarDossie("dossie_juliana_2.png", "Wireframe - 81.png", NULL);
+    texDosJul[2] = CarregarDossie("dossie_juliana_3.png", "Wireframe - 82.png", NULL);
+
+    // Texto que falta na caixa roxa vazia da última evidência da Juliana
+    Texture2D texDosRotulo = CarregarDossie("dossie_rotulo_foto.png",
+                                            "Fotografia recebida por Gabriel naquela noite de Juliana.png", NULL);
 
     // ======= MIPMAPS + FILTRO =======
     Texture2D* todasTexturas[] = {
@@ -840,6 +925,12 @@ int main(void) {
     for (int k = 0; k < 5; k++) PrepararTextura(&imgC8[k]);
     for (int k = 0; k < 4; k++) PrepararTextura(&imgF2[k]);
     for (int k = 0; k < 4; k++) PrepararTextura(&imgF3[k]);
+
+    for (int k = 0; k < 4; k++)           PrepararTextura(&texDossieHub[k]);
+    for (int k = 0; k < DOS_QTD_EVID; k++) PrepararTextura(&texDosCaio[k]);
+    for (int k = 0; k < DOS_QTD_EVID; k++) PrepararTextura(&texDosJul[k]);
+    PrepararTextura(&texDosCaioAudioPlay);
+    PrepararTextura(&texDosRotulo);
 
 
     Rectangle dest = { 0.0f, 0.0f, (float)larguraTela, (float)alturaTela };
@@ -1092,6 +1183,23 @@ int main(void) {
     // F3_3 "CLIQUE PARA CONTINUAR" (canto inferior direito, ícone + texto)
     Rectangle btnContinuarF3 = { 486, 464, 178, 34 };
 
+    // ---- DOSSIÊ ---- (coordenadas na tela virtual 800x600, medidas a partir das imagens 1440x1024)
+    // Hub: link "ACESSAR" de cada suspeito
+    Rectangle btnDossieCaio    = { 104, 328, 140, 30 };
+    Rectangle btnDossieJuliana = { 104, 412, 140, 30 };
+
+    // Tela de evidência: "CLIQUE PARA CONTINUAR" (canto inferior direito) e play/pause do áudio
+    Rectangle btnContinuarDossie = { 560, 497, 190, 32 };
+    Rectangle btnDosAudioPlay    = { 345, 363,  48, 48 };
+
+    // Estado do dossiê
+    Dossie dossie = { 0 };            // evidências desbloqueadas (tudo false no começo)
+    int  dosSuspeito = 0;             // 0 = Caio, 1 = Juliana
+    int  dosEvid = 0;                 // evidência que está na tela (0..2)
+    bool dosAudioAtivo = false;       // true enquanto a tela do áudio do Caio está aberta
+    bool dosAudioTocando = false;     // play / pause do áudio
+    float dosAudioTempo = 0.0f;       // tempo simulado (usado só se não houver arquivo audio_prova)
+
 
     bool telaCheia = false;
     bool debugBotoes = false;
@@ -1130,7 +1238,12 @@ int main(void) {
 
         g_numDebugRects = 0;
         if (IsKeyPressed(KEY_F1)) debugBotoes = !debugBotoes;
-
+         // ---- TESTE (apagar depois) ----
+        if (IsKeyPressed(KEY_F2)) {            // F2 = desbloqueia todas as evidências
+            for (int i = 0; i < DOS_QTD_EVID; i++) { dossie.caio[i] = true; dossie.juliana[i] = true; }
+        }
+        if (IsKeyPressed(KEY_F3)) estadoAtual = STATE_C8_5;   // F3 = pula direto para o veredito
+        
         telaCheia = IsWindowFullscreen();   // define qual imagem de configurações aparece (ATIVADO / DESATIVADO)
 
 
@@ -1143,6 +1256,38 @@ int main(void) {
                            estadoAtual == STATE_REGRAS ||
                            estadoAtual == STATE_CONFIG ||
                            estadoAtual == STATE_CREDITOS);
+
+
+
+        // --- Áudio do Caio dentro do dossiê (evidência 1) ---
+        // Em vez de ligar/desligar o áudio em cada botão, detectamos a ENTRADA e a SAÍDA da tela:
+        //   entrou -> começa a tocar do zero | saiu (qualquer caminho) -> para.
+        bool noAudioDossie = (estadoAtual == STATE_DOSSIE_EVID && dosSuspeito == 0 && dosEvid == 1);
+
+        if (noAudioDossie && !dosAudioAtivo) {
+            dosAudioTocando = true;
+            dosAudioTempo = 0.0f;
+            if (temAudio) {
+                StopMusicStream(audioProva);
+                SetMusicVolume(audioProva, 1.0f);
+                PlayMusicStream(audioProva);
+            }
+        }
+        else if (!noAudioDossie && dosAudioAtivo) {
+            if (temAudio) StopMusicStream(audioProva);
+            dosAudioTocando = false;
+        }
+        dosAudioAtivo = noAudioDossie;
+
+        if (noAudioDossie) {
+            if (temAudio) UpdateMusicStream(audioProva);
+            if (dosAudioTocando) {
+                dosAudioTempo += GetFrameTime();
+                bool terminou = temAudio ? !IsMusicStreamPlaying(audioProva)
+                                         : (dosAudioTempo >= audioDuracao);
+                if (terminou) dosAudioTocando = false;
+            }
+        }
 
         // O audio_prova está realmente tocando? (player aberto + em play + faixa ainda não terminou)
         bool provaTocando = (estadoAtual == STATE_C3_AUDIO) && audioTocando &&
@@ -1338,7 +1483,8 @@ int main(void) {
                     estadoAtual = STATE_C2_EVIDENCIA;
                 }
                 else if (BotaoClicado(btnC2OpcaoA, posMouse)) {
-                    if (temSfxBrilho) PlaySound(sfxBrilho);   // evidência desbloqueada
+                    if (temSfxBrilho) PlaySound(sfxBrilho);
+                    dossie.caio[0] = true; //novinho // evidência desbloqueada
                     estadoAtual = STATE_EVIDENCIA_DESBLOQUEADA;
                 }
                 else if (BotaoClicado(btnC2OpcaoB, posMouse) || BotaoClicado(btnC2OpcaoC, posMouse)) {
@@ -1393,6 +1539,7 @@ int main(void) {
             case STATE_VEREDITO_INCORRETO:
                 if (BotaoClicado(btnTentarNovamente, posMouse)) {
                     jogador = (Jogador){ 0 };
+                    dossie = (Dossie){ 0 };                      // <<< NOVO: zera o dossiê
                     estadoAtual = STATE_MENU;   // volta para o menu inicial
                 }
                 break;
@@ -1431,7 +1578,8 @@ int main(void) {
 
             case STATE_C3_4:
                 if (BotaoClicado(btnC3OpcaoB, posMouse)) {
-                    if (temSfxBrilho) PlaySound(sfxBrilho);   // evidência desbloqueada
+                    if (temSfxBrilho) PlaySound(sfxBrilho);  // evidência desbloqueada
+                    dossie.caio[1] = true;    
                     jogador.acertos++;
                     SalvarProgresso(jogador);
                     estadoAtual = STATE_C3_DESBLOQUEADA;
@@ -1528,6 +1676,7 @@ int main(void) {
                 else if (BotaoClicado(btnC4OpcaoB, posMouse)) {
                     // Única resposta correta -> tela "evidência desbloqueada" (c4.18)
                     if (temSfxBrilho) PlaySound(sfxBrilho);   // evidência desbloqueada
+                    dossie.caio[2] = true;   
                     estadoAtual = STATE_C4_DESBLOQUEADA;
                 }
                 else if (BotaoClicado(btnC4OpcaoA, posMouse) ||
@@ -1599,6 +1748,7 @@ int main(void) {
                 }
                 if (escolhida == respostaCertaC5) {
                     if (temSfxBrilho) PlaySound(sfxBrilho);   // evidência desbloqueada
+                    dossie.juliana[0] = true;     
                     estadoAtual = STATE_C5_DESBLOQUEADA;
                 }
                 else if (escolhida >= 0) {
@@ -1657,6 +1807,7 @@ int main(void) {
                 }
                 if (escolhida == respostaCertaC6) {
                     if (temSfxBrilho) PlaySound(sfxBrilho);   // evidência desbloqueada
+                    dossie.juliana[1] = true; 
                     estadoAtual = STATE_C6_DESBLOQUEADA;
                 }
                 else if (escolhida >= 0) {
@@ -1730,6 +1881,7 @@ int main(void) {
                 }
                 if (escolhida == respostaCertaC7) {
                     if (temSfxBrilho) PlaySound(sfxBrilho);   // evidência desbloqueada
+                    dossie.juliana[2] = true;          
                     estadoAtual = STATE_C7_DESBLOQUEADA;
                 }
                 else if (escolhida >= 0) {
@@ -1807,7 +1959,7 @@ int main(void) {
                     estadoAtual = STATE_F3_1;
                 }
                 else if (BotaoClicado(btnVeredDossie, posMouse)) {
-                    estadoAtual = STATE_DOSSIE_PROV;
+                   estadoAtual = STATE_DOSSIE;
                 }
                 break;
 
@@ -1845,6 +1997,7 @@ int main(void) {
                 }
                 else if (BotaoClicado(btnJogarNovamente, posMouse)) {
                     jogador = (Jogador){ 0 };
+                    dossie = (Dossie){ 0 };                      // <<< NOVO: zera o dossiê
                     estadoAtual = STATE_MENU;   // volta para o menu inicial
                 }
                 break;
@@ -1884,17 +2037,84 @@ int main(void) {
                 }
                 else if (BotaoClicado(btnJogarNovamente, posMouse)) {
                     jogador = (Jogador){ 0 };
+                    dossie = (Dossie){ 0 };                      // <<< NOVO: zera o dossiê
                     estadoAtual = STATE_MENU;   // volta para o menu inicial
                 }
                 break;
 
 
-            // --- Tela provisória (ainda sem imagem) ---
-            case STATE_DOSSIE_PROV:
-                if (IsKeyPressed(KEY_ESCAPE) || CliqueQualquerLugar()) {
-                    estadoAtual = STATE_C8_5;
+            //-------DOSSIÊ--------
+            case STATE_DOSSIE: {
+                bool temCaio    = DossieContar(dossie.caio)    > 0;
+                bool temJuliana = DossieContar(dossie.juliana) > 0;
+
+                if (BotaoClicado(btnVoltar, posMouse) || IsKeyPressed(KEY_ESCAPE)) {
+                    estadoAtual = STATE_C8_5;            // volta para a escolha do veredito
+                }
+                // O "ACESSAR" só funciona se o suspeito tem pelo menos uma evidência
+                else if (temCaio && BotaoClicado(btnDossieCaio, posMouse)) {
+                    dosSuspeito = 0;
+                    dosEvid = DossieProxima(dossie.caio, -1, +1);      // primeira desbloqueada
+                    estadoAtual = STATE_DOSSIE_EVID;
+                }
+                else if (temJuliana && BotaoClicado(btnDossieJuliana, posMouse)) {
+                    dosSuspeito = 1;
+                    dosEvid = DossieProxima(dossie.juliana, -1, +1);
+                    estadoAtual = STATE_DOSSIE_EVID;
                 }
                 break;
+            }
+
+            // --- DOSSIÊ: uma evidência por vez ---
+            case STATE_DOSSIE_EVID: {
+                bool* ev = DossieEvidencias(&dossie, dosSuspeito);
+
+                // Proteção: se por algum motivo a evidência não está desbloqueada, volta ao hub
+                if (dosEvid < 0 || !ev[dosEvid]) {
+                    estadoAtual = STATE_DOSSIE;
+                    break;
+                }
+
+                bool naTelaAudio = (dosSuspeito == 0 && dosEvid == 1);
+
+                if (BotaoClicado(btnVoltar, posMouse) || IsKeyPressed(KEY_ESCAPE)) {
+                    estadoAtual = STATE_DOSSIE;          // o áudio para sozinho (ver ALTERAÇÃO 4)
+                }
+                // Play / pause (só existe na evidência do áudio)
+                else if (naTelaAudio && BotaoClicado(btnDosAudioPlay, posMouse)) {
+                    if (dosAudioTocando) {
+                        dosAudioTocando = false;
+                        if (temAudio) PauseMusicStream(audioProva);
+                    } else {
+                        // Se a faixa já acabou, recomeça do início; senão, só retoma
+                        bool acabou = temAudio ? !IsMusicStreamPlaying(audioProva) && dosAudioTempo > 0.0f
+                                               : (dosAudioTempo >= audioDuracao);
+                        if (acabou) {
+                            dosAudioTempo = 0.0f;
+                            if (temAudio) { StopMusicStream(audioProva); PlayMusicStream(audioProva); }
+                        } else if (temAudio) {
+                            ResumeMusicStream(audioProva);
+                        }
+                        dosAudioTocando = true;
+                    }
+                }
+                // "CLIQUE PARA CONTINUAR": próxima evidência desbloqueada; se não há, volta ao hub
+                else if (BotaoClicado(btnContinuarDossie, posMouse)) {
+                    int prox = DossieProxima(ev, dosEvid, +1);
+                    if (prox >= 0) dosEvid = prox;
+                    else estadoAtual = STATE_DOSSIE;
+                }
+                // Setas: navegação livre entre as desbloqueadas (não saem do suspeito atual)
+                else if (IsKeyPressed(KEY_RIGHT)) {
+                    int prox = DossieProxima(ev, dosEvid, +1);
+                    if (prox >= 0) dosEvid = prox;
+                }
+                else if (IsKeyPressed(KEY_LEFT)) {
+                    int prox = DossieProxima(ev, dosEvid, -1);
+                    if (prox >= 0) dosEvid = prox;
+                }
+                break;
+            }
 
 
             default:
@@ -2119,13 +2339,37 @@ int main(void) {
             case STATE_F3_4: DesenharTela(imgF3[3], dest); break;
 
 
-            // --- Tela provisória ---
-            case STATE_DOSSIE_PROV:
-                DrawRectangleRec(dest, (Color){ 20, 10, 40, 255 });
-                DrawText("DOSSIE DE EVIDENCIAS - EM CONSTRUCAO", 120, 280, 28, RAYWHITE);
-                DrawText("Clique ou ESC para voltar ao veredito", 220, 330, 20, GRAY);
-                break;
+            // --- DOSSIÊ RENDERIZAÇÃO ---
+            case STATE_DOSSIE: {
+                bool temCaio    = DossieContar(dossie.caio)    > 0;
+                bool temJuliana = DossieContar(dossie.juliana) > 0;
 
+                // Escolhe a imagem certa: 0 nenhuma | 1 ambos | 2 só Caio | 3 só Juliana
+                int idx = (temCaio && temJuliana) ? 1 : temCaio ? 2 : temJuliana ? 3 : 0;
+                DesenharTela(texDossieHub[idx], dest);
+                break;
+            }
+
+            // --- DOSSIÊ: evidência ---
+            case STATE_DOSSIE_EVID: {
+                Texture2D tex;
+                if (dosSuspeito == 0) {
+                    if (dosEvid == 1) tex = dosAudioTocando ? texDosCaioAudioPlay : texDosCaio[1];  // pausa/play
+                    else              tex = texDosCaio[dosEvid];
+                } else {
+                    tex = texDosJul[dosEvid];
+                }
+                DesenharTela(tex, dest);
+
+                // A última evidência da Juliana tem a caixa roxa vazia: desenhamos o texto por cima.
+                // Posição medida na imagem 1440x1024: caixa em (590,593), texto em (601,609) com 692x75.
+                if (dosSuspeito == 1 && dosEvid == 2 && texDosRotulo.id != 0) {
+                    Rectangle origem = { 0.0f, 0.0f, (float)texDosRotulo.width, (float)texDosRotulo.height };
+                    Rectangle destino = { 334.0f, 357.0f, 384.5f, 44.0f };   // já na escala 800x600
+                    DrawTexturePro(texDosRotulo, origem, destino, (Vector2){ 0.0f, 0.0f }, 0.0f, WHITE);
+                }
+                break;
+            }
 
             default:
                 if (estadoAtual >= STATE_C2_0 && estadoAtual <= STATE_C2_7) {
@@ -2147,6 +2391,10 @@ int main(void) {
             for (int k = 0; k < g_numDebugRects; k++) {
                 DrawRectangleRec(g_debugRects[k], (Color){ 0, 255, 0, 50 });
                 DrawRectangleLinesEx(g_debugRects[k], 2.0f, LIME);
+
+               DrawText(TextFormat("dossie caio=%d%d%d  juliana=%d%d%d",
+               dossie.caio[0], dossie.caio[1], dossie.caio[2],
+               dossie.juliana[0], dossie.juliana[1], dossie.juliana[2]), 10, 540, 14, LIME);
             }
             DrawText("DEBUG (F1)", 10, 580, 16, LIME);
             DrawText(TextFormat("estado=%d  (C4_1=%d  C5_1=%d  C6_1=%d  C7_1=%d  C8_1=%d  F2_1=%d  F3_1=%d)  mouse=%d,%d",
@@ -2224,6 +2472,12 @@ int main(void) {
     for (int k = 0; k < 5; k++) UnloadTexture(imgC8[k]);
     for (int k = 0; k < 4; k++) UnloadTexture(imgF2[k]);
     for (int k = 0; k < 4; k++) UnloadTexture(imgF3[k]);
+
+    for (int k = 0; k < 4; k++)            UnloadTexture(texDossieHub[k]);
+    for (int k = 0; k < DOS_QTD_EVID; k++) UnloadTexture(texDosCaio[k]);
+    for (int k = 0; k < DOS_QTD_EVID; k++) UnloadTexture(texDosJul[k]);
+    UnloadTexture(texDosCaioAudioPlay);
+    UnloadTexture(texDosRotulo);
 
     if (temAudio) UnloadMusicStream(audioProva);
     if (temMusicaMenu) UnloadMusicStream(musicaMenu);
