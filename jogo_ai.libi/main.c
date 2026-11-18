@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <math.h>
 
 #define C4_FORCAR_DIALOGOS 0
 
@@ -255,6 +256,56 @@ void DesenharTela(Texture2D t, Rectangle dest) {
     DrawTexturePro(t, orig, dest, zero, 0.0f, WHITE);
 }
 
+// Efeito visual tecnológico e fluido para hover nos botões do menu principal.
+void DesenharHoverMenu(Rectangle r, float t, double tempo) {
+    if (t <= 0.01f) return;
+
+    float pad = 4.0f * t;
+    Rectangle box = { r.x - pad, r.y - pad * 0.5f, r.width + pad * 2.0f, r.height + pad };
+
+    // Sombreamento suave + preenchimento translúcido tecnológico
+    Rectangle sombra = { box.x + 3.0f * t, box.y + 4.0f * t, box.width, box.height };
+    DrawRectangleRounded(sombra, 0.25f, 6, (Color){ 0, 0, 0, (unsigned char)(110 * t) });
+    DrawRectangleRounded(box, 0.25f, 6, (Color){ 0, 190, 255, (unsigned char)(45 * t) });
+
+    // Brilho de varredura horizontal (scanline)
+    float scanProg = fmodf((float)tempo * 1.4f, 1.0f);
+    float scanX = box.x + scanProg * (box.width - 18.0f);
+    DrawRectangle((int)scanX, (int)box.y + 2, 18, (int)box.height - 4,
+                  (Color){ 140, 240, 255, (unsigned char)(55 * t) });
+
+    // Barra inferior tecnológica que se expande do centro
+    float barW = box.width * t;
+    float barX = box.x + (box.width - barW) * 0.5f;
+    DrawRectangle((int)barX, (int)(box.y + box.height - 2), (int)barW, 2,
+                  (Color){ 0, 235, 255, (unsigned char)(230 * t) });
+
+    // Cantoneiras tecnológicas nos 4 cantos
+    float cLen = 8.0f * t;
+    Color cCor = { 120, 245, 255, (unsigned char)(220 * t) };
+    // Superior esquerdo
+    DrawLineEx((Vector2){ box.x, box.y + cLen }, (Vector2){ box.x, box.y }, 2.0f, cCor);
+    DrawLineEx((Vector2){ box.x, box.y }, (Vector2){ box.x + cLen, box.y }, 2.0f, cCor);
+    // Superior direito
+    DrawLineEx((Vector2){ box.x + box.width - cLen, box.y }, (Vector2){ box.x + box.width, box.y }, 2.0f, cCor);
+    DrawLineEx((Vector2){ box.x + box.width, box.y }, (Vector2){ box.x + box.width, box.y + cLen }, 2.0f, cCor);
+    // Inferior esquerdo
+    DrawLineEx((Vector2){ box.x, box.y + box.height - cLen }, (Vector2){ box.x, box.y + box.height }, 2.0f, cCor);
+    DrawLineEx((Vector2){ box.x, box.y + box.height }, (Vector2){ box.x + cLen, box.y + box.height }, 2.0f, cCor);
+    // Inferior direito
+    DrawLineEx((Vector2){ box.x + box.width - cLen, box.y + box.height }, (Vector2){ box.x + box.width, box.y + box.height }, 2.0f, cCor);
+    DrawLineEx((Vector2){ box.x + box.width, box.y + box.height - cLen }, (Vector2){ box.x + box.width, box.y + box.height }, 2.0f, cCor);
+}
+
+// Atualiza suavemente o estado de hover de um conjunto de botões.
+void AtualizarHover(const Rectangle *btns, float *hovers, int count, Vector2 posMouse, float dt) {
+    float fator = fminf(1.0f, dt * 12.0f);
+    for (int i = 0; i < count; i++) {
+        float alvo = CheckCollisionPointRec(posMouse, btns[i]) ? 1.0f : 0.0f;
+        hovers[i] += (alvo - hovers[i]) * fator;
+    }
+}
+
 
 // Desenha só um pedaço de uma textura (fx, fy, fw, fh = fração 0..1 da imagem) na mesma posição da tela 800x600.
 // Usado na tela de configurações para combinar "volume ATIVADO" + "tela cheia ATIVADO".
@@ -267,103 +318,59 @@ void DesenharRecorte(Texture2D t, float fx, float fy, float fw, float fh, float 
 }
 
 
-// Gera mipmaps e filtro bilinear (se a textura existir)
+// Aplica filtro bilinear (sem gerar mipmaps pesados na inicialização)
 void PrepararTextura(Texture2D* t) {
     if (t->id != 0) {
-        GenTextureMipmaps(t);
-        SetTextureFilter(*t, TEXTURE_FILTER_TRILINEAR);
+        SetTextureFilter(*t, TEXTURE_FILTER_BILINEAR);
     }
 }
 
+// Helper unificado para procurar e carregar uma textura em múltiplas pastas e nomes alternativos.
+static Texture2D CarregarDePastas(const char* tag, const char* const* pastas, int numPastas,
+                                  const char* const* nomes, int numNomes, bool logarSucesso) {
+    char caminho[256];
+    for (int n = 0; n < numNomes; n++) {
+        if (nomes[n] == NULL) continue;
+        for (int p = 0; p < numPastas; p++) {
+            snprintf(caminho, sizeof(caminho), "%s%s", pastas[p], nomes[n]);
+            if (FileExists(caminho)) {
+                if (logarSucesso) TraceLog(LOG_INFO, "%s: carregou %s", tag, caminho);
+                return LoadTexture(caminho);
+            }
+        }
+    }
+    TraceLog(LOG_WARNING, "%s: imagem NAO encontrada: %s", tag, nomes[0] ? nomes[0] : "-");
+    return (Texture2D){ 0 };
+}
 
-// Carrega uma imagem do menu (menu, regras, configurações, créditos) procurando em várias pastas.
-// Aceita até 2 nomes alternativos (o segundo pode ser NULL).
 Texture2D CarregarMenu(const char* nome1, const char* nome2) {
-    const char* pastas[] = { "src/menu_inicial/", "jogo_ai.libi/src/menu_inicial/", "menu_inicial/", "" };
+    static const char* const pastas[] = { "src/menu_inicial/", "jogo_ai.libi/src/menu_inicial/", "menu_inicial/", "" };
     const char* nomes[2] = { nome1, nome2 };
-    char caminho[256];
-
-    for (int n = 0; n < 2; n++) {
-        if (nomes[n] == NULL) continue;
-        for (int p = 0; p < 4; p++) {
-            snprintf(caminho, sizeof(caminho), "%s%s", pastas[p], nomes[n]);
-            if (FileExists(caminho)) return LoadTexture(caminho);
-        }
-    }
-    TraceLog(LOG_WARNING, "MENU: imagem NAO encontrada: %s", nome1);
-    return (Texture2D){ 0 };
+    return CarregarDePastas("MENU", pastas, 4, nomes, 2, false);
 }
 
-
-// Tenta carregar uma imagem da Cena 1 em várias pastas e com dois nomes possíveis (C1_N.png ou C1.N.png)
 Texture2D CarregarCena1(const char* nome1, const char* nome2) {
-    const char* pastas[] = { "src/cena1/", "cena1/", "jogo_ai.libi/src/cena1/", "" };
+    static const char* const pastas[] = { "src/cena1/", "cena1/", "jogo_ai.libi/src/cena1/", "" };
     const char* nomes[2] = { nome1, nome2 };
-    char caminho[256];
-
-    for (int n = 0; n < 2; n++) {
-        if (nomes[n] == NULL) continue;
-        for (int p = 0; p < 4; p++) {
-            snprintf(caminho, sizeof(caminho), "%s%s", pastas[p], nomes[n]);
-            if (FileExists(caminho)) return LoadTexture(caminho);
-        }
-    }
-    TraceLog(LOG_WARNING, "CENA1: imagem NAO encontrada: %s (nem %s)", nome1, nome2 ? nome2 : "-");
-    return (Texture2D){ 0 };
+    return CarregarDePastas("CENA1", pastas, 4, nomes, 2, false);
 }
 
-
-// Tenta carregar uma imagem da Cena 2 em várias pastas e com dois nomes possíveis
 Texture2D CarregarCena2(const char* nome1, const char* nome2) {
-    const char* pastas[] = { "src/cena2/", "cena2/", "jogo_ai.libi/src/cena2/", "" };
+    static const char* const pastas[] = { "src/cena2/", "cena2/", "jogo_ai.libi/src/cena2/", "" };
     const char* nomes[2] = { nome1, nome2 };
-    char caminho[256];
-
-    for (int n = 0; n < 2; n++) {
-        if (nomes[n] == NULL) continue;
-        for (int p = 0; p < 4; p++) {
-            snprintf(caminho, sizeof(caminho), "%s%s", pastas[p], nomes[n]);
-            if (FileExists(caminho)) return LoadTexture(caminho);
-        }
-    }
-    TraceLog(LOG_WARNING, "CENA2: imagem NAO encontrada: %s (nem %s)", nome1, nome2 ? nome2 : "-");
-    return (Texture2D){ 0 };
+    return CarregarDePastas("CENA2", pastas, 4, nomes, 2, false);
 }
 
-
-// Tenta carregar uma imagem da Cena 3 em várias pastas e com dois nomes possíveis
 Texture2D CarregarCena3(const char* nome1, const char* nome2) {
-    const char* pastas[] = { "src/cena3/", "cena3/", "src/cena2/", "" };
+    static const char* const pastas[] = { "src/cena3/", "cena3/", "src/cena2/", "" };
     const char* nomes[2] = { nome1, nome2 };
-    char caminho[256];
-
-    for (int n = 0; n < 2; n++) {
-        if (nomes[n] == NULL) continue;
-        for (int p = 0; p < 4; p++) {
-            snprintf(caminho, sizeof(caminho), "%s%s", pastas[p], nomes[n]);
-            if (FileExists(caminho)) return LoadTexture(caminho);
-        }
-    }
-    TraceLog(LOG_WARNING, "CENA3: imagem NAO encontrada: %s (nem %s)", nome1, nome2 ? nome2 : "-");
-    return (Texture2D){ 0 };
+    return CarregarDePastas("CENA3", pastas, 4, nomes, 2, false);
 }
 
-
-// Tenta carregar uma imagem da Cena 4 em várias pastas e com até 3 nomes possíveis
 Texture2D CarregarCena4(const char* nome1, const char* nome2, const char* nome3) {
-    const char* pastas[] = { "src/cena4/", "cena4/", "src/cena3/", "" };
+    static const char* const pastas[] = { "src/cena4/", "cena4/", "src/cena3/", "" };
     const char* nomes[3] = { nome1, nome2, nome3 };
-    char caminho[256];
-
-    for (int n = 0; n < 3; n++) {
-        if (nomes[n] == NULL) continue;
-        for (int p = 0; p < 4; p++) {
-            snprintf(caminho, sizeof(caminho), "%s%s", pastas[p], nomes[n]);
-            if (FileExists(caminho)) { TraceLog(LOG_INFO, "CENA4: carregou %s", caminho); return LoadTexture(caminho); }
-        }
-    }
-    TraceLog(LOG_WARNING, "CENA4: imagem NAO encontrada: %s", nome1);
-    return (Texture2D){ 0 };
+    return CarregarDePastas("CENA4", pastas, 4, nomes, 3, true);
 }
 
 
@@ -392,25 +399,10 @@ Texture2D CarregarCena4Num(int numero) {
 }
 
 
-// Tenta carregar uma imagem da Cena 5 em várias pastas e com até 4 nomes possíveis
-// (procura SÓ nas pastas da cena 5, para não pegar imagem de outra cena por engano)
 Texture2D CarregarCena5(const char* n1, const char* n2, const char* n3, const char* n4) {
-    const char* pastas[] = { "src/cena5/", "cena5/", "jogo_ai.libi/src/cena5/", "" };
+    static const char* const pastas[] = { "src/cena5/", "cena5/", "jogo_ai.libi/src/cena5/", "" };
     const char* nomes[4] = { n1, n2, n3, n4 };
-    char caminho[256];
-
-    for (int n = 0; n < 4; n++) {
-        if (nomes[n] == NULL) continue;
-        for (int p = 0; p < 4; p++) {
-            snprintf(caminho, sizeof(caminho), "%s%s", pastas[p], nomes[n]);
-            if (FileExists(caminho)) {
-                TraceLog(LOG_INFO, "CENA5: carregou %s", caminho);
-                return LoadTexture(caminho);
-            }
-        }
-    }
-    TraceLog(LOG_WARNING, "CENA5: imagem NAO encontrada: %s", n1);
-    return (Texture2D){ 0 };
+    return CarregarDePastas("CENA5", pastas, 4, nomes, 4, true);
 }
 
 Texture2D CarregarCena5Num(int numero) {
@@ -433,25 +425,10 @@ Texture2D CarregarCena5P(int numero) {
 }
 
 
-// Tenta carregar uma imagem da Cena 6 em várias pastas e com até 5 nomes possíveis
-// (procura SÓ nas pastas da cena 6, para não pegar imagem de outra cena por engano)
 Texture2D CarregarCena6(const char* n1, const char* n2, const char* n3, const char* n4, const char* n5) {
-    const char* pastas[] = { "src/cena6/", "cena6/", "jogo_ai.libi/src/cena6/", "" };
+    static const char* const pastas[] = { "src/cena6/", "cena6/", "jogo_ai.libi/src/cena6/", "" };
     const char* nomes[5] = { n1, n2, n3, n4, n5 };
-    char caminho[256];
-
-    for (int n = 0; n < 5; n++) {
-        if (nomes[n] == NULL) continue;
-        for (int p = 0; p < 4; p++) {
-            snprintf(caminho, sizeof(caminho), "%s%s", pastas[p], nomes[n]);
-            if (FileExists(caminho)) {
-                TraceLog(LOG_INFO, "CENA6: carregou %s", caminho);
-                return LoadTexture(caminho);
-            }
-        }
-    }
-    TraceLog(LOG_WARNING, "CENA6: imagem NAO encontrada: %s", n1);
-    return (Texture2D){ 0 };
+    return CarregarDePastas("CENA6", pastas, 4, nomes, 5, true);
 }
 
 // c6.N.png / c6_N.png / C6.N.png / C6_N.png
@@ -493,7 +470,9 @@ Texture2D CarregarTexturaSemBordaTransparente(const char* caminho) {
     Image img = LoadImage(caminho);
     if (img.data == NULL) return (Texture2D){ 0 };
 
-    ImageFormat(&img, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
+    if (img.format != PIXELFORMAT_UNCOMPRESSED_R8G8B8A8) {
+        ImageFormat(&img, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
+    }
 
     int topo = 0;
     int base = img.height - 1;
@@ -609,25 +588,10 @@ static int DossieProxima(const bool* ev, int atual, int direcao) {
     return -1;
 }
 
-// Carrega uma imagem do dossiê procurando em várias pastas e com até 3 nomes
-// alternativos (o nome sem acento primeiro, depois os nomes originais).
 Texture2D CarregarDossie(const char* n1, const char* n2, const char* n3) {
-    const char* pastas[] = { "src/dossie/", "dossie/", "jogo_ai.libi/src/dossie/", "" };
+    static const char* const pastas[] = { "src/dossie/", "dossie/", "jogo_ai.libi/src/dossie/", "" };
     const char* nomes[3] = { n1, n2, n3 };
-    char caminho[256];
-
-    for (int n = 0; n < 3; n++) {
-        if (nomes[n] == NULL) continue;
-        for (int p = 0; p < 4; p++) {
-            snprintf(caminho, sizeof(caminho), "%s%s", pastas[p], nomes[n]);
-            if (FileExists(caminho)) {
-                TraceLog(LOG_INFO, "DOSSIE: carregou %s", caminho);
-                return LoadTexture(caminho);
-            }
-        }
-    }
-    TraceLog(LOG_WARNING, "DOSSIE: imagem NAO encontrada: %s", n1);
-    return (Texture2D){ 0 };
+    return CarregarDePastas("DOSSIE", pastas, 4, nomes, 3, true);
 }
 
 //===== LOOP PRINCIPAL =====
@@ -643,6 +607,16 @@ int main(void) {
     SetExitKey(KEY_NULL);   // ESC não fecha mais o jogo (ESC é usado para voltar ao menu)
 
     GameState estadoAtual = STATE_MENU;
+    bool jogoPausado = false;
+    bool configVeioDaPausa = false;
+    bool dossieVeioDaPausa = false;
+    GameState estadoAntesPausa = STATE_MENU;
+
+    Rectangle btnPausa           = {  24,  28, 118, 42 };
+    Rectangle btnPausaResumir    = { 290, 215, 220, 44 };
+    Rectangle btnPausaEvidencias = { 290, 272, 220, 44 };
+    Rectangle btnPausaConfig     = { 290, 329, 220, 44 };
+    Rectangle btnPausaSair       = { 290, 386, 220, 44 };
 
     // Progresso do jogador (acertos, erros, evidência perdida)
     Jogador jogador = {0};
@@ -971,7 +945,6 @@ int main(void) {
     Rectangle btnVoltarC1_1       = { 28, 36, 92, 32 };      // C1_1 "VOLTAR" (seta + texto, topo esquerdo) -> menu
     Rectangle btnAcessarCaso      = { 287, 397, 225, 51 };   // C1_1 "Acessar caso"
     Rectangle btnFotoCaio         = { 533, 167, 194, 284 };  // C1_3 caixa "Clique para acessar uma foto do Caio"
-    Rectangle btnNovasMensagens   = { 114, 340, 242, 40 };   // C1_4 "Acessar novas mensagens"
     Rectangle btnInterrogarCaio   = { 272, 361, 256, 58 };   // C1_6 "Ir interrogar Caio"
 
     // ======= BOTÃO "CLIQUE PARA CONTINUAR" (CENA 1.4) =======
@@ -1369,7 +1342,31 @@ int main(void) {
 
 
         // ======================= LÓGICA =======================
-        switch (estadoAtual) {
+        bool emGameplay = (estadoAtual != STATE_MENU && estadoAtual != STATE_CONFIG &&
+                           estadoAtual != STATE_CREDITOS && estadoAtual != STATE_REGRAS &&
+                           estadoAtual != STATE_DOSSIE && estadoAtual != STATE_DOSSIE_EVID);
+
+        if (jogoPausado) {
+            if (IsKeyPressed(KEY_ESCAPE) || BotaoClicado(btnPausaResumir, posMouse)) {
+                jogoPausado = false;
+            } else if (BotaoClicado(btnPausaEvidencias, posMouse)) {
+                dossieVeioDaPausa = true;
+                jogoPausado = false;
+                estadoAtual = STATE_DOSSIE;
+            } else if (BotaoClicado(btnPausaConfig, posMouse)) {
+                configVeioDaPausa = true;
+                jogoPausado = false;
+                estadoAtual = STATE_CONFIG;
+            } else if (BotaoClicado(btnPausaSair, posMouse)) {
+                jogoPausado = false;
+                configVeioDaPausa = false;
+                dossieVeioDaPausa = false;
+                estadoAtual = STATE_MENU;
+            }
+        } else if (emGameplay && (BotaoClicado(btnPausa, posMouse) || IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_P))) {
+            jogoPausado = true;
+            estadoAntesPausa = estadoAtual;
+        } else switch (estadoAtual) {
             case STATE_MENU:
                 if (BotaoClicado(btnJogar, posMouse)) estadoAtual = STATE_C1_1;
                 else if (BotaoClicado(btnRegras, posMouse)) {
@@ -1391,7 +1388,13 @@ int main(void) {
                     DefinirTelaCheia(!IsWindowFullscreen(), larguraTela, alturaTela);
                 }
                 else if (BotaoClicado(btnVoltarMenu, posMouse) || IsKeyPressed(KEY_ESCAPE)) {
-                    estadoAtual = STATE_MENU;
+                    if (configVeioDaPausa) {
+                        configVeioDaPausa = false;
+                        estadoAtual = estadoAntesPausa;
+                        jogoPausado = true;
+                    } else {
+                        estadoAtual = STATE_MENU;
+                    }
                 }
                 break;
 
@@ -1429,10 +1432,8 @@ int main(void) {
 
             // --- CENA 1 ---
             case STATE_C1_1:
-                // Nova ocorrência: botão "VOLTAR" (topo esquerdo) -> menu | "Acessar caso" -> C1_2 | ESC também volta ao menu
-                if (IsKeyPressed(KEY_ESCAPE)) estadoAtual = STATE_MENU;
-                else if (BotaoClicado(btnVoltarC1_1, posMouse)) estadoAtual = STATE_MENU;
-                else if (BotaoClicado(btnAcessarCaso, posMouse)) estadoAtual = STATE_C1_2;
+                // Nova ocorrência: "Acessar caso" -> C1_2
+                if (BotaoClicado(btnAcessarCaso, posMouse)) estadoAtual = STATE_C1_2;
                 break;
 
             case STATE_C1_2:
@@ -2053,7 +2054,13 @@ int main(void) {
                 bool temJuliana = DossieContar(dossie.juliana) > 0;
 
                 if (BotaoClicado(btnVoltar, posMouse) || IsKeyPressed(KEY_ESCAPE)) {
-                    estadoAtual = STATE_C8_5;            // volta para a escolha do veredito
+                    if (dossieVeioDaPausa) {
+                        dossieVeioDaPausa = false;
+                        estadoAtual = estadoAntesPausa;
+                        jogoPausado = true;
+                    } else {
+                        estadoAtual = STATE_C8_5;            // volta para a escolha do veredito
+                    }
                 }
                 // O "ACESSAR" só funciona se o suspeito tem pelo menos uma evidência
                 else if (temCaio && BotaoClicado(btnDossieCaio, posMouse)) {
@@ -2174,7 +2181,12 @@ int main(void) {
         BeginMode2D(camera);
 
         switch (estadoAtual) {
-            case STATE_MENU:
+            case STATE_MENU: {
+                static float menuHover[4] = { 0 };
+                Rectangle menuBtns[4] = { btnJogar, btnRegras, btnConfig, btnCreditos };
+                AtualizarHover(menuBtns, menuHover, 4, posMouse, GetFrameTime());
+                double tempo = GetTime();
+
                 if (imgMenu.id != 0) {
                     DesenharTela(imgMenu, dest);
                 } else {
@@ -2184,10 +2196,20 @@ int main(void) {
                     DrawText("CONFIGURACOES", (int)btnConfig.x, (int)btnConfig.y, 22, RAYWHITE);
                     DrawText("CREDITOS", (int)btnCreditos.x, (int)btnCreditos.y, 22, RAYWHITE);
                 }
+
+                for (int i = 0; i < 4; i++) {
+                    DesenharHoverMenu(menuBtns[i], menuHover[i], tempo);
+                }
                 break;
+            }
 
 
             case STATE_CONFIG: {
+                static float configHover[3] = { 0 };
+                Rectangle configBtns[3] = { btnVolumeGeral, btnTelaCheia, btnVoltarMenu };
+                AtualizarHover(configBtns, configHover, 3, posMouse, GetFrameTime());
+                double tempo = GetTime();
+
                 bool volOn = volumeAtivo;
                 bool telaOn = telaCheia;
 
@@ -2210,6 +2232,16 @@ int main(void) {
                     DrawText(telaOn ? "TELA CHEIA: ATIVADO" : "TELA CHEIA: DESATIVADO", 250, 335, 18, RAYWHITE);
                     DrawText("VOLTAR", (int)btnVoltarMenu.x, (int)btnVoltarMenu.y, 20, RAYWHITE);
                 }
+
+                // Indicadores luminosos de status (LED tecnológico) ao lado dos toggles
+                Color corVol  = volOn  ? (Color){ 0, 235, 180, 220 } : (Color){ 255, 80, 90, 170 };
+                Color corTela = telaOn ? (Color){ 0, 235, 180, 220 } : (Color){ 255, 80, 90, 170 };
+                DrawCircle((int)(btnVolumeGeral.x - 14), (int)(btnVolumeGeral.y + btnVolumeGeral.height * 0.5f), 5.0f, corVol);
+                DrawCircle((int)(btnTelaCheia.x - 14),   (int)(btnTelaCheia.y + btnTelaCheia.height * 0.5f),   5.0f, corTela);
+
+                for (int i = 0; i < 3; i++) {
+                    DesenharHoverMenu(configBtns[i], configHover[i], tempo);
+                }
                 break;
             }
 
@@ -2230,14 +2262,39 @@ int main(void) {
                 } else {
                     DrawText("REGRAS DO JOGO", 300, 200, 24, RAYWHITE);
                     DrawText("VOLTAR", (int)btnVoltarRegras.x, (int)btnVoltarRegras.y, 20, RAYWHITE);
-                    DrawText(paginaRegras == 4 ? "JOGAR" : "CONTINUAR",
-                             (int)btnContinuarRegras.x, (int)btnContinuarRegras.y, 20, RAYWHITE);
                 }
+                DrawRectangleRec(btnContinuarRegras, WHITE);
+                DrawRectangleLinesEx(btnContinuarRegras, 3.0f, BLACK);
+                DrawText(paginaRegras == 4 ? "JOGAR" : "CONTINUAR",
+                         (int)btnContinuarRegras.x + (paginaRegras == 4 ? 22 : 8),
+                         (int)btnContinuarRegras.y + 8, 16, BLACK);
                 break;
 
 
             // --- CENA 1 ---
-            case STATE_C1_1: DesenharTela(imgC1[0], dest); break;
+            case STATE_C1_1: {
+                static float c1Hover = 0.0f;
+                AtualizarHover(&btnAcessarCaso, &c1Hover, 1, posMouse, GetFrameTime());
+                DesenharTela(imgC1[0], dest);
+
+                // Sinal de aviso preenchido com roxo (triângulo central superior)
+                Vector2 v1 = { 400.0f, 118.0f };
+                Vector2 v2 = { 370.0f, 170.0f };
+                Vector2 v3 = { 430.0f, 170.0f };
+                DrawTriangle(v1, v2, v3, (Color){ 138, 43, 226, 255 });
+                DrawTriangleLines(v1, v2, v3, (Color){ 200, 140, 255, 255 });
+                DrawText("!", 396, 134, 28, RAYWHITE);
+
+                // Botão "Acessar caso" sem fundo cinza, seguindo a paleta do jogo
+                DrawRectangleRounded(btnAcessarCaso, 0.22f, 8, (Color){ 24, 20, 48, 255 });
+                DrawRectangleRoundedLinesEx(btnAcessarCaso, 0.22f, 8, 2.0f, (Color){ 157, 78, 221, 255 });
+                int tw = MeasureText("Acessar caso", 20);
+                DrawText("Acessar caso",
+                         (int)(btnAcessarCaso.x + (btnAcessarCaso.width - tw) * 0.5f),
+                         (int)(btnAcessarCaso.y + 15), 20, RAYWHITE);
+                DesenharHoverMenu(btnAcessarCaso, c1Hover, GetTime());
+                break;
+            }
             case STATE_C1_2: DesenharTela(imgC1[1], dest); break;
             case STATE_C1_3: DesenharTela(imgC1[2], dest); break;
             case STATE_C1_4: DesenharTela(imgC1[3], dest); break;
@@ -2391,6 +2448,43 @@ int main(void) {
                 break;
         }
 
+        if (emGameplay && !jogoPausado) {
+            static float pausaBtnHover = 0.0f;
+            AtualizarHover(&btnPausa, &pausaBtnHover, 1, posMouse, GetFrameTime());
+            DrawRectangleRounded(btnPausa, 0.25f, 6, (Color){ 15, 22, 36, 235 });
+            DrawRectangleRoundedLinesEx(btnPausa, 0.25f, 6, 1.5f, (Color){ 0, 210, 255, 190 });
+            DrawText("|| PAUSA", (int)btnPausa.x + 18, (int)btnPausa.y + 12, 18, RAYWHITE);
+            DesenharHoverMenu(btnPausa, pausaBtnHover, GetTime());
+        }
+
+        if (jogoPausado) {
+            static float pausaMenuHover[4] = { 0 };
+            Rectangle pausaBtns[4] = {
+                btnPausaResumir, btnPausaEvidencias, btnPausaConfig, btnPausaSair
+            };
+            const char* pausaLabels[4] = {
+                "Resumir", "Evidencias", "Configuracoes", "Sair do jogo"
+            };
+            AtualizarHover(pausaBtns, pausaMenuHover, 4, posMouse, GetFrameTime());
+            double tempoPausa = GetTime();
+
+            DrawRectangle(0, 0, larguraTela, alturaTela, (Color){ 6, 10, 20, 200 });
+            Rectangle painelPausa = { 245, 135, 310, 325 };
+            DrawRectangleRounded(painelPausa, 0.06f, 8, (Color){ 14, 20, 34, 245 });
+            DrawRectangleRoundedLinesEx(painelPausa, 0.06f, 8, 2.0f, (Color){ 0, 210, 255, 200 });
+            DrawText("JOGO PAUSADO", 312, 162, 24, (Color){ 160, 245, 255, 255 });
+
+            for (int i = 0; i < 4; i++) {
+                DrawRectangleRounded(pausaBtns[i], 0.2f, 6, (Color){ 24, 34, 56, 240 });
+                DrawRectangleRoundedLinesEx(pausaBtns[i], 0.2f, 6, 1.5f, (Color){ 80, 170, 220, 180 });
+                int tw = MeasureText(pausaLabels[i], 20);
+                DrawText(pausaLabels[i],
+                         (int)(pausaBtns[i].x + (pausaBtns[i].width - tw) * 0.5f),
+                         (int)(pausaBtns[i].y + 12), 20, RAYWHITE);
+                DesenharHoverMenu(pausaBtns[i], pausaMenuHover[i], tempoPausa);
+            }
+        }
+
         if (debugBotoes) {
             for (int k = 0; k < g_numDebugRects; k++) {
                 DrawRectangleRec(g_debugRects[k], (Color){ 0, 255, 0, 50 });
@@ -2419,6 +2513,11 @@ int main(void) {
     UnloadTexture(texConfigTelaOn);
     UnloadTexture(texCreditos);
     UnloadTexture(imgMenu);
+    UnloadTexture(texConfigTudoOff);
+    UnloadTexture(texConfigVolOn);
+    UnloadTexture(texConfigTelaOn);
+    UnloadTexture(texCreditos);
+    for (int k = 0; k < 5; k++) UnloadTexture(texRegras[k]);
 
     for (int k = 0; k < 6; k++) UnloadTexture(imgC1[k]);
 

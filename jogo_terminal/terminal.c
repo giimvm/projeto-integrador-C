@@ -12,8 +12,7 @@ int finalAntecipado = 0;  // 1 = jogador acusou Caio na cena 2 (final sem soluca
 
 /* estado de cada evidencia: 0 = bloqueada, 1 = perdida,
  2 = marcada como autentica, 3 = marcada como IA */
-int evidencia1 = 0, evidencia2 = 0, evidencia3 = 0;
-int evidencia4 = 0, evidencia5 = 0, evidencia6 = 0;
+int evidencias[6] = { 0 };
 
 void limparTela() { //pra limpar a tela do terminal após uma execução
 #ifdef _WIN32
@@ -69,44 +68,32 @@ int lerOpcao(int minimo, int maximo) {
 
 // Retorna o estado da evidência correspondente ao ID informado.
 int pegarEstado(int id) {
-    switch (id) {
-        case 1: return evidencia1;
-        case 2: return evidencia2;
-        case 3: return evidencia3;
-        case 4: return evidencia4;
-        case 5: return evidencia5;
-        default: return evidencia6; //"else" do switch case
-    }
+    if (id < 1 || id > 6) return 0;
+    return evidencias[id - 1];
 }
 
 // Atualiza o estado da evidência escolhida durante a investigação.
 void mudarEstado(int id, int estado) {
-    switch (id) {
-        case 1: evidencia1 = estado; break;
-        case 2: evidencia2 = estado; break;
-        case 3: evidencia3 = estado; break;
-        case 4: evidencia4 = estado; break;
-        case 5: evidencia5 = estado; break;
-        default: evidencia6 = estado; break;
-    }
+    if (id >= 1 && id <= 6) evidencias[id - 1] = estado;
 }
 
 // Define quais evidências foram criadas por IA no gabarito do jogo. 
 // Evidências 2, 4 e 6 são consideradas geradas por IA.
 int ehFalsa(int id) {
-    return (id == 2 || id == 4 || id == 6);
+    return (id % 2 == 0);
 }
 
 // Exibe o título correspondente ao número da evidência selecionada.
 void mostrarTitulo(int id) {
-    switch (id) {
-        case 1: printf("Camera de seguranca do estacionamento"); break;
-        case 2: printf("Audio da discussao"); break;
-        case 3: printf("Mensagens de Caio e Gabriel"); break;
-        case 4: printf("Foto de Juliana no carro"); break;
-        case 5: printf("Registro de localizacao do celular de Gabriel"); break;
-        case 6: printf("Fotografia recebida por Gabriel"); break;
-    }
+    static const char* const titulos[6] = {
+        "Camera de seguranca do estacionamento",
+        "Audio da discussao",
+        "Mensagens de Caio e Gabriel",
+        "Foto de Juliana no carro",
+        "Registro de localizacao do celular de Gabriel",
+        "Fotografia recebida por Gabriel"
+    };
+    if (id >= 1 && id <= 6) printf("%s", titulos[id - 1]);
 }
 
 // Exibe o conteúdo da evidência desbloqueada pelo jogador.
@@ -665,8 +652,7 @@ void jogar() {
     abandonou = 0;
     finalAntecipado = 0;
     // Reinicia o estado de todas as evidências para uma nova investigação.
-    evidencia1 = evidencia2 = evidencia3 = 0;
-    evidencia4 = evidencia5 = evidencia6 = 0;
+    for (int i = 0; i < 6; i++) evidencias[i] = 0;
 
     // Inicia a história e apresenta o depoimento de Caio.
     cena1();
