@@ -1,0 +1,39 @@
+# .agyignore — Arquivos e diretórios ignorados do contexto inicial do Antigravity
+
+# Binários compilados e artefatos de build em C
+*.exe
+*.out
+*.o
+*.obj
+*.a
+*.so
+*.dll
+*.lib
+jogo_ai.libi/main
+jogo_terminal/terminal
+
+# Assets de mídia (imagens e áudios das cenas)
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.ico
+*.webp
+*.mp3
+*.wav
+*.ogg
+*.flac
+jogo_ai.libi/src/
+
+# Protótipo de baixa fidelidade (apenas imagens/diagramas)
+prototipo_de_baixa/
+
+# Estado de execução / save do jogo
+jogo_ai.libi/progresso.txt
+
+# Configurações de IDE, controle de versão e sistema operacional
+.vscode/
+.git/
+.DS_Store
+Thumbs.db
