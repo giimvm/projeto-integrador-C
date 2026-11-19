@@ -3,6 +3,8 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
+#include "minigames.h"
+#include "celular.h"
 
 #define C4_FORCAR_DIALOGOS 0
 
@@ -612,7 +614,7 @@ int main(void) {
     bool dossieVeioDaPausa = false;
     GameState estadoAntesPausa = STATE_MENU;
 
-    Rectangle btnPausa           = {  24,  28, 118, 42 };
+    Rectangle btnPausa           = {  28,  32,  42, 42 };
     Rectangle btnPausaResumir    = { 290, 215, 220, 44 };
     Rectangle btnPausaEvidencias = { 290, 272, 220, 44 };
     Rectangle btnPausaConfig     = { 290, 329, 220, 44 };
@@ -620,6 +622,9 @@ int main(void) {
 
     // Progresso do jogador (acertos, erros, evidência perdida)
     Jogador jogador = {0};
+    FontesUI fontes = CarregarFontesUI();
+    EstadoMiniGame miniGame = {0};
+    EstadoCelular celular = {0};
 
     // ======= CARREGAMENTO DE TEXTURAS DO MENU (multi-caminho) =======
     Texture2D imgMenu = CarregarMenu("menu.png", NULL);
@@ -956,15 +961,6 @@ int main(void) {
     Rectangle btnAvancarC2  = { 615, 553, 130, 40 };
     Rectangle btnResolverC2 = { 304, 382, 182, 41 };   // C2_8 "Resolver desafio"
 
-    // Opções do desafio (C2.9)
-    Rectangle btnC2OpcaoA = { 140, 296, 497, 40 };
-    Rectangle btnC2OpcaoB = { 140, 350, 497, 40 };
-    Rectangle btnC2OpcaoC = { 140, 403, 497, 40 };
-    Rectangle btnC2OpcaoD = { 140, 454, 497, 40 };
-
-    // C2.9: VOLTAR invisível (a imagem não desenha o botão, mas o clique funciona no topo esquerdo)
-    Rectangle btnVoltarC2_9 = { 28, 36, 92, 32 };
-
     // Confirmação (C2.10)
     Rectangle btnAcusaCaioSim = { 142, 319, 496, 40 };
     Rectangle btnAcusaCaioNao = { 142, 373, 496, 40 };
@@ -1019,11 +1015,6 @@ int main(void) {
 
     Rectangle btnResolverC4 = { 310, 392, 180, 40 };
 
-    Rectangle btnC4OpcaoA = { 142, 326, 496, 40 };
-    Rectangle btnC4OpcaoB = { 142, 381, 496, 40 };
-    Rectangle btnC4OpcaoC = { 142, 434, 496, 40 };
-    Rectangle btnC4OpcaoD = { 142, 484, 496, 40 };
-
     Rectangle btnAcessarEvidC4      = { 309, 390, 182, 38 };
     Rectangle btnContinuarPerdidaC4 = { 280, 415, 240, 40 };
     Rectangle btnContinuarOrigemC4  = { 565, 538, 185, 36 };
@@ -1050,16 +1041,6 @@ int main(void) {
     Rectangle btnAvancarC5   = { 615, 553, 130, 40 };
     Rectangle btnResolverC5  = { 309, 384, 182, 38 };
 
-    // Opções do desafio (c5_12): 0=a, 1=b, 2=c, 3=d
-    Rectangle btnC5Opcao[4] = {
-        { 142, 326, 496, 40 },   // a)
-        { 142, 381, 496, 40 },   // b)
-        { 142, 434, 496, 40 },   // c)
-        { 142, 484, 496, 40 }    // d)
-    };
-    // Resposta CERTA do desafio da Cena 5 (0=a, 1=b, 2=c, 3=d). Troque aqui se for outra.
-    const int respostaCertaC5 = 2;
-
     // c5_13 Evidência perdida -> Continuar investigação
     Rectangle btnContinuarPerdidaC5 = { 298, 420, 204, 42 };
 
@@ -1079,17 +1060,6 @@ int main(void) {
     // c6_13 Nova evidência encontrada -> Resolver desafio
     Rectangle btnResolverC6 = { 309, 387, 182, 41 };
 
-    // c6_14 Desafio de lógica: 0=a, 1=b, 2=c, 3=d
-    Rectangle btnC6Opcao[4] = {
-        { 142, 326, 496, 40 },   // a)
-        { 142, 381, 496, 40 },   // b)
-        { 142, 434, 496, 40 },   // c)
-        { 142, 484, 496, 40 }    // d)
-    };
-    // Resposta CERTA do desafio da Cena 6 (0=a, 1=b, 2=c, 3=d).
-    // b) "O celular não estava perto da estrada às 3h20" (contrapositiva). Troque aqui se for outra.
-    const int respostaCertaC6 = 1;
-
     // c6_15 Evidência perdida -> Continuar investigação
     Rectangle btnContinuarPerdidaC6 = { 286, 403, 220, 49 };
 
@@ -1106,17 +1076,6 @@ int main(void) {
 
     // c7_3 Nova evidência encontrada -> Resolver desafio
     Rectangle btnResolverC7 = { 309, 387, 182, 41 };
-
-    // c7_4 Desafio de lógica: 0=a, 1=b, 2=c, 3=d
-    Rectangle btnC7Opcao[4] = {
-        { 141, 290, 503, 54 },   // a) Se o horário bate com o registro, então a foto é autêntica.  (recíproca)
-        { 142, 352, 503, 53 },   // b) Se a foto não é autêntica, então o horário não bate.         (inversa)
-        { 142, 413, 503, 54 },   // c) Se o horário não bate com o registro, então a foto não é autêntica. (contrapositiva)
-        { 142, 475, 503, 54 }    // d) Se a foto é autêntica, então o horário não bate.             (negação)
-    };
-    // Resposta CERTA do desafio da Cena 7 (0=a, 1=b, 2=c, 3=d).
-    // c) é a contrapositiva de "Se P então Q" -> "Se não Q então não P". Troque aqui se for outra.
-    const int respostaCertaC7 = 2;
 
     // c7_5 Evidência perdida -> Continuar investigação
     Rectangle btnContinuarPerdidaC7 = { 286, 403, 222, 49 };
@@ -1450,6 +1409,7 @@ int main(void) {
 
             case STATE_C1_4:
                 if (BotaoClicado(btnContinuarC1_4, posMouse)) {
+                    IniciarCelular(&celular);
                     estadoAtual = STATE_C1_5;
                 }
                 // Volta para a tela anterior ao clicar no VOLTAR do topo
@@ -1459,9 +1419,10 @@ int main(void) {
                 break;
 
             case STATE_C1_5:
-                // Mensagens do Chefe: clique para continuar
-                if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_C1_4;
-                else if (CliqueQualquerLugar()) estadoAtual = STATE_C1_6;
+                // Celular interativo com notificações do aplicativo de mensagens
+                if (AtualizarCelular(&celular, posMouse, GetFrameTime()) == 1) {
+                    estadoAtual = STATE_C1_6;
+                }
                 break;
 
             case STATE_C1_6:
@@ -1482,23 +1443,17 @@ int main(void) {
                 break;
 
 
-            case STATE_C2_DESAFIO:
-                // C2.9: VOLTAR invisível (topo esquerdo) -> volta para a evidência
-                if (BotaoClicado(btnVoltarC2_9, posMouse)) {
-                    estadoAtual = STATE_C2_EVIDENCIA;
-                }
-                else if (BotaoClicado(btnC2OpcaoA, posMouse)) {
+            case STATE_C2_DESAFIO: {
+                int resMG = AtualizarMiniGame(&miniGame, 2, posMouse, GetFrameTime());
+                if (resMG == 1) {
                     if (temSfxBrilho) PlaySound(sfxBrilho);
-                    dossie.caio[0] = true; //novinho // evidência desbloqueada
+                    dossie.caio[0] = true; // evidência desbloqueada
                     estadoAtual = STATE_EVIDENCIA_DESBLOQUEADA;
-                }
-                else if (BotaoClicado(btnC2OpcaoB, posMouse) || BotaoClicado(btnC2OpcaoC, posMouse)) {
+                } else if (resMG == -1) {
                     estadoAtual = STATE_C2_PERDIDA;
                 }
-                else if (BotaoClicado(btnC2OpcaoD, posMouse)) {
-                    estadoAtual = STATE_CONFIRMA_CAIO;
-                }
                 break;
+            }
 
 
             case STATE_CONFIRMA_CAIO:
@@ -1674,23 +1629,17 @@ int main(void) {
 
 
             // --- CENA 4 ---
-            case STATE_C4_DESAFIO:
-                if (BotaoClicado(btnVoltar, posMouse)) {
-                    estadoAtual = STATE_C4_EVIDENCIA;
-                }
-                else if (BotaoClicado(btnC4OpcaoB, posMouse)) {
-                    // Única resposta correta -> tela "evidência desbloqueada" (c4.18)
-                    if (temSfxBrilho) PlaySound(sfxBrilho);   // evidência desbloqueada
-                    dossie.caio[2] = true;   
+            case STATE_C4_DESAFIO: {
+                int resMG = AtualizarMiniGame(&miniGame, 4, posMouse, GetFrameTime());
+                if (resMG == 1) {
+                    if (temSfxBrilho) PlaySound(sfxBrilho);
+                    dossie.caio[2] = true;
                     estadoAtual = STATE_C4_DESBLOQUEADA;
-                }
-                else if (BotaoClicado(btnC4OpcaoA, posMouse) ||
-                         BotaoClicado(btnC4OpcaoC, posMouse) ||
-                         BotaoClicado(btnC4OpcaoD, posMouse)) {
-                    // Qualquer erro -> evidência perdida (c4.17)
+                } else if (resMG == -1) {
                     estadoAtual = STATE_C4_PERDIDA;
                 }
                 break;
+            }
 
             case STATE_C4_DESBLOQUEADA:
                 if (BotaoClicado(btnVoltar, posMouse)) {
@@ -1746,17 +1695,12 @@ int main(void) {
                 break;
 
             case STATE_C5_DESAFIO: {
-                // c5_12 Desafio de lógica: acertou -> P5_1 | errou (qualquer outra) -> c5_13
-                int escolhida = -1;
-                for (int k = 0; k < 4; k++) {
-                    if (BotaoClicado(btnC5Opcao[k], posMouse)) { escolhida = k; break; }
-                }
-                if (escolhida == respostaCertaC5) {
-                    if (temSfxBrilho) PlaySound(sfxBrilho);   // evidência desbloqueada
-                    dossie.juliana[0] = true;     
+                int resMG = AtualizarMiniGame(&miniGame, 5, posMouse, GetFrameTime());
+                if (resMG == 1) {
+                    if (temSfxBrilho) PlaySound(sfxBrilho);
+                    dossie.juliana[0] = true;
                     estadoAtual = STATE_C5_DESBLOQUEADA;
-                }
-                else if (escolhida >= 0) {
+                } else if (resMG == -1) {
                     estadoAtual = STATE_C5_PERDIDA;
                 }
                 break;
@@ -1805,17 +1749,12 @@ int main(void) {
                 break;
 
             case STATE_C6_DESAFIO: {
-                // c6_14 Desafio de lógica: acertou -> evidência desbloqueada | errou -> c6_15
-                int escolhida = -1;
-                for (int k = 0; k < 4; k++) {
-                    if (BotaoClicado(btnC6Opcao[k], posMouse)) { escolhida = k; break; }
-                }
-                if (escolhida == respostaCertaC6) {
-                    if (temSfxBrilho) PlaySound(sfxBrilho);   // evidência desbloqueada
-                    dossie.juliana[1] = true; 
+                int resMG = AtualizarMiniGame(&miniGame, 6, posMouse, GetFrameTime());
+                if (resMG == 1) {
+                    if (temSfxBrilho) PlaySound(sfxBrilho);
+                    dossie.juliana[1] = true;
                     estadoAtual = STATE_C6_DESBLOQUEADA;
-                }
-                else if (escolhida >= 0) {
+                } else if (resMG == -1) {
                     estadoAtual = STATE_C6_PERDIDA;
                 }
                 break;
@@ -1879,17 +1818,12 @@ int main(void) {
                 break;
 
             case STATE_C7_DESAFIO: {
-                // c7_4 Desafio de lógica: acertou -> P7_1 | errou -> c7_5
-                int escolhida = -1;
-                for (int k = 0; k < 4; k++) {
-                    if (BotaoClicado(btnC7Opcao[k], posMouse)) { escolhida = k; break; }
-                }
-                if (escolhida == respostaCertaC7) {
-                    if (temSfxBrilho) PlaySound(sfxBrilho);   // evidência desbloqueada
-                    dossie.juliana[2] = true;          
+                int resMG = AtualizarMiniGame(&miniGame, 7, posMouse, GetFrameTime());
+                if (resMG == 1) {
+                    if (temSfxBrilho) PlaySound(sfxBrilho);
+                    dossie.juliana[2] = true;
                     estadoAtual = STATE_C7_DESBLOQUEADA;
-                }
-                else if (escolhida >= 0) {
+                } else if (resMG == -1) {
                     estadoAtual = STATE_C7_PERDIDA;
                 }
                 break;
@@ -2298,13 +2232,13 @@ int main(void) {
             case STATE_C1_2: DesenharTela(imgC1[1], dest); break;
             case STATE_C1_3: DesenharTela(imgC1[2], dest); break;
             case STATE_C1_4: DesenharTela(imgC1[3], dest); break;
-            case STATE_C1_5: DesenharTela(imgC1[4], dest); break;
+            case STATE_C1_5: DesenharCelular(&celular, &fontes, posMouse, larguraTela, alturaTela); break;
             case STATE_C1_6: DesenharTela(imgC1[5], dest); break;
 
 
             // --- CENA 2 ---
             case STATE_C2_EVIDENCIA:  DesenharTela(imgC2[8],  dest); break;
-            case STATE_C2_DESAFIO:    DesenharTela(imgC2[9],  dest); break;
+            case STATE_C2_DESAFIO:    DesenharMiniGame(&miniGame, &fontes, 2, posMouse, larguraTela, alturaTela); break;
             case STATE_CONFIRMA_CAIO: DesenharTela(imgC2[10], dest); break;
             case STATE_C2_PERDIDA:    DesenharTela(imgC2[11], dest); break;
 
@@ -2339,7 +2273,7 @@ int main(void) {
 
             // --- CENA 4 ---
             case STATE_C4_EVIDENCIA:    DesenharTela(imgC4Evidencia, dest); break;
-            case STATE_C4_DESAFIO:      DesenharTela(imgC4Desafio, dest); break;
+            case STATE_C4_DESAFIO:      DesenharMiniGame(&miniGame, &fontes, 4, posMouse, larguraTela, alturaTela); break;
             case STATE_C4_PERDIDA:      DesenharTela(imgC4Perdida, dest); break;
             case STATE_C4_DESBLOQUEADA: DesenharTela(imgC4Desbloqueada, dest); break;
             case STATE_C4_ORIGEM:       DesenharTela(imgP4_1, dest); break;
@@ -2348,7 +2282,7 @@ int main(void) {
 
             // --- CENA 5 ---
             case STATE_C5_EVIDENCIA:    DesenharTela(imgC5Evidencia,    dest); break;   // c5_11
-            case STATE_C5_DESAFIO:      DesenharTela(imgC5Desafio,      dest); break;   // c5_12
+            case STATE_C5_DESAFIO:      DesenharMiniGame(&miniGame, &fontes, 5, posMouse, larguraTela, alturaTela); break;
             case STATE_C5_PERDIDA:      DesenharTela(imgC5Perdida,      dest); break;   // c5_13
             case STATE_C5_DESBLOQUEADA: DesenharTela(imgC5Desbloqueada, dest); break;   // P5_1
             case STATE_C5_ORIGEM:       DesenharTela(imgC5Origem,       dest); break;   // P5_2
@@ -2357,7 +2291,7 @@ int main(void) {
 
             // --- CENA 6 ---
             case STATE_C6_EVIDENCIA: DesenharTela(imgC6Evidencia, dest); break;   // c6_13
-            case STATE_C6_DESAFIO:   DesenharTela(imgC6Desafio,   dest); break;   // c6_14
+            case STATE_C6_DESAFIO:   DesenharMiniGame(&miniGame, &fontes, 6, posMouse, larguraTela, alturaTela); break;
             case STATE_C6_PERDIDA:   DesenharTela(imgC6Perdida,   dest); break;   // c6_15
             case STATE_C6_DESBLOQUEADA:
                 // Usa a tela própria da Cena 6 (P6.png) se existir; senão reaproveita a da Cena 5 (P5_1)
@@ -2371,7 +2305,7 @@ int main(void) {
             case STATE_C7_1:            DesenharTela(imgC7_1,           dest); break;   // c7_1
             case STATE_C7_2:            DesenharTela(imgC7_2,           dest); break;   // c7_2
             case STATE_C7_EVIDENCIA:    DesenharTela(imgC7Evidencia,    dest); break;   // c7_3
-            case STATE_C7_DESAFIO:      DesenharTela(imgC7Desafio,      dest); break;   // c7_4
+            case STATE_C7_DESAFIO:      DesenharMiniGame(&miniGame, &fontes, 7, posMouse, larguraTela, alturaTela); break;
             case STATE_C7_PERDIDA:      DesenharTela(imgC7Perdida,      dest); break;   // c7_5
             case STATE_C7_DESBLOQUEADA: DesenharTela(imgC7Desbloqueada, dest); break;   // P7_1
             case STATE_C7_ORIGEM:       DesenharTela(imgC7Origem,       dest); break;   // p7_2
@@ -2453,7 +2387,9 @@ int main(void) {
             AtualizarHover(&btnPausa, &pausaBtnHover, 1, posMouse, GetFrameTime());
             DrawRectangleRounded(btnPausa, 0.25f, 6, (Color){ 15, 22, 36, 235 });
             DrawRectangleRoundedLinesEx(btnPausa, 0.25f, 6, 1.5f, (Color){ 0, 210, 255, 190 });
-            DrawText("|| PAUSA", (int)btnPausa.x + 18, (int)btnPausa.y + 12, 18, RAYWHITE);
+            // Apenas ícone de pausa (duas barras verticais)
+            DrawRectangleRounded((Rectangle){ btnPausa.x + 13, btnPausa.y + 11, 5, 20 }, 0.4f, 4, RAYWHITE);
+            DrawRectangleRounded((Rectangle){ btnPausa.x + 24, btnPausa.y + 11, 5, 20 }, 0.4f, 4, RAYWHITE);
             DesenharHoverMenu(btnPausa, pausaBtnHover, GetTime());
         }
 
@@ -2472,15 +2408,12 @@ int main(void) {
             Rectangle painelPausa = { 245, 135, 310, 325 };
             DrawRectangleRounded(painelPausa, 0.06f, 8, (Color){ 14, 20, 34, 245 });
             DrawRectangleRoundedLinesEx(painelPausa, 0.06f, 8, 2.0f, (Color){ 0, 210, 255, 200 });
-            DrawText("JOGO PAUSADO", 312, 162, 24, (Color){ 160, 245, 255, 255 });
+            DesenharTextoCentralizadoUI(fontes.bold, "JOGO PAUSADO", (Rectangle){ 245, 154, 310, 34 }, 28, (Color){ 160, 245, 255, 255 });
 
             for (int i = 0; i < 4; i++) {
                 DrawRectangleRounded(pausaBtns[i], 0.2f, 6, (Color){ 24, 34, 56, 240 });
                 DrawRectangleRoundedLinesEx(pausaBtns[i], 0.2f, 6, 1.5f, (Color){ 80, 170, 220, 180 });
-                int tw = MeasureText(pausaLabels[i], 20);
-                DrawText(pausaLabels[i],
-                         (int)(pausaBtns[i].x + (pausaBtns[i].width - tw) * 0.5f),
-                         (int)(pausaBtns[i].y + 12), 20, RAYWHITE);
+                DesenharTextoCentralizadoUI(fontes.regular, pausaLabels[i], pausaBtns[i], 22, RAYWHITE);
                 DesenharHoverMenu(pausaBtns[i], pausaMenuHover[i], tempoPausa);
             }
         }
@@ -2587,6 +2520,7 @@ int main(void) {
     if (temMusicaJogo) UnloadMusicStream(musicaJogo);
     if (temSfxClick) UnloadSound(sfxClick);
     if (temSfxBrilho) UnloadSound(sfxBrilho);
+    DescarregarFontesUI(&fontes);
     CloseAudioDevice();
 
     CloseWindow();
