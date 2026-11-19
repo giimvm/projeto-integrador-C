@@ -21,22 +21,28 @@ static inline FontesUI CarregarFontesUI(void) {
     for (int c = 160; c <= 255; c++) codepoints[count++] = c;
 
     const char *caminhosBold[] = {
+        "src/fonts/Tektur-Regular.ttf",
+        "jogo_ai.libi/src/fonts/Tektur-Regular.ttf",
+        "../jogo_ai.libi/src/fonts/Tektur-Regular.ttf",
         "src/fonts/Rajdhani-Bold.ttf",
         "jogo_ai.libi/src/fonts/Rajdhani-Bold.ttf"
     };
     const char *caminhosReg[] = {
+        "src/fonts/Tektur-Regular.ttf",
+        "jogo_ai.libi/src/fonts/Tektur-Regular.ttf",
+        "../jogo_ai.libi/src/fonts/Tektur-Regular.ttf",
         "src/fonts/Rajdhani-SemiBold.ttf",
         "jogo_ai.libi/src/fonts/Rajdhani-SemiBold.ttf"
     };
 
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 5; i++) {
         if (FileExists(caminhosBold[i])) {
             f.bold = LoadFontEx(caminhosBold[i], 36, codepoints, count);
             SetTextureFilter(f.bold.texture, TEXTURE_FILTER_BILINEAR);
             break;
         }
     }
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 5; i++) {
         if (FileExists(caminhosReg[i])) {
             f.regular = LoadFontEx(caminhosReg[i], 28, codepoints, count);
             SetTextureFilter(f.regular.texture, TEXTURE_FILTER_BILINEAR);
@@ -93,12 +99,28 @@ typedef struct {
     float memTimerPreview;
     float memTimerMismatch;
 
-    // Cena 4: Gaveta 3D Cyberpunk com 8 Pen Drives
+    // Cena 4: Gaveta 3D Cyberpunk com 8 Pen Drives + Física 3D + Inspeção 360
     int penSimbolos[8];
     int penCores[8];
     int penAlvo;
     int penHover;
     bool penTestado[8];
+    Vector3 penPos[8];
+    Vector3 penVel[8];
+    float penRot[8];
+    float penVelRot[8];
+    int penArrastando;
+    Vector2 penClickPos;
+    bool penArrastou;
+
+    int penInspecionando;
+    float penInspYaw;
+    float penInspPitch;
+    float penInspVelYaw;
+    float penInspVelPitch;
+    float penInspZoom;
+    bool penInspArrastando;
+    Vector2 penInspMouseAnt;
 
     // Cena 5: Interceptação de Sinal (barra de timing)
     float sinalPos;
@@ -147,7 +169,21 @@ static inline void IniciarMiniGame(EstadoMiniGame *mg, int cena) {
     } else if (cena == 4) {
         mg->penAlvo = GetRandomValue(0, 3);
         mg->penHover = -1;
+        mg->penArrastando = -1;
+        mg->penInspecionando = -1;
+        mg->penInspZoom = 1.0f;
         int idxCorreto = GetRandomValue(0, 7);
+        static const Vector3 posInit[8] = {
+            { -2.65f, 0.06f, -1.05f },
+            { -0.85f, 0.06f, -1.20f },
+            {  1.15f, 0.06f, -0.95f },
+            {  2.75f, 0.06f, -1.10f },
+            { -2.35f, 0.06f,  0.85f },
+            { -0.55f, 0.06f,  0.65f },
+            {  1.05f, 0.06f,  1.05f },
+            {  2.65f, 0.06f,  0.75f }
+        };
+        static const float rotInit[8] = { -28.0f, 19.0f, -52.0f, 34.0f, 48.0f, -14.0f, 72.0f, -38.0f };
         for (int i = 0; i < 8; i++) {
             if (i == idxCorreto) {
                 mg->penSimbolos[i] = mg->penAlvo;
@@ -156,6 +192,8 @@ static inline void IniciarMiniGame(EstadoMiniGame *mg, int cena) {
                 mg->penSimbolos[i] = s;
             }
             mg->penCores[i] = GetRandomValue(0, 3);
+            mg->penPos[i] = posInit[i];
+            mg->penRot[i] = rotInit[i];
         }
     } else if (cena == 5) {
         mg->sinalPos = 0.1f;
@@ -203,12 +241,33 @@ static inline void MGRegistrarErro(EstadoMiniGame *mg, const char *msg) {
 
 static inline Camera3D MGGavetaCamera(void) {
     Camera3D cam = { 0 };
-    cam.position = (Vector3){ 0.0f, 8.8f, 5.2f };
-    cam.target   = (Vector3){ 0.0f, 0.0f, 0.35f };
+    cam.position = (Vector3){ 0.0f, 7.6f, 4.4f };
+    cam.target   = (Vector3){ 0.0f, 0.0f, 0.20f };
     cam.up       = (Vector3){ 0.0f, 1.0f, 0.0f };
-    cam.fovy     = 42.0f;
+    cam.fovy     = 38.0f;
     cam.projection = CAMERA_PERSPECTIVE;
     return cam;
+}
+
+static inline Rectangle MGGavetaArea(void) {
+    return (Rectangle){ 86.0f, 228.0f, 628.0f, 266.0f };
+}
+
+static inline RenderTexture2D *MGObterRTGaveta(bool criar) {
+    static RenderTexture2D rt = { 0 };
+    if (criar && rt.id == 0) {
+        rt = LoadRenderTexture(628, 266);
+        SetTextureFilter(rt.texture, TEXTURE_FILTER_BILINEAR);
+    }
+    return &rt;
+}
+
+static inline void DescarregarMiniGame(void) {
+    RenderTexture2D *rt = MGObterRTGaveta(false);
+    if (rt->id != 0) {
+        UnloadRenderTexture(*rt);
+        *rt = (RenderTexture2D){ 0 };
+    }
 }
 
 static inline void MGPenDrivePosRot(int i, Vector3 *pos, float *rotY) {
@@ -225,6 +284,288 @@ static inline void MGPenDrivePosRot(int i, Vector3 *pos, float *rotY) {
     static const float angulos[8] = { -28.0f, 19.0f, -52.0f, 34.0f, 48.0f, -14.0f, 72.0f, -38.0f };
     *pos = posicoes[i];
     *rotY = angulos[i];
+}
+
+// Desenha o símbolo diretamente na geometria 3D do pen drive (em relevo neon na base)
+static inline void DesenharSimboloPenDrive3D(int tipo, float yBase, float zCentro, float r, Color cor) {
+    float esp = 0.011f;
+    if (tipo == 0) {
+        // Triângulo 3D
+        Vector3 p1 = { 0.0f, yBase, zCentro - r };
+        Vector3 p2 = { -r * 0.92f, yBase, zCentro + r * 0.78f };
+        Vector3 p3 = {  r * 0.92f, yBase, zCentro + r * 0.78f };
+        DrawCylinderEx(p1, p2, esp, esp, 6, cor);
+        DrawCylinderEx(p2, p3, esp, esp, 6, cor);
+        DrawCylinderEx(p3, p1, esp, esp, 6, cor);
+    } else if (tipo == 1) {
+        // Losango 3D
+        Vector3 p1 = { 0.0f, yBase, zCentro - r };
+        Vector3 p2 = {  r * 0.88f, yBase, zCentro };
+        Vector3 p3 = { 0.0f, yBase, zCentro + r };
+        Vector3 p4 = { -r * 0.88f, yBase, zCentro };
+        DrawCylinderEx(p1, p2, esp, esp, 6, cor);
+        DrawCylinderEx(p2, p3, esp, esp, 6, cor);
+        DrawCylinderEx(p3, p4, esp, esp, 6, cor);
+        DrawCylinderEx(p4, p1, esp, esp, 6, cor);
+    } else if (tipo == 2) {
+        // Alvo 3D (anel + núcleo)
+        const int segs = 14;
+        for (int i = 0; i < segs; i++) {
+            float a0 = (2.0f * PI * i) / segs;
+            float a1 = (2.0f * PI * (i + 1)) / segs;
+            Vector3 p0 = { cosf(a0) * r, yBase, zCentro + sinf(a0) * r };
+            Vector3 p1 = { cosf(a1) * r, yBase, zCentro + sinf(a1) * r };
+            DrawCylinderEx(p0, p1, esp, esp, 5, cor);
+        }
+        DrawCylinder((Vector3){ 0.0f, yBase - 0.004f, zCentro }, r * 0.34f, r * 0.34f, 0.012f, 10, cor);
+    } else {
+        // Cruz-X 3D
+        float d = r * 0.78f;
+        DrawCylinderEx((Vector3){ -d, yBase, zCentro - d }, (Vector3){  d, yBase, zCentro + d }, esp, esp, 6, cor);
+        DrawCylinderEx((Vector3){  d, yBase, zCentro - d }, (Vector3){ -d, yBase, zCentro + d }, esp, esp, 6, cor);
+    }
+}
+
+// Desenha um pen drive 3D afiado, chanfrado e tecnológico no estilo cyberpunk
+static inline void DesenharPenDriveCyberpunk3D(Vector3 pos, float rotY, float inspYaw, float inspPitch,
+                                                Color corpo, Color neon, bool testado, bool hover,
+                                                double tempo, int simbolo) {
+    float lift = hover ? 0.12f : 0.0f;
+    float pulso = testado ? 0.35f : (0.72f + 0.28f * (float)sin(tempo * 4.5 + pos.x * 1.7));
+    Color neonAtivo = {
+        neon.r,
+        neon.g,
+        neon.b,
+        (unsigned char)(hover ? 255 : (int)(205 * pulso))
+    };
+    Color corpoEscuro = {
+        (unsigned char)(corpo.r / 2),
+        (unsigned char)(corpo.g / 2),
+        (unsigned char)(corpo.b / 2),
+        255
+    };
+    Color metal = testado ? (Color){ 95, 92, 102, 230 } : (Color){ 195, 212, 232, 255 };
+    Color ouro  = testado ? (Color){ 115, 95, 55, 210 } : (Color){ 250, 195, 60, 255 };
+
+    rlPushMatrix();
+    rlTranslatef(pos.x, pos.y + lift, pos.z);
+    if (inspYaw != 0.0f || inspPitch != 0.0f) {
+        rlRotatef(inspPitch, 1.0f, 0.0f, 0.0f);
+        rlRotatef(inspYaw, 0.0f, 1.0f, 0.0f);
+    } else {
+        rlRotatef(rotY, 0.0f, 1.0f, 0.0f);
+    }
+
+    // 1. Corpo principal chanfrado e afunilado (perfil hexágono-blade)
+    // Seções ao longo de Z: nariz (-0.36), ombro (-0.10), cintura (+0.34), cauda (+0.58)
+    const float zSec[4] = { -0.36f, -0.10f, 0.34f, 0.58f };
+    const float wMid[4] = {  0.14f,  0.22f, 0.19f, 0.11f };
+    const float wTop[4] = {  0.10f,  0.16f, 0.13f, 0.07f };
+    const float wBot[4] = {  0.11f,  0.17f, 0.14f, 0.08f };
+    const float yTop =  0.075f;
+    const float yMid =  0.005f;
+    const float yBot = -0.060f;
+
+    rlDisableBackfaceCulling();
+    rlBegin(RL_TRIANGLES);
+    for (int s = 0; s < 3; s++) {
+        float z0 = zSec[s], z1 = zSec[s + 1];
+        float wt0 = wTop[s], wt1 = wTop[s + 1];
+        float wm0 = wMid[s], wm1 = wMid[s + 1];
+        float wb0 = wBot[s], wb1 = wBot[s + 1];
+        Color cTop = (s == 1) ? corpo : corpoEscuro;
+        Color cChanfro = { (unsigned char)(corpo.r * 0.72f), (unsigned char)(corpo.g * 0.72f), (unsigned char)(corpo.b * 0.72f), 255 };
+
+        // Deck superior
+        rlColor4ub(cTop.r, cTop.g, cTop.b, cTop.a);
+        rlVertex3f(-wt0, yTop, z0); rlVertex3f( wt0, yTop, z0); rlVertex3f( wt1, yTop, z1);
+        rlVertex3f(-wt0, yTop, z0); rlVertex3f( wt1, yTop, z1); rlVertex3f(-wt1, yTop, z1);
+
+        // Chanfro superior direito e esquerdo (efeito afiado)
+        rlColor4ub(cChanfro.r, cChanfro.g, cChanfro.b, cChanfro.a);
+        rlVertex3f( wt0, yTop, z0); rlVertex3f( wm0, yMid, z0); rlVertex3f( wm1, yMid, z1);
+        rlVertex3f( wt0, yTop, z0); rlVertex3f( wm1, yMid, z1); rlVertex3f( wt1, yTop, z1);
+
+        rlVertex3f(-wm0, yMid, z0); rlVertex3f(-wt0, yTop, z0); rlVertex3f(-wt1, yTop, z1);
+        rlVertex3f(-wm0, yMid, z0); rlVertex3f(-wt1, yTop, z1); rlVertex3f(-wm1, yMid, z1);
+
+        // Chanfro inferior direito e esquerdo + base
+        rlColor4ub(corpoEscuro.r, corpoEscuro.g, corpoEscuro.b, corpoEscuro.a);
+        rlVertex3f( wm0, yMid, z0); rlVertex3f( wb0, yBot, z0); rlVertex3f( wb1, yBot, z1);
+        rlVertex3f( wm0, yMid, z0); rlVertex3f( wb1, yBot, z1); rlVertex3f( wm1, yMid, z1);
+
+        rlVertex3f(-wb0, yBot, z0); rlVertex3f(-wm0, yMid, z0); rlVertex3f(-wm1, yMid, z1);
+        rlVertex3f(-wb0, yBot, z0); rlVertex3f(-wm1, yMid, z1); rlVertex3f(-wb1, yBot, z1);
+
+        rlVertex3f(-wb0, yBot, z0); rlVertex3f( wb1, yBot, z1); rlVertex3f( wb0, yBot, z0);
+        rlVertex3f(-wb0, yBot, z0); rlVertex3f(-wb1, yBot, z1); rlVertex3f( wb1, yBot, z1);
+    }
+
+    // Tampa frontal (nariz) e tampa traseira (cauda)
+    rlColor4ub(corpoEscuro.r, corpoEscuro.g, corpoEscuro.b, corpoEscuro.a);
+    rlVertex3f(-wTop[0], yTop, zSec[0]); rlVertex3f(wTop[0], yTop, zSec[0]); rlVertex3f(wBot[0], yBot, zSec[0]);
+    rlVertex3f(-wTop[0], yTop, zSec[0]); rlVertex3f(wBot[0], yBot, zSec[0]); rlVertex3f(-wBot[0], yBot, zSec[0]);
+    rlVertex3f(-wTop[3], yTop, zSec[3]); rlVertex3f(wBot[3], yBot, zSec[3]); rlVertex3f(wTop[3], yTop, zSec[3]);
+    rlVertex3f(-wTop[3], yTop, zSec[3]); rlVertex3f(-wBot[3], yBot, zSec[3]); rlVertex3f(wBot[3], yBot, zSec[3]);
+
+    // Pontas traseiras duplas (cyber-tail V-notch)
+    rlColor4ub(corpo.r, corpo.g, corpo.b, corpo.a);
+    rlVertex3f(-0.10f, yMid, 0.56f); rlVertex3f(-0.04f, yMid, 0.56f); rlVertex3f(-0.08f, yMid + 0.02f, 0.70f);
+    rlVertex3f( 0.04f, yMid, 0.56f); rlVertex3f( 0.10f, yMid, 0.56f); rlVertex3f( 0.08f, yMid + 0.02f, 0.70f);
+    rlEnd();
+    rlEnableBackfaceCulling();
+
+    // 2. Trilhos neon laterais + contorno afiado das arestas
+    rlBegin(RL_LINES);
+    rlColor4ub(neonAtivo.r, neonAtivo.g, neonAtivo.b, neonAtivo.a);
+    for (int s = 0; s < 3; s++) {
+        // Arestas superiores
+        rlVertex3f(-wTop[s], yTop + 0.003f, zSec[s]); rlVertex3f(-wTop[s + 1], yTop + 0.003f, zSec[s + 1]);
+        rlVertex3f( wTop[s], yTop + 0.003f, zSec[s]); rlVertex3f( wTop[s + 1], yTop + 0.003f, zSec[s + 1]);
+        // Arestas da cintura (lâmina lateral)
+        rlVertex3f(-wMid[s], yMid, zSec[s]); rlVertex3f(-wMid[s + 1], yMid, zSec[s + 1]);
+        rlVertex3f( wMid[s], yMid, zSec[s]); rlVertex3f( wMid[s + 1], yMid, zSec[s + 1]);
+    }
+    // Contorno frontal, ombro e cauda
+    rlVertex3f(-wTop[0], yTop + 0.003f, zSec[0]); rlVertex3f(wTop[0], yTop + 0.003f, zSec[0]);
+    rlVertex3f(-wTop[1], yTop + 0.003f, zSec[1]); rlVertex3f(wTop[1], yTop + 0.003f, zSec[1]);
+    rlVertex3f(-wTop[3], yTop + 0.003f, zSec[3]); rlVertex3f(wTop[3], yTop + 0.003f, zSec[3]);
+    // Circuito central no deck
+    rlVertex3f(0.0f, yTop + 0.005f, -0.30f); rlVertex3f(0.0f, yTop + 0.005f, 0.34f);
+    rlEnd();
+
+    // 3. Detalhes tecnológicos no deck: canaleta de carbono, aletas de dissipação e LED chevron
+    DrawCube((Vector3){ 0.0f, yTop + 0.004f, 0.05f }, 0.055f, 0.012f, 0.44f, (Color){ 8, 12, 22, 255 });
+    for (int r = 0; r < 3; r++) {
+        float rz = -0.24f + r * 0.07f;
+        DrawCube((Vector3){ 0.0f, yTop + 0.008f, rz }, 0.18f, 0.014f, 0.025f, corpoEscuro);
+        DrawCube((Vector3){ 0.0f, yTop + 0.012f, rz }, 0.16f, 0.006f, 0.012f, neonAtivo);
+    }
+    // Núcleo LED traseiro pulsante
+    DrawCube((Vector3){ 0.0f, yTop + 0.010f, 0.42f }, 0.09f, 0.018f, 0.11f, neonAtivo);
+
+    // 4. Colar blindado + conector USB metálico com pinos dourados
+    DrawCube((Vector3){ 0.0f, 0.0f, -0.395f }, 0.25f, 0.11f, 0.07f, (Color){ 18, 24, 38, 255 });
+    DrawCube((Vector3){ 0.0f, 0.0f, -0.575f }, 0.22f, 0.082f, 0.30f, metal);
+    DrawCubeWires((Vector3){ 0.0f, 0.0f, -0.575f }, 0.225f, 0.086f, 0.305f, (Color){ 70, 90, 120, 255 });
+    // Pinos dourados no conector USB
+    for (int p = -1; p <= 1; p++) {
+        DrawCube((Vector3){ p * 0.052f, 0.042f, -0.62f }, 0.024f, 0.008f, 0.14f, ouro);
+    }
+
+    // 5. Placa inferior recuada com o símbolo gravado diretamente na geometria 3D
+    DrawCube((Vector3){ 0.0f, yBot - 0.003f, 0.08f }, 0.24f, 0.008f, 0.30f, (Color){ 8, 12, 22, 255 });
+    DrawCubeWires((Vector3){ 0.0f, yBot - 0.003f, 0.08f }, 0.245f, 0.010f, 0.305f, neonAtivo);
+    Color corSimbolo = testado ? (Color){ 220, 75, 85, 220 } : (Color){ 0, 240, 255, 255 };
+    DesenharSimboloPenDrive3D(simbolo, yBot - 0.008f, 0.08f, 0.085f, corSimbolo);
+
+    rlPopMatrix();
+}
+
+static inline void PrepararMiniGame3D(EstadoMiniGame *mg, int cena) {
+    if (cena != 4) return;
+    if (mg->desafioAtual != cena) {
+        IniciarMiniGame(mg, cena);
+    }
+
+    RenderTexture2D *rt = MGObterRTGaveta(true);
+    double tempo = GetTime();
+
+    Color paletaCorpo[4] = {
+        { 46, 22, 74, 255 },   // roxo cyberpunk
+        { 18, 40, 72, 255 },   // azul cyber
+        { 62, 20, 56, 255 },   // vinho neon
+        { 30, 36, 54, 255 }    // grafite tech
+    };
+    Color paletaNeon[4] = {
+        { 255, 55, 185, 255 }, // magenta
+        { 0, 230, 255, 255 },  // ciano
+        { 245, 215, 55, 255 }, // amarelo ácido
+        { 170, 90, 255, 255 }  // violeta
+    };
+
+    BeginTextureMode(*rt);
+    ClearBackground((Color){ 8, 10, 22, 255 });
+
+    if (mg->penInspecionando >= 0) {
+        // Modo Inspeção 360° estilo Resident Evil
+        int idx = mg->penInspecionando;
+        Camera3D camInsp = { 0 };
+        camInsp.position = (Vector3){ 0.0f, 0.35f, 2.25f / (mg->penInspZoom > 0.1f ? mg->penInspZoom : 1.0f) };
+        camInsp.target   = (Vector3){ 0.0f, -0.08f, 0.0f };
+        camInsp.up       = (Vector3){ 0.0f, 1.0f, 0.0f };
+        camInsp.fovy     = 36.0f;
+        camInsp.projection = CAMERA_PERSPECTIVE;
+
+        BeginMode3D(camInsp);
+        // Grade holográfica de scanner ao fundo/base
+        for (float gx = -1.6f; gx <= 1.6f; gx += 0.4f) {
+            DrawLine3D((Vector3){ gx, -0.68f, -1.6f }, (Vector3){ gx, -0.68f, 1.6f }, (Color){ 0, 200, 240, 55 });
+            DrawLine3D((Vector3){ -1.6f, -0.68f, gx }, (Vector3){ 1.6f, -0.68f, gx }, (Color){ 180, 40, 150, 45 });
+        }
+        bool testado = mg->penTestado[idx];
+        Color corpo = testado ? (Color){ 52, 22, 28, 235 } : paletaCorpo[mg->penCores[idx]];
+        Color neon  = testado ? (Color){ 220, 60, 75, 200 } : paletaNeon[mg->penCores[idx]];
+        DesenharPenDriveCyberpunk3D((Vector3){ 0.0f, 0.04f, 0.0f }, 0.0f, mg->penInspYaw, mg->penInspPitch,
+                                    corpo, neon, testado, false, tempo, mg->penSimbolos[idx]);
+        EndMode3D();
+        EndTextureMode();
+        return;
+    }
+
+    Camera3D cam = MGGavetaCamera();
+    BeginMode3D(cam);
+
+    // Fundo e grade dual-tone da gaveta cyberpunk
+    DrawCube((Vector3){ 0.0f, -0.35f, 0.0f }, 8.6f, 0.30f, 5.2f, (Color){ 12, 14, 28, 255 });
+    for (float gx = -4.0f; gx <= 4.0f; gx += 0.8f) {
+        DrawLine3D((Vector3){ gx, -0.19f, -2.5f }, (Vector3){ gx, -0.19f, 2.5f }, (Color){ 165, 30, 145, 110 });
+    }
+    for (float gz = -2.4f; gz <= 2.4f; gz += 0.8f) {
+        DrawLine3D((Vector3){ -4.2f, -0.19f, gz }, (Vector3){ 4.2f, -0.19f, gz }, (Color){ 0, 200, 240, 95 });
+    }
+
+    // Bordas da gaveta + puxador frontal neon
+    DrawCube((Vector3){ -4.25f, 0.15f,  0.0f }, 0.25f, 0.90f, 5.2f, (Color){ 20, 24, 44, 255 });
+    DrawCube((Vector3){  4.25f, 0.15f,  0.0f }, 0.25f, 0.90f, 5.2f, (Color){ 20, 24, 44, 255 });
+    DrawCube((Vector3){  0.0f,  0.15f, -2.55f }, 8.6f, 0.90f, 0.25f, (Color){ 20, 24, 44, 255 });
+    DrawCube((Vector3){  0.0f,  0.15f,  2.55f }, 8.6f, 0.90f, 0.25f, (Color){ 26, 28, 52, 255 });
+    DrawCubeWires((Vector3){ 0.0f, 0.15f, 0.0f }, 8.55f, 0.92f, 5.15f, (Color){ 0, 215, 255, 195 });
+    DrawCube((Vector3){ 0.0f, 0.35f, 2.74f }, 1.9f, 0.14f, 0.16f, (Color){ 255, 45, 175, 255 });
+
+    // Cabos de dados e microchips soltos na gaveta
+    DrawCylinderEx((Vector3){ -3.6f, -0.10f, -2.0f }, (Vector3){ -1.4f, -0.05f, -0.2f }, 0.042f, 0.042f, 6, (Color){ 255, 40, 165, 210 });
+    DrawCylinderEx((Vector3){ -1.4f, -0.05f, -0.2f }, (Vector3){  0.2f, -0.10f,  1.8f }, 0.042f, 0.042f, 6, (Color){ 255, 40, 165, 210 });
+    DrawCylinderEx((Vector3){  3.5f, -0.10f, -1.9f }, (Vector3){  1.8f, -0.04f,  0.1f }, 0.042f, 0.042f, 6, (Color){ 0, 220, 255, 210 });
+
+    rlPushMatrix();
+    rlTranslatef(-3.4f, -0.08f, 1.55f);
+    rlRotatef(24.0f, 0.0f, 1.0f, 0.0f);
+    DrawCube((Vector3){ 0, 0, 0 }, 0.92f, 0.07f, 0.62f, (Color){ 28, 32, 58, 255 });
+    DrawCubeWires((Vector3){ 0, 0, 0 }, 0.93f, 0.08f, 0.63f, (Color){ 245, 210, 60, 180 });
+    rlPopMatrix();
+
+    rlPushMatrix();
+    rlTranslatef(3.45f, -0.08f, -0.15f);
+    rlRotatef(-40.0f, 0.0f, 1.0f, 0.0f);
+    DrawCube((Vector3){ 0, 0, 0 }, 0.70f, 0.07f, 0.50f, (Color){ 22, 36, 58, 255 });
+    DrawCubeWires((Vector3){ 0, 0, 0 }, 0.71f, 0.08f, 0.51f, (Color){ 0, 220, 255, 165 });
+    rlPopMatrix();
+
+    for (int i = 0; i < 8; i++) {
+        bool testado = mg->penTestado[i];
+        bool hover = ((mg->penHover == i) || (mg->penArrastando == i)) && !testado;
+
+        Color corpo = testado ? (Color){ 52, 22, 28, 235 } : paletaCorpo[mg->penCores[i]];
+        Color neon  = testado ? (Color){ 220, 60, 75, 200 }
+                    : hover   ? RAYWHITE
+                              : paletaNeon[mg->penCores[i]];
+
+        DesenharPenDriveCyberpunk3D(mg->penPos[i], mg->penRot[i], 0.0f, 0.0f, corpo, neon, testado, hover, tempo, mg->penSimbolos[i]);
+    }
+
+    EndMode3D();
+    EndTextureMode();
 }
 
 // Retorna: 0 = em andamento, 1 = venceu, -1 = perdeu (sem chances)
@@ -286,34 +627,181 @@ static inline int AtualizarMiniGame(EstadoMiniGame *mg, int cena, Vector2 mouse,
             }
         }
     } else if (cena == 4) {
-        // Gaveta 3D Cyberpunk: raycasting nos 8 pen drives
-        Camera3D cam = MGGavetaCamera();
-        Ray ray = GetScreenToWorldRay(mouse, cam);
-        mg->penHover = -1;
-        float melhorDist = 9999.0f;
+        // Gaveta 3D Cyberpunk: Física 3D + Inspeção 360° estilo Resident Evil
+        Rectangle areaGaveta = MGGavetaArea();
+
+        if (mg->penInspecionando >= 0) {
+            Rectangle btnSelecionar   = { 158.0f, 446.0f, 244.0f, 40.0f };
+            Rectangle btnVoltarGaveta = { 420.0f, 446.0f, 222.0f, 40.0f };
+
+            if (MGBotaoClicado(btnVoltarGaveta, mouse) || IsKeyPressed(KEY_BACKSPACE)) {
+                mg->penInspecionando = -1;
+                mg->penInspArrastando = false;
+                return 0;
+            }
+            if (MGBotaoClicado(btnSelecionar, mouse)) {
+                int i = mg->penInspecionando;
+                if (mg->penSimbolos[i] == mg->penAlvo) {
+                    return 1;
+                } else {
+                    mg->penTestado[i] = true;
+                    mg->penInspecionando = -1;
+                    mg->penInspArrastando = false;
+                    MGRegistrarErro(mg, "Pen drive errado! Resta 1 chance.");
+                    if (mg->chances <= 0) return -1;
+                    return 0;
+                }
+            }
+
+            Rectangle areaRotacao = { areaGaveta.x, areaGaveta.y, areaGaveta.width, areaGaveta.height - 50.0f };
+            if (CheckCollisionPointRec(mouse, areaRotacao) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+                mg->penInspArrastando = true;
+                mg->penInspMouseAnt = mouse;
+            }
+            if (mg->penInspArrastando && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+                Vector2 delta = { mouse.x - mg->penInspMouseAnt.x, mouse.y - mg->penInspMouseAnt.y };
+                mg->penInspYaw += delta.x * 0.55f;
+                mg->penInspPitch += delta.y * 0.55f;
+                mg->penInspVelYaw = delta.x * 22.0f;
+                mg->penInspVelPitch = delta.y * 22.0f;
+                mg->penInspMouseAnt = mouse;
+            } else {
+                mg->penInspArrastando = false;
+                mg->penInspYaw += mg->penInspVelYaw * dt;
+                mg->penInspPitch += mg->penInspVelPitch * dt;
+                float damp = expf(-6.0f * dt);
+                mg->penInspVelYaw *= damp;
+                mg->penInspVelPitch *= damp;
+            }
+
+            float wheel = GetMouseWheelMove();
+            if (wheel != 0.0f) {
+                mg->penInspZoom += wheel * 0.12f;
+                if (mg->penInspZoom < 0.75f) mg->penInspZoom = 0.75f;
+                if (mg->penInspZoom > 1.75f) mg->penInspZoom = 1.75f;
+            }
+            return 0;
+        }
+
+        // Passo de física 3D na gaveta (inércia, atrito, paredes e colisões entre pen drives)
+        float damp = expf(-7.5f * dt);
         for (int i = 0; i < 8; i++) {
-            if (mg->penTestado[i]) continue;
-            Vector3 p;
-            float rot;
-            MGPenDrivePosRot(i, &p, &rot);
-            BoundingBox box = {
-                (Vector3){ p.x - 0.62f, p.y - 0.20f, p.z - 0.62f },
-                (Vector3){ p.x + 0.62f, p.y + 0.35f, p.z + 0.62f }
-            };
-            RayCollision hit = GetRayCollisionBox(ray, box);
-            if (hit.hit && hit.distance < melhorDist) {
-                melhorDist = hit.distance;
-                mg->penHover = i;
+            if (mg->penArrastando != i) {
+                mg->penPos[i].x += mg->penVel[i].x * dt;
+                mg->penPos[i].z += mg->penVel[i].z * dt;
+                mg->penVel[i].x *= damp;
+                mg->penVel[i].z *= damp;
+            }
+            mg->penRot[i] += mg->penVelRot[i] * dt;
+            mg->penVelRot[i] *= damp;
+
+            if (mg->penPos[i].x < -3.45f) { mg->penPos[i].x = -3.45f; mg->penVel[i].x *= -0.4f; }
+            if (mg->penPos[i].x >  3.45f) { mg->penPos[i].x =  3.45f; mg->penVel[i].x *= -0.4f; }
+            if (mg->penPos[i].z < -1.85f) { mg->penPos[i].z = -1.85f; mg->penVel[i].z *= -0.4f; }
+            if (mg->penPos[i].z >  1.85f) { mg->penPos[i].z =  1.85f; mg->penVel[i].z *= -0.4f; }
+        }
+        for (int i = 0; i < 8; i++) {
+            for (int j = i + 1; j < 8; j++) {
+                float dx = mg->penPos[j].x - mg->penPos[i].x;
+                float dz = mg->penPos[j].z - mg->penPos[i].z;
+                float dist2 = dx * dx + dz * dz;
+                const float minDist = 0.88f;
+                if (dist2 > 0.0001f && dist2 < minDist * minDist) {
+                    float dist = sqrtf(dist2);
+                    float nx = dx / dist, nz = dz / dist;
+                    float overlap = (minDist - dist) * 0.5f;
+                    if (mg->penArrastando != i) {
+                        mg->penPos[i].x -= nx * overlap;
+                        mg->penPos[i].z -= nz * overlap;
+                        mg->penVel[i].x -= nx * 1.8f;
+                        mg->penVel[i].z -= nz * 1.8f;
+                        mg->penVelRot[i] += (nx - nz) * 18.0f;
+                    }
+                    if (mg->penArrastando != j) {
+                        mg->penPos[j].x += nx * overlap;
+                        mg->penPos[j].z += nz * overlap;
+                        mg->penVel[j].x += nx * 1.8f;
+                        mg->penVel[j].z += nz * 1.8f;
+                        mg->penVelRot[j] -= (nx - nz) * 18.0f;
+                    }
+                }
             }
         }
+
+        Camera3D cam = MGGavetaCamera();
+        mg->penHover = -1;
+        Ray ray = { 0 };
+        bool mouseNaGaveta = CheckCollisionPointRec(mouse, areaGaveta);
+        if (mouseNaGaveta) {
+            Vector2 mouseLocal = { mouse.x - areaGaveta.x, mouse.y - areaGaveta.y };
+            ray = GetScreenToWorldRayEx(mouseLocal, cam, (int)areaGaveta.width, (int)areaGaveta.height);
+            float melhorDist = 9999.0f;
+
+            for (int i = 0; i < 8; i++) {
+                Vector3 p = mg->penPos[i];
+                float rot = mg->penRot[i];
+                float rad = -rot * DEG2RAD;
+                float cs = cosf(rad), sn = sinf(rad);
+                Vector3 relOrig = { ray.position.x - p.x, ray.position.y - p.y, ray.position.z - p.z };
+                Ray rayLocal = {
+                    (Vector3){ relOrig.x * cs - relOrig.z * sn, relOrig.y, relOrig.x * sn + relOrig.z * cs },
+                    (Vector3){ ray.direction.x * cs - ray.direction.z * sn, ray.direction.y, ray.direction.x * sn + ray.direction.z * cs }
+                };
+                BoundingBox box = {
+                    (Vector3){ -0.28f, -0.14f, -0.78f },
+                    (Vector3){  0.28f,  0.22f,  0.74f }
+                };
+                RayCollision hit = GetRayCollisionBox(rayLocal, box);
+                if (hit.hit && hit.distance < melhorDist) {
+                    melhorDist = hit.distance;
+                    mg->penHover = i;
+                }
+            }
+        }
+
         if (mg->penHover >= 0 && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-            int i = mg->penHover;
-            if (mg->penSimbolos[i] == mg->penAlvo) {
-                return 1;
-            } else {
-                mg->penTestado[i] = true;
-                MGRegistrarErro(mg, "Pen drive errado! Resta 1 chance.");
-                if (mg->chances <= 0) return -1;
+            mg->penArrastando = mg->penHover;
+            mg->penClickPos = mouse;
+            mg->penArrastou = false;
+        }
+        if (mg->penArrastando >= 0 && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+            int idx = mg->penArrastando;
+            float dx = mouse.x - mg->penClickPos.x;
+            float dy = mouse.y - mg->penClickPos.y;
+            if (dx * dx + dy * dy > 36.0f) mg->penArrastou = true;
+
+            if (mg->penArrastou && mouseNaGaveta && fabsf(ray.direction.y) > 0.001f) {
+                float t = (0.06f - ray.position.y) / ray.direction.y;
+                if (t > 0.0f) {
+                    float tx = ray.position.x + ray.direction.x * t;
+                    float tz = ray.position.z + ray.direction.z * t;
+                    if (tx < -3.45f) tx = -3.45f;
+                    if (tx >  3.45f) tx =  3.45f;
+                    if (tz < -1.85f) tz = -1.85f;
+                    if (tz >  1.85f) tz =  1.85f;
+                    float vx = (tx - mg->penPos[idx].x) / (dt > 0.001f ? dt : 0.016f);
+                    float vz = (tz - mg->penPos[idx].z) / (dt > 0.001f ? dt : 0.016f);
+                    mg->penVel[idx].x = vx * 0.45f;
+                    mg->penVel[idx].z = vz * 0.45f;
+                    mg->penVelRot[idx] += (vx - vz) * 0.35f * dt * 60.0f;
+                    mg->penPos[idx].x = tx;
+                    mg->penPos[idx].z = tz;
+                    mg->penPos[idx].y = 0.20f;
+                }
+            }
+        }
+        if (mg->penArrastando >= 0 && IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
+            int idx = mg->penArrastando;
+            mg->penPos[idx].y = 0.06f;
+            mg->penArrastando = -1;
+            if (!mg->penArrastou && !mg->penTestado[idx]) {
+                mg->penInspecionando = idx;
+                mg->penInspYaw = 28.0f;
+                mg->penInspPitch = 32.0f;
+                mg->penInspVelYaw = 0.0f;
+                mg->penInspVelPitch = 0.0f;
+                mg->penInspZoom = 1.0f;
+                mg->penInspArrastando = false;
             }
         }
     } else if (cena == 5) {
@@ -467,6 +955,16 @@ static inline void DesenharMiniGame(EstadoMiniGame *mg, FontesUI *f, int cena, V
     Rectangle painel = { 70.0f, 66.0f, 660.0f, 476.0f };
     DrawRectangleRounded(painel, 0.04f, 8, (Color){ 14, 20, 34, 245 });
     DrawRectangleRoundedLinesEx(painel, 0.04f, 8, 2.0f, (Color){ 0, 210, 255, 200 });
+    // Cantoneiras tecnológicas do painel
+    Color corCanto = (Color){ 120, 245, 255, 235 };
+    DrawLineEx((Vector2){ painel.x + 6, painel.y + 20 }, (Vector2){ painel.x + 6, painel.y + 6 }, 2.5f, corCanto);
+    DrawLineEx((Vector2){ painel.x + 6, painel.y + 6 }, (Vector2){ painel.x + 20, painel.y + 6 }, 2.5f, corCanto);
+    DrawLineEx((Vector2){ painel.x + painel.width - 20, painel.y + 6 }, (Vector2){ painel.x + painel.width - 6, painel.y + 6 }, 2.5f, corCanto);
+    DrawLineEx((Vector2){ painel.x + painel.width - 6, painel.y + 6 }, (Vector2){ painel.x + painel.width - 6, painel.y + 20 }, 2.5f, corCanto);
+    DrawLineEx((Vector2){ painel.x + 6, painel.y + painel.height - 20 }, (Vector2){ painel.x + 6, painel.y + painel.height - 6 }, 2.5f, corCanto);
+    DrawLineEx((Vector2){ painel.x + 6, painel.y + painel.height - 6 }, (Vector2){ painel.x + 20, painel.y + painel.height - 6 }, 2.5f, corCanto);
+    DrawLineEx((Vector2){ painel.x + painel.width - 20, painel.y + painel.height - 6 }, (Vector2){ painel.x + painel.width - 6, painel.y + painel.height - 6 }, 2.5f, corCanto);
+    DrawLineEx((Vector2){ painel.x + painel.width - 6, painel.y + painel.height - 20 }, (Vector2){ painel.x + painel.width - 6, painel.y + painel.height - 6 }, 2.5f, corCanto);
 
     const char *titulo = "";
     const char *instrucao = "";
@@ -538,111 +1036,27 @@ static inline void DesenharMiniGame(EstadoMiniGame *mg, FontesUI *f, int cena, V
         DrawRectangleRoundedLinesEx(badgeAlvo, 0.2f, 6, 1.5f, (Color){ 0, 235, 255, 220 });
         DesenharSimboloPenDrive(mg->penAlvo, badgeAlvo.x + 21.0f, badgeAlvo.y + 21.0f, 12.0f, (Color){ 0, 240, 255, 255 });
 
-        // Renderização 3D da gaveta bagunçada estilo Cyberpunk
-        Camera3D cam = MGGavetaCamera();
-        BeginScissorMode(86, 228, 628, 266);
-        BeginMode3D(cam);
-
-        // Fundo e paredes da gaveta cyberpunk
-        DrawCube((Vector3){ 0.0f, -0.35f, 0.0f }, 8.6f, 0.30f, 5.2f, (Color){ 16, 10, 30, 255 });
-        for (float gx = -4.0f; gx <= 4.0f; gx += 0.8f) {
-            DrawLine3D((Vector3){ gx, -0.19f, -2.5f }, (Vector3){ gx, -0.19f, 2.5f }, (Color){ 110, 25, 130, 120 });
+        // Viewport 3D pré-renderizada da gaveta Cyberpunk (ou inspeção 360° Resident Evil)
+        Rectangle areaGaveta = MGGavetaArea();
+        RenderTexture2D *rt = MGObterRTGaveta(false);
+        if (rt->id != 0) {
+            Rectangle srcRT = { 0.0f, 0.0f, (float)rt->texture.width, -(float)rt->texture.height };
+            DrawTexturePro(rt->texture, srcRT, areaGaveta, (Vector2){ 0.0f, 0.0f }, 0.0f, WHITE);
+        } else {
+            DrawRectangleRec(areaGaveta, (Color){ 8, 10, 22, 255 });
         }
-        for (float gz = -2.4f; gz <= 2.4f; gz += 0.8f) {
-            DrawLine3D((Vector3){ -4.2f, -0.19f, gz }, (Vector3){ 4.2f, -0.19f, gz }, (Color){ 0, 180, 220, 90 });
-        }
-        // Bordas da gaveta + puxador frontal neon
-        DrawCube((Vector3){ -4.25f, 0.15f,  0.0f }, 0.25f, 0.90f, 5.2f, (Color){ 28, 18, 52, 255 });
-        DrawCube((Vector3){  4.25f, 0.15f,  0.0f }, 0.25f, 0.90f, 5.2f, (Color){ 28, 18, 52, 255 });
-        DrawCube((Vector3){  0.0f,  0.15f, -2.55f }, 8.6f, 0.90f, 0.25f, (Color){ 28, 18, 52, 255 });
-        DrawCube((Vector3){  0.0f,  0.15f,  2.55f }, 8.6f, 0.90f, 0.25f, (Color){ 36, 22, 66, 255 });
-        DrawCubeWires((Vector3){ 0.0f, 0.15f, 0.0f }, 8.55f, 0.92f, 5.15f, (Color){ 0, 215, 255, 190 });
-        DrawCube((Vector3){ 0.0f, 0.35f, 2.74f }, 1.9f, 0.14f, 0.16f, (Color){ 255, 45, 175, 255 });
+        DrawRectangleLinesEx(areaGaveta, 1.5f, (Color){ 0, 210, 255, 175 });
 
-        // Bagunça na gaveta (cabos soltos e chips/cartões inclinados)
-        DrawCylinderEx((Vector3){ -3.6f, -0.10f, -2.0f }, (Vector3){ -1.4f, -0.05f, -0.2f }, 0.045f, 0.045f, 6, (Color){ 255, 40, 165, 220 });
-        DrawCylinderEx((Vector3){ -1.4f, -0.05f, -0.2f }, (Vector3){  0.2f, -0.10f,  1.8f }, 0.045f, 0.045f, 6, (Color){ 255, 40, 165, 220 });
-        DrawCylinderEx((Vector3){  3.5f, -0.10f, -1.9f }, (Vector3){  1.8f, -0.04f,  0.1f }, 0.045f, 0.045f, 6, (Color){ 0, 220, 255, 210 });
-
-        rlPushMatrix();
-        rlTranslatef(-3.4f, -0.08f, 1.55f);
-        rlRotatef(24.0f, 0.0f, 1.0f, 0.0f);
-        DrawCube((Vector3){ 0, 0, 0 }, 0.95f, 0.08f, 0.65f, (Color){ 42, 32, 68, 255 });
-        DrawCubeWires((Vector3){ 0, 0, 0 }, 0.96f, 0.09f, 0.66f, (Color){ 245, 210, 60, 180 });
-        rlPopMatrix();
-
-        rlPushMatrix();
-        rlTranslatef(3.45f, -0.08f, -0.15f);
-        rlRotatef(-40.0f, 0.0f, 1.0f, 0.0f);
-        DrawCube((Vector3){ 0, 0, 0 }, 0.72f, 0.08f, 0.52f, (Color){ 28, 42, 66, 255 });
-        DrawCubeWires((Vector3){ 0, 0, 0 }, 0.73f, 0.09f, 0.53f, (Color){ 0, 220, 255, 160 });
-        rlPopMatrix();
-
-        // 8 Pen Drives 3D com paleta Cyberpunk
-        Color paletaCorpo[4] = {
-            { 42, 20, 68, 255 },   // roxo cyberpunk
-            { 18, 36, 62, 255 },   // azul escuro
-            { 52, 18, 48, 255 },   // vinho neon
-            { 28, 32, 46, 255 }    // grafite
-        };
-        Color paletaNeon[4] = {
-            { 255, 55, 185, 255 }, // magenta
-            { 0, 230, 255, 255 },  // ciano
-            { 245, 215, 55, 255 }, // amarelo ácido
-            { 170, 90, 255, 255 }  // violeta
-        };
-
-        for (int i = 0; i < 8; i++) {
-            Vector3 p;
-            float rot;
-            MGPenDrivePosRot(i, &p, &rot);
-            bool testado = mg->penTestado[i];
-            bool hover = (mg->penHover == i) && !testado;
-
-            Color corpo = testado ? (Color){ 48, 20, 26, 220 } : paletaCorpo[mg->penCores[i]];
-            Color borda = testado ? (Color){ 220, 60, 75, 200 }
-                        : hover   ? RAYWHITE
-                                  : paletaNeon[mg->penCores[i]];
-
-            rlPushMatrix();
-            rlTranslatef(p.x, p.y + (hover ? 0.10f : 0.0f), p.z);
-            rlRotatef(rot, 0.0f, 1.0f, 0.0f);
-
-            // Corpo do pen drive 3D
-            DrawCube((Vector3){ 0.0f, 0.0f, 0.0f }, 0.62f, 0.22f, 1.10f, corpo);
-            DrawCubeWires((Vector3){ 0.0f, 0.0f, 0.0f }, 0.63f, 0.23f, 1.11f, borda);
-
-            // Conector USB metálico na ponta
-            DrawCube((Vector3){ 0.0f, -0.01f, -0.72f }, 0.38f, 0.14f, 0.36f,
-                     testado ? (Color){ 100, 95, 105, 220 } : (Color){ 185, 200, 220, 255 });
-            DrawCubeWires((Vector3){ 0.0f, -0.01f, -0.72f }, 0.39f, 0.15f, 0.37f, (Color){ 80, 95, 120, 255 });
-
-            // LED neon na traseira
-            DrawCube((Vector3){ 0.0f, 0.08f, 0.44f }, 0.22f, 0.08f, 0.10f, borda);
-            rlPopMatrix();
-        }
-
-        EndMode3D();
-        EndScissorMode();
-
-        // Projeção 2D dos símbolos em cima de cada pen drive 3D para leitura nítida
-        for (int i = 0; i < 8; i++) {
-            Vector3 p;
-            float rot;
-            MGPenDrivePosRot(i, &p, &rot);
-            bool testado = mg->penTestado[i];
-            bool hover = (mg->penHover == i) && !testado;
-            p.y += hover ? 0.26f : 0.16f;
-            Vector2 sc = GetWorldToScreen(p, cam);
-
-            Rectangle tag = { sc.x - 16.0f, sc.y - 16.0f, 32.0f, 32.0f };
-            DrawRectangleRounded(tag, 0.25f, 4, testado ? (Color){ 55, 18, 26, 230 } : (Color){ 12, 16, 32, 230 });
-            DrawRectangleRoundedLinesEx(tag, 0.25f, 4, 1.5f,
-                                        testado ? (Color){ 235, 70, 85, 220 }
-                                      : hover   ? RAYWHITE
-                                                : (Color){ 0, 225, 255, 210 });
-            DesenharSimboloPenDrive(mg->penSimbolos[i], sc.x, sc.y, 9.5f,
-                                    testado ? (Color){ 220, 90, 100, 200 } : (Color){ 170, 245, 255, 255 });
+        if (mg->penInspecionando >= 0) {
+            DesenharTextoUI(f->regular, "INSPECAO 360 // ARRASTE PARA GIRAR  |  SCROLL: ZOOM",
+                            areaGaveta.x + 10.0f, areaGaveta.y + 6.0f, 15.0f, (Color){ 0, 225, 255, 195 });
+            Rectangle btnSelecionar   = { 158.0f, 446.0f, 244.0f, 40.0f };
+            Rectangle btnVoltarGaveta = { 420.0f, 446.0f, 222.0f, 40.0f };
+            MGDesenharBotao(f, btnSelecionar,   "SELECIONAR PEN DRIVE", mouse, true,  (Color){ 0, 225, 255, 230 });
+            MGDesenharBotao(f, btnVoltarGaveta, "VOLTAR A GAVETA",      mouse, false, (Color){ 255, 65, 180, 210 });
+        } else {
+            DesenharTextoUI(f->regular, "GAVETA 3D // ARRASTE PARA MOVER  |  CLIQUE PARA INSPECIONAR EM 360",
+                            areaGaveta.x + 10.0f, areaGaveta.y + 6.0f, 15.0f, (Color){ 0, 225, 255, 175 });
         }
     } else if (cena == 5) {
         char prog[32];

@@ -227,17 +227,22 @@ bool BotaoClicado(Rectangle btn, Vector2 posMouse) {
 }
 
 
-// Clique em qualquer lugar da tela (usado para avançar a Cena 1) + som de clique
+// Clique em qualquer lugar da tela (ou Espaço/Enter/Seta Direita) + som de clique
 bool CliqueQualquerLugar(void) {
-    bool clicou = IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+    bool clicou = IsMouseButtonPressed(MOUSE_BUTTON_LEFT) ||
+                  IsKeyPressed(KEY_SPACE) ||
+                  IsKeyPressed(KEY_ENTER) ||
+                  IsKeyPressed(KEY_RIGHT);
     if (clicou && temSfxClick) PlaySound(sfxClick);
     return clicou;
 }
 
 
-// Avançar em telas de diálogo: SÓ avança ao clicar no botão específico da tela
+// Avançar em telas de diálogo (estilo Visual Novel): clique em qualquer lugar da tela
 bool AvancarDialogo(Rectangle btnAvancar, Vector2 posMouse) {
-    return BotaoClicado(btnAvancar, posMouse);
+    (void)posMouse;
+    RegistrarDebug(btnAvancar);
+    return CliqueQualquerLugar();
 }
 
 
@@ -308,6 +313,95 @@ void AtualizarHover(const Rectangle *btns, float *hovers, int count, Vector2 pos
     }
 }
 
+// Efeito hover cyberpunk: mantém apenas a seta rosa animada (a cor do texto muda para rosa no desenho).
+void DesenharHoverCyberRosa(Rectangle r, float t, double tempo) {
+    if (t <= 0.01f) return;
+
+    Color rosaNeon  = { 255, 45, 140, (unsigned char)(245 * t) };
+    Color rosaClaro = { 255, 145, 200, (unsigned char)(220 * t) };
+
+    // Seta rosa animada à esquerda do texto
+    float cy = r.y + r.height * 0.5f;
+    float pulso = sinf((float)tempo * 7.5f) * 2.0f * t;
+    float ax = r.x + 8.0f * t + pulso;
+    Vector2 p1 = { ax, cy - 7.0f * t };
+    Vector2 p2 = { ax + 10.0f * t, cy };
+    Vector2 p3 = { ax, cy + 7.0f * t };
+    DrawTriangle(p1, p3, p2, rosaNeon);
+    DrawLineEx((Vector2){ ax - 5.0f * t, cy - 5.5f * t }, (Vector2){ ax + 1.0f * t, cy }, 2.0f, rosaClaro);
+    DrawLineEx((Vector2){ ax - 5.0f * t, cy + 5.5f * t }, (Vector2){ ax + 1.0f * t, cy }, 2.0f, rosaClaro);
+}
+
+// Desenha a logo parada (sem movimento vertical/horizontal) com efeito glitch periódico.
+void DesenharLogoGlitchTech(Texture2D logo, Rectangle baseRect, double tempo) {
+    if (logo.id == 0) return;
+
+    Rectangle r = baseRect;
+    Rectangle orig = { 0.0f, 0.0f, (float)logo.width, (float)logo.height };
+    Vector2 zero = { 0.0f, 0.0f };
+
+    // Janela periódica de glitch (a cada 3.2s por ~0.20s)
+    float ciclo = fmodf((float)tempo, 3.2f);
+    bool emGlitch = (ciclo < 0.20f) || (ciclo > 1.75f && ciclo < 1.82f);
+
+    if (!emGlitch) {
+        DrawTexturePro(logo, orig, r, zero, 0.0f, WHITE);
+    } else {
+        float jitter = sinf((float)tempo * 95.0f) * 5.0f;
+        float jitterY = cosf((float)tempo * 73.0f) * 1.5f;
+
+        // Aberração cromática: camada rosa (esquerda) e ciano (direita)
+        Rectangle rRosa = { r.x - fabsf(jitter) - 2.0f, r.y + jitterY, r.width, r.height };
+        Rectangle rCiano = { r.x + fabsf(jitter) + 2.0f, r.y - jitterY, r.width, r.height };
+        DrawTexturePro(logo, orig, rRosa, zero, 0.0f, (Color){ 255, 45, 145, 145 });
+        DrawTexturePro(logo, orig, rCiano, zero, 0.0f, (Color){ 0, 235, 255, 135 });
+
+        // Fatiamento horizontal (slice tear) em 3 faixas
+        const int fatias = 3;
+        for (int s = 0; s < fatias; s++) {
+            float fy0 = (float)s / fatias;
+            float fy1 = (float)(s + 1) / fatias;
+            float offSlice = sinf((float)tempo * 120.0f + s * 2.7f) * 6.0f;
+            Rectangle srcS = { 0.0f, fy0 * logo.height, (float)logo.width, (fy1 - fy0) * logo.height };
+            Rectangle dstS = { r.x + offSlice, r.y + fy0 * r.height, r.width, (fy1 - fy0) * r.height };
+            DrawTexturePro(logo, srcS, dstS, zero, 0.0f, WHITE);
+        }
+
+        // Linha de scan tecnológica rápida sobre a logo
+        float scanY = r.y + fmodf((float)tempo * 9.0f, 1.0f) * r.height;
+        DrawRectangle((int)r.x, (int)scanY, (int)r.width, 2, (Color){ 255, 65, 165, 180 });
+    }
+}
+
+// Desenha barra de progresso cyberpunk com 10 blocos inclinados (paralelogramos).
+void DesenharBarraCyberInclinada(Rectangle area, float valor) {
+    const int totalBlocos = 10;
+    const float gap = 4.0f;
+    const float skew = 6.0f;
+    float blocoW = (area.width - gap * (totalBlocos - 1)) / totalBlocos;
+    int ativos = (int)(valor * totalBlocos + 0.5f);
+
+    for (int i = 0; i < totalBlocos; i++) {
+        float bx = area.x + i * (blocoW + gap);
+        float by = area.y;
+        float bh = area.height;
+
+        Vector2 tl = { bx + skew, by };
+        Vector2 tr = { bx + blocoW + skew, by };
+        Vector2 bl = { bx, by + bh };
+        Vector2 br = { bx + blocoW, by + bh };
+
+        bool ativo = (i < ativos);
+        Color cor = ativo ? (Color){ 255, 45, 140, 240 } : (Color){ 58, 34, 88, 210 };
+        DrawTriangle(tl, bl, br, cor);
+        DrawTriangle(tl, br, tr, cor);
+
+        Color borda = ativo ? (Color){ 255, 160, 210, 220 } : (Color){ 120, 85, 165, 130 };
+        DrawLineEx(tl, tr, 1.0f, borda);
+        DrawLineEx(bl, br, 1.0f, borda);
+    }
+}
+
 
 // Desenha só um pedaço de uma textura (fx, fy, fw, fh = fração 0..1 da imagem) na mesma posição da tela 800x600.
 // Usado na tela de configurações para combinar "volume ATIVADO" + "tela cheia ATIVADO".
@@ -349,6 +443,45 @@ Texture2D CarregarMenu(const char* nome1, const char* nome2) {
     static const char* const pastas[] = { "src/menu_inicial/", "jogo_ai.libi/src/menu_inicial/", "menu_inicial/", "" };
     const char* nomes[2] = { nome1, nome2 };
     return CarregarDePastas("MENU", pastas, 4, nomes, 2, false);
+}
+
+Texture2D CarregarAssetMenuPrincipal(const char* nome) {
+    static const char* const pastas[] = {
+        "../AssetsRay/MenuPrincipal/",
+        "AssetsRay/MenuPrincipal/",
+        "src/menu_inicial/",
+        "jogo_ai.libi/src/menu_inicial/",
+        ""
+    };
+    const char* nomes[1] = { nome };
+    return CarregarDePastas("MENU_PRINCIPAL", pastas, 5, nomes, 1, true);
+}
+
+Font CarregarFonteTeko(int fontSize) {
+    int codepoints[224];
+    int count = 0;
+    for (int c = 32; c <= 126; c++) codepoints[count++] = c;
+    for (int c = 160; c <= 255; c++) codepoints[count++] = c;
+
+    static const char* const caminhos[] = {
+        "src/fonts/Tektur-Regular.ttf",
+        "jogo_ai.libi/src/fonts/Tektur-Regular.ttf",
+        "../jogo_ai.libi/src/fonts/Tektur-Regular.ttf",
+        "src/fonts/Teko-Regular.ttf",
+        "jogo_ai.libi/src/fonts/Teko-Regular.ttf",
+        "../jogo_ai.libi/src/fonts/Teko-Regular.ttf"
+    };
+    for (int i = 0; i < 6; i++) {
+        if (FileExists(caminhos[i])) {
+            Font f = LoadFontEx(caminhos[i], fontSize, codepoints, count);
+            if (f.texture.id != 0) {
+                SetTextureFilter(f.texture, TEXTURE_FILTER_BILINEAR);
+                return f;
+            }
+        }
+    }
+    TraceLog(LOG_WARNING, "FONTE: Tektur-Regular.ttf / Teko-Regular.ttf nao encontrada, usando fallback");
+    return GetFontDefault();
 }
 
 Texture2D CarregarCena1(const char* nome1, const char* nome2) {
@@ -604,6 +737,7 @@ int main(void) {
 
 
     InitWindow(larguraTela, alturaTela, "ai.libe - Projeto Investigativo");
+    DefinirTelaCheia(true, larguraTela, alturaTela);
     InitAudioDevice();
     SetTargetFPS(60);
     SetExitKey(KEY_NULL);   // ESC não fecha mais o jogo (ESC é usado para voltar ao menu)
@@ -623,20 +757,13 @@ int main(void) {
     // Progresso do jogador (acertos, erros, evidência perdida)
     Jogador jogador = {0};
     FontesUI fontes = CarregarFontesUI();
+    Font fontTeko = CarregarFonteTeko(48);
     EstadoMiniGame miniGame = {0};
     EstadoCelular celular = {0};
 
     // ======= CARREGAMENTO DE TEXTURAS DO MENU (multi-caminho) =======
-    Texture2D imgMenu = CarregarMenu("menu.png", NULL);
-
-    // Configurações: agora são 2 botões (VOLUME GERAL e TELA CHEIA), cada um ATIVADO/DESATIVADO
-    //   configuracoes3 = volume DESATIVADO + tela cheia DESATIVADO
-    //   configuracoes2 = volume ATIVADO    + tela cheia DESATIVADO
-    //   configuracoes1 = volume DESATIVADO + tela cheia ATIVADO
-    //   (volume ATIVADO + tela cheia ATIVADO = configuracoes2 com o recorte da linha "tela cheia" da configuracoes1)
-    Texture2D texConfigTudoOff = CarregarMenu("configuracoes3.png", "configuracoes.png");
-    Texture2D texConfigVolOn   = CarregarMenu("configuracoes2.png", NULL);
-    Texture2D texConfigTelaOn  = CarregarMenu("configuracoes1.png", NULL);
+    Texture2D texMenuBg   = CarregarAssetMenuPrincipal("menu (1).png");
+    Texture2D texMenuLogo = CarregarAssetMenuPrincipal("ailibe marca.png");
 
     Texture2D texCreditos = CarregarMenu("creditos.png", NULL);
 
@@ -869,7 +996,7 @@ int main(void) {
 
     // ======= MIPMAPS + FILTRO =======
     Texture2D* todasTexturas[] = {
-        &imgMenu, &texConfigTudoOff, &texConfigVolOn, &texConfigTelaOn, &texCreditos,
+        &texMenuBg, &texMenuLogo, &texCreditos,
         &texRegras[0], &texRegras[1], &texRegras[2], &texRegras[3], &texRegras[4],
         &imgP1, &imgP1_1, &imgP1_2,
         &imgC3_1, &imgC3_2, &imgC3_3, &imgC3_4, &imgC3_5, &imgP2,
@@ -918,16 +1045,25 @@ int main(void) {
     // ======= BOTÕES E ÁREAS DE CLIQUE (coordenadas na tela virtual 800x600) =======
     // (calculados a partir das imagens 1440x1024: x * 0.5556, y * 0.5859)
 
-    // MENU: JOGAR / REGRAS / CONFIGURAÇÕES / CRÉDITOS
-    Rectangle btnJogar    = { 115, 270, 110, 36 };
-    Rectangle btnRegras   = { 138, 324,  90, 36 };
-    Rectangle btnConfig   = { 108, 374, 176, 36 };
-    Rectangle btnCreditos = { 133, 428, 108, 36 };
+    // MENU PRINCIPAL: Logo acima + Jogar / Configurações / Créditos / Sair
+    Rectangle rectLogoMenu = { 56,  52, 310, 159 };
+    Rectangle btnJogar     = { 68, 248, 260,  50 };
+    Rectangle btnConfig    = { 68, 308, 260,  50 };
+    Rectangle btnCreditos  = { 68, 368, 260,  50 };
+    Rectangle btnSair      = { 68, 428, 260,  50 };
 
-    // CONFIGURAÇÕES: dois botões de liga/desliga + VOLTAR
-    Rectangle btnVolumeGeral = { 574, 236, 110, 26 };   // VOLUME GERAL (ATIVADO/DESATIVADO)
-    Rectangle btnTelaCheia   = { 574, 328, 110, 26 };   // TELA CHEIA   (ATIVADO/DESATIVADO)
-    Rectangle btnVoltarMenu  = { 100, 503,  90, 32 };   // VOLTAR (configurações)
+    // CONFIGURAÇÕES: Pular tutorial / Ajustar Música / Ajustar Efeitos / Tela cheia / Voltar
+    Rectangle btnPularTutorial   = {  72, 148, 466, 54 };
+    Rectangle btnAjustarMusica   = {  72, 214, 200, 54 };
+    Rectangle btnMusicaMenos     = { 276, 226,  30, 30 };
+    Rectangle sliderMusica       = { 312, 230, 144, 22 };
+    Rectangle btnMusicaMais      = { 464, 226,  30, 30 };
+    Rectangle btnAjustarEfeitos  = {  72, 280, 200, 54 };
+    Rectangle btnEfeitosMenos    = { 276, 292,  30, 30 };
+    Rectangle sliderEfeitos      = { 312, 296, 144, 22 };
+    Rectangle btnEfeitosMais     = { 464, 292,  30, 30 };
+    Rectangle btnTelaCheia       = {  72, 346, 466, 54 };
+    Rectangle btnVoltarMenu      = {  72, 444, 190, 52 };
 
     // CRÉDITOS: VOLTAR (sem ícone, mais à direita que o das configurações)
     Rectangle btnVoltarCreditos = { 130, 521, 62, 30 };
@@ -1140,12 +1276,13 @@ int main(void) {
     bool telaCheia = false;
     bool debugBotoes = false;
 
-    // Configurações: VOLUME GERAL agora é um botão ATIVADO/DESATIVADO.
-    // (Para o jogo abrir com o som desligado, troque para false.)
-    bool volumeAtivo = true;
-    const float volMusica  = 0.55f;   // volume fixo da música
-    const float volEfeitos = 0.65f;   // volume fixo dos efeitos
-    SetMasterVolume(volumeAtivo ? 1.0f : 0.0f);
+    // Configurações: Pular tutorial, Ajustar Música, Ajustar Efeitos, Tela cheia
+    bool pularTutorial = false;
+    float volMusica  = 0.50f;
+    float volEfeitos = 0.70f;
+    bool arrastandoMusica = false;
+    bool arrastandoEfeitos = false;
+    SetMasterVolume(1.0f);
 
     Vector2 posMouse = { 0.0f, 0.0f };
 
@@ -1327,26 +1464,77 @@ int main(void) {
             estadoAntesPausa = estadoAtual;
         } else switch (estadoAtual) {
             case STATE_MENU:
-                if (BotaoClicado(btnJogar, posMouse)) estadoAtual = STATE_C1_1;
-                else if (BotaoClicado(btnRegras, posMouse)) {
-                    paginaRegras = 0;
-                    estadoAtual = STATE_REGRAS;
+                if (BotaoClicado(btnJogar, posMouse)) {
+                    if (pularTutorial) {
+                        estadoAtual = STATE_C1_1;
+                    } else {
+                        paginaRegras = 0;
+                        estadoAtual = STATE_REGRAS;
+                    }
                 }
                 else if (BotaoClicado(btnConfig, posMouse)) estadoAtual = STATE_CONFIG;
                 else if (BotaoClicado(btnCreditos, posMouse)) estadoAtual = STATE_CREDITOS;
+                else if (BotaoClicado(btnSair, posMouse)) {
+                    CloseWindow();
+                    return 0;
+                }
                 break;
 
 
-            case STATE_CONFIG:
-                if (BotaoClicado(btnVolumeGeral, posMouse)) {
-                    // Liga/desliga todo o áudio do jogo
-                    volumeAtivo = !volumeAtivo;
-                    SetMasterVolume(volumeAtivo ? 1.0f : 0.0f);
+            case STATE_CONFIG: {
+                Rectangle hitMusica  = { sliderMusica.x - 4,  sliderMusica.y - 8,  sliderMusica.width + 8,  sliderMusica.height + 16 };
+                Rectangle hitEfeitos = { sliderEfeitos.x - 4, sliderEfeitos.y - 8, sliderEfeitos.width + 8, sliderEfeitos.height + 16 };
+
+                if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(posMouse, hitMusica)) {
+                    arrastandoMusica = true;
                 }
-                else if (BotaoClicado(btnTelaCheia, posMouse)) {
+                if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(posMouse, hitEfeitos)) {
+                    arrastandoEfeitos = true;
+                }
+
+                if (arrastandoMusica) {
+                    float rel = (posMouse.x - sliderMusica.x) / sliderMusica.width;
+                    int bloco = (int)ceilf(rel * 10.0f);
+                    if (rel <= 0.02f) bloco = 0;
+                    if (bloco < 0) bloco = 0;
+                    if (bloco > 10) bloco = 10;
+                    volMusica = bloco * 0.10f;
+                    if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) arrastandoMusica = false;
+                } else if (arrastandoEfeitos) {
+                    float rel = (posMouse.x - sliderEfeitos.x) / sliderEfeitos.width;
+                    int bloco = (int)ceilf(rel * 10.0f);
+                    if (rel <= 0.02f) bloco = 0;
+                    if (bloco < 0) bloco = 0;
+                    if (bloco > 10) bloco = 10;
+                    volEfeitos = bloco * 0.10f;
+                    if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
+                        arrastandoEfeitos = false;
+                        if (temSfxClick) {
+                            SetSoundVolume(sfxClick, volEfeitos);
+                            PlaySound(sfxClick);
+                        }
+                    }
+                } else if (BotaoClicado(btnMusicaMenos, posMouse)) {
+                    volMusica = roundf((volMusica - 0.10f) * 10.0f) / 10.0f;
+                    if (volMusica < 0.0f) volMusica = 0.0f;
+                } else if (BotaoClicado(btnMusicaMais, posMouse)) {
+                    volMusica = roundf((volMusica + 0.10f) * 10.0f) / 10.0f;
+                    if (volMusica > 1.0f) volMusica = 1.0f;
+                } else if (BotaoClicado(btnEfeitosMenos, posMouse)) {
+                    volEfeitos = roundf((volEfeitos - 0.10f) * 10.0f) / 10.0f;
+                    if (volEfeitos < 0.0f) volEfeitos = 0.0f;
+                    if (temSfxClick) { SetSoundVolume(sfxClick, volEfeitos); PlaySound(sfxClick); }
+                } else if (BotaoClicado(btnEfeitosMais, posMouse)) {
+                    volEfeitos = roundf((volEfeitos + 0.10f) * 10.0f) / 10.0f;
+                    if (volEfeitos > 1.0f) volEfeitos = 1.0f;
+                    if (temSfxClick) { SetSoundVolume(sfxClick, volEfeitos); PlaySound(sfxClick); }
+                } else if (BotaoClicado(btnPularTutorial, posMouse)) {
+                    pularTutorial = !pularTutorial;
+                } else if (BotaoClicado(btnTelaCheia, posMouse)) {
                     DefinirTelaCheia(!IsWindowFullscreen(), larguraTela, alturaTela);
-                }
-                else if (BotaoClicado(btnVoltarMenu, posMouse) || IsKeyPressed(KEY_ESCAPE)) {
+                } else if (BotaoClicado(btnVoltarMenu, posMouse) || IsKeyPressed(KEY_ESCAPE)) {
+                    arrastandoMusica = false;
+                    arrastandoEfeitos = false;
                     if (configVeioDaPausa) {
                         configVeioDaPausa = false;
                         estadoAtual = estadoAntesPausa;
@@ -1356,6 +1544,7 @@ int main(void) {
                     }
                 }
                 break;
+            }
 
 
             case STATE_CREDITOS:
@@ -1408,13 +1597,13 @@ int main(void) {
                 break;
 
             case STATE_C1_4:
-                if (BotaoClicado(btnContinuarC1_4, posMouse)) {
+                // Volta para a tela anterior ao clicar no VOLTAR do topo
+                if (BotaoClicado(btnVoltarTopo, posMouse)) {
+                    estadoAtual = STATE_C1_3;
+                }
+                else if (AvancarDialogo(btnContinuarC1_4, posMouse)) {
                     IniciarCelular(&celular);
                     estadoAtual = STATE_C1_5;
-                }
-                // Volta para a tela anterior ao clicar no VOLTAR do topo
-                else if (BotaoClicado(btnVoltarTopo, posMouse)) {
-                    estadoAtual = STATE_C1_3;
                 }
                 break;
 
@@ -1448,8 +1637,10 @@ int main(void) {
                 if (resMG == 1) {
                     if (temSfxBrilho) PlaySound(sfxBrilho);
                     dossie.caio[0] = true; // evidência desbloqueada
+                    miniGame.desafioAtual = 0;
                     estadoAtual = STATE_EVIDENCIA_DESBLOQUEADA;
                 } else if (resMG == -1) {
+                    miniGame.desafioAtual = 0;
                     estadoAtual = STATE_C2_PERDIDA;
                 }
                 break;
@@ -1634,8 +1825,10 @@ int main(void) {
                 if (resMG == 1) {
                     if (temSfxBrilho) PlaySound(sfxBrilho);
                     dossie.caio[2] = true;
+                    miniGame.desafioAtual = 0;
                     estadoAtual = STATE_C4_DESBLOQUEADA;
                 } else if (resMG == -1) {
+                    miniGame.desafioAtual = 0;
                     estadoAtual = STATE_C4_PERDIDA;
                 }
                 break;
@@ -1699,8 +1892,10 @@ int main(void) {
                 if (resMG == 1) {
                     if (temSfxBrilho) PlaySound(sfxBrilho);
                     dossie.juliana[0] = true;
+                    miniGame.desafioAtual = 0;
                     estadoAtual = STATE_C5_DESBLOQUEADA;
                 } else if (resMG == -1) {
+                    miniGame.desafioAtual = 0;
                     estadoAtual = STATE_C5_PERDIDA;
                 }
                 break;
@@ -1753,8 +1948,10 @@ int main(void) {
                 if (resMG == 1) {
                     if (temSfxBrilho) PlaySound(sfxBrilho);
                     dossie.juliana[1] = true;
+                    miniGame.desafioAtual = 0;
                     estadoAtual = STATE_C6_DESBLOQUEADA;
                 } else if (resMG == -1) {
+                    miniGame.desafioAtual = 0;
                     estadoAtual = STATE_C6_PERDIDA;
                 }
                 break;
@@ -1822,8 +2019,10 @@ int main(void) {
                 if (resMG == 1) {
                     if (temSfxBrilho) PlaySound(sfxBrilho);
                     dossie.juliana[2] = true;
+                    miniGame.desafioAtual = 0;
                     estadoAtual = STATE_C7_DESBLOQUEADA;
                 } else if (resMG == -1) {
+                    miniGame.desafioAtual = 0;
                     estadoAtual = STATE_C7_PERDIDA;
                 }
                 break;
@@ -1964,9 +2163,9 @@ int main(void) {
                 break;
 
             case STATE_F3_3:
-                // F3_3 VEREDITO CORRETO: botão "CLIQUE PARA CONTINUAR" -> F3_4
+                // F3_3 VEREDITO CORRETO: clique para continuar -> F3_4
                 if (BotaoClicado(btnVoltar, posMouse)) estadoAtual = STATE_F3_2;
-                else if (BotaoClicado(btnContinuarF3, posMouse)) estadoAtual = STATE_F3_4;
+                else if (AvancarDialogo(btnContinuarF3, posMouse)) estadoAtual = STATE_F3_4;
                 break;
 
             case STATE_F3_4:
@@ -2098,8 +2297,8 @@ int main(void) {
                         else estadoAtual = (GameState)(estadoAtual - 1);
                     }
                     else if (estadoAtual == STATE_C6_8) {
-                        // Tela "Algumas horas depois": botão Continuar no centro
-                        if (BotaoClicado(btnContinuarHorasC6, posMouse)) estadoAtual = STATE_C6_9;
+                        // Tela "Algumas horas depois": clique para continuar
+                        if (AvancarDialogo(btnContinuarHorasC6, posMouse)) estadoAtual = STATE_C6_9;
                     }
                     else if (AvancarDialogo(btnAvancarC6, posMouse)) {
                         if (estadoAtual == STATE_C6_12) estadoAtual = STATE_C6_EVIDENCIA;
@@ -2110,6 +2309,10 @@ int main(void) {
         }
 
         // ======================= RENDERIZAÇÃO =======================
+        if (estadoAtual == STATE_C4_DESAFIO && !jogoPausado) {
+            PrepararMiniGame3D(&miniGame, 4);
+        }
+
         BeginDrawing();
         ClearBackground(BLACK);
         BeginMode2D(camera);
@@ -2117,64 +2320,164 @@ int main(void) {
         switch (estadoAtual) {
             case STATE_MENU: {
                 static float menuHover[4] = { 0 };
-                Rectangle menuBtns[4] = { btnJogar, btnRegras, btnConfig, btnCreditos };
+                Rectangle menuBtns[4] = { btnJogar, btnConfig, btnCreditos, btnSair };
+                const char* menuTextos[4] = { "jogar", "configurações", "créditos", "sair" };
                 AtualizarHover(menuBtns, menuHover, 4, posMouse, GetFrameTime());
                 double tempo = GetTime();
 
-                if (imgMenu.id != 0) {
-                    DesenharTela(imgMenu, dest);
+                // Fundo cyberpunk
+                if (texMenuBg.id != 0) {
+                    DesenharTela(texMenuBg, dest);
                 } else {
-                    DrawText("AI.LIBE - MENU", 310, 150, 24, RAYWHITE);
-                    DrawText("JOGAR", (int)btnJogar.x, (int)btnJogar.y, 22, RAYWHITE);
-                    DrawText("REGRAS", (int)btnRegras.x, (int)btnRegras.y, 22, RAYWHITE);
-                    DrawText("CONFIGURACOES", (int)btnConfig.x, (int)btnConfig.y, 22, RAYWHITE);
-                    DrawText("CREDITOS", (int)btnCreditos.x, (int)btnCreditos.y, 22, RAYWHITE);
+                    ClearBackground((Color){ 18, 10, 28, 255 });
                 }
 
+                // Gradiente escuro à esquerda para destacar logo e botões
+                DrawRectangleGradientH(0, 0, 440, alturaTela,
+                                       (Color){ 12, 6, 22, 165 },
+                                       (Color){ 12, 6, 22, 0 });
+
+                // Logo posicionada acima dos botões com efeito glitch/tecnológico (sem movimento vertical)
+                if (texMenuLogo.id != 0) {
+                    DesenharLogoGlitchTech(texMenuLogo, rectLogoMenu, tempo);
+                } else {
+                    DrawTextEx(fontTeko, "ai.libe", (Vector2){ rectLogoMenu.x + 12, rectLogoMenu.y + 45 }, 60, 2.0f, WHITE);
+                }
+
+                // Botões do menu principal em Teko Regular: seta rosa + texto muda para rosa no hover
                 for (int i = 0; i < 4; i++) {
-                    DesenharHoverMenu(menuBtns[i], menuHover[i], tempo);
+                    float h = menuHover[i];
+                    DesenharHoverCyberRosa(menuBtns[i], h, tempo);
+
+                    float textX = menuBtns[i].x + 14.0f + 16.0f * h;
+                    float textY = menuBtns[i].y + 4.0f;
+                    Color corTexto = {
+                        (unsigned char)(238 + (255 - 238) * h),
+                        (unsigned char)(235 + (45  - 235) * h),
+                        (unsigned char)(248 + (140 - 248) * h),
+                        255
+                    };
+                    DrawTextEx(fontTeko, menuTextos[i], (Vector2){ textX, textY }, 46, 1.4f, corTexto);
                 }
                 break;
             }
 
 
             case STATE_CONFIG: {
-                static float configHover[3] = { 0 };
-                Rectangle configBtns[3] = { btnVolumeGeral, btnTelaCheia, btnVoltarMenu };
-                AtualizarHover(configBtns, configHover, 3, posMouse, GetFrameTime());
+                static float configHover[5] = { 0 };
+                Rectangle rowMusica  = { btnAjustarMusica.x, btnAjustarMusica.y, 466, 54 };
+                Rectangle rowEfeitos = { btnAjustarEfeitos.x, btnAjustarEfeitos.y, 466, 54 };
+                Rectangle configBtns[5] = {
+                    btnPularTutorial, rowMusica, rowEfeitos, btnTelaCheia, btnVoltarMenu
+                };
+                AtualizarHover(configBtns, configHover, 5, posMouse, GetFrameTime());
                 double tempo = GetTime();
 
-                bool volOn = volumeAtivo;
-                bool telaOn = telaCheia;
-
-                if (!volOn && !telaOn) {
-                    DesenharTela(texConfigTudoOff, dest);            // configuracoes3
-                } else if (volOn && !telaOn) {
-                    DesenharTela(texConfigVolOn, dest);              // configuracoes2
-                } else if (!volOn && telaOn) {
-                    DesenharTela(texConfigTelaOn, dest);             // configuracoes1
+                // Mesmo fundo cyberpunk com painel translúcido
+                if (texMenuBg.id != 0) {
+                    DesenharTela(texMenuBg, dest);
                 } else {
-                    // Os dois ATIVADOS: base com volume ativado + recorte da linha "tela cheia" ativada
-                    DesenharTela(texConfigVolOn, dest);
-                    DesenharRecorte(texConfigTelaOn, 0.715f, 0.545f, 0.14f, 0.055f,
-                                    (float)larguraTela, (float)alturaTela);
+                    ClearBackground((Color){ 18, 10, 28, 255 });
+                }
+                DrawRectangle(0, 0, larguraTela, alturaTela, (Color){ 12, 6, 24, 175 });
+
+                // Painel cyberpunk de configurações
+                Rectangle painel = { 54, 56, 502, 468 };
+                DrawRectangleRounded(painel, 0.03f, 6, (Color){ 20, 11, 36, 225 });
+                DrawRectangleRoundedLinesEx(painel, 0.03f, 6, 1.5f, (Color){ 255, 45, 140, 140 });
+
+                // Cantoneiras decorativas do painel
+                DrawRectangle((int)painel.x, (int)painel.y, 64, 3, (Color){ 255, 45, 140, 240 });
+                DrawRectangle((int)painel.x, (int)painel.y, 3, 42, (Color){ 255, 45, 140, 240 });
+
+                // Título
+                DrawTextEx(fontTeko, "configurações", (Vector2){ 76, 74 }, 48, 1.5f, (Color){ 245, 240, 255, 255 });
+                DrawRectangle(76, 124, 458, 2, (Color){ 255, 45, 140, 110 });
+
+                // 1. Pular tutorial
+                {
+                    float h = configHover[0];
+                    DesenharHoverCyberRosa(btnPularTutorial, h, tempo);
+                    Color corLbl = {
+                        (unsigned char)(238 + (255 - 238) * h),
+                        (unsigned char)(235 + (45  - 235) * h),
+                        (unsigned char)(248 + (140 - 248) * h), 255
+                    };
+                    DrawTextEx(fontTeko, "pular tutorial", (Vector2){ btnPularTutorial.x + 14.0f + 16.0f * h, btnPularTutorial.y + 8.0f }, 38, 1.1f, corLbl);
+                    const char* txtTut = pularTutorial ? "ligado" : "desligado";
+                    Color corTut = pularTutorial ? (Color){ 255, 65, 165, 255 } : (Color){ 185, 175, 210, 230 };
+                    DrawTextEx(fontTeko, txtTut, (Vector2){ 432, btnPularTutorial.y + 9.0f }, 36, 1.0f, corTut);
                 }
 
-                if (texConfigTudoOff.id == 0 && texConfigVolOn.id == 0 && texConfigTelaOn.id == 0) {
-                    DrawText("CONFIGURACOES", 300, 200, 24, RAYWHITE);
-                    DrawText(volOn ? "VOLUME GERAL: ATIVADO" : "VOLUME GERAL: DESATIVADO", 250, 245, 18, RAYWHITE);
-                    DrawText(telaOn ? "TELA CHEIA: ATIVADO" : "TELA CHEIA: DESATIVADO", 250, 335, 18, RAYWHITE);
-                    DrawText("VOLTAR", (int)btnVoltarMenu.x, (int)btnVoltarMenu.y, 20, RAYWHITE);
+                // 2. Ajustar Música (- / 10 blocos inclinados / +)
+                {
+                    float h = configHover[1];
+                    DesenharHoverCyberRosa(rowMusica, h, tempo);
+                    Color corLbl = {
+                        (unsigned char)(238 + (255 - 238) * h),
+                        (unsigned char)(235 + (45  - 235) * h),
+                        (unsigned char)(248 + (140 - 248) * h), 255
+                    };
+                    DrawTextEx(fontTeko, "ajustar música", (Vector2){ rowMusica.x + 14.0f + 16.0f * h, rowMusica.y + 8.0f }, 38, 1.1f, corLbl);
+
+                    Color corMenos = CheckCollisionPointRec(posMouse, btnMusicaMenos) ? (Color){ 255, 45, 140, 255 } : (Color){ 235, 230, 248, 255 };
+                    Color corMais  = CheckCollisionPointRec(posMouse, btnMusicaMais)  ? (Color){ 255, 45, 140, 255 } : (Color){ 235, 230, 248, 255 };
+                    DrawTextEx(fontTeko, "-", (Vector2){ btnMusicaMenos.x + 9, btnMusicaMenos.y - 6 }, 40, 1.0f, corMenos);
+                    DesenharBarraCyberInclinada(sliderMusica, volMusica);
+                    DrawTextEx(fontTeko, "+", (Vector2){ btnMusicaMais.x + 7, btnMusicaMais.y - 6 }, 40, 1.0f, corMais);
+
+                    char pctM[16];
+                    snprintf(pctM, sizeof(pctM), "%d%%", (int)(volMusica * 100.0f + 0.5f));
+                    DrawTextEx(fontTeko, pctM, (Vector2){ 502, rowMusica.y + 10.0f }, 32, 1.0f, (Color){ 235, 230, 248, 240 });
                 }
 
-                // Indicadores luminosos de status (LED tecnológico) ao lado dos toggles
-                Color corVol  = volOn  ? (Color){ 0, 235, 180, 220 } : (Color){ 255, 80, 90, 170 };
-                Color corTela = telaOn ? (Color){ 0, 235, 180, 220 } : (Color){ 255, 80, 90, 170 };
-                DrawCircle((int)(btnVolumeGeral.x - 14), (int)(btnVolumeGeral.y + btnVolumeGeral.height * 0.5f), 5.0f, corVol);
-                DrawCircle((int)(btnTelaCheia.x - 14),   (int)(btnTelaCheia.y + btnTelaCheia.height * 0.5f),   5.0f, corTela);
+                // 3. Ajustar Efeitos (- / 10 blocos inclinados / +)
+                {
+                    float h = configHover[2];
+                    DesenharHoverCyberRosa(rowEfeitos, h, tempo);
+                    Color corLbl = {
+                        (unsigned char)(238 + (255 - 238) * h),
+                        (unsigned char)(235 + (45  - 235) * h),
+                        (unsigned char)(248 + (140 - 248) * h), 255
+                    };
+                    DrawTextEx(fontTeko, "ajustar efeitos", (Vector2){ rowEfeitos.x + 14.0f + 16.0f * h, rowEfeitos.y + 8.0f }, 38, 1.1f, corLbl);
 
-                for (int i = 0; i < 3; i++) {
-                    DesenharHoverMenu(configBtns[i], configHover[i], tempo);
+                    Color corMenos = CheckCollisionPointRec(posMouse, btnEfeitosMenos) ? (Color){ 255, 45, 140, 255 } : (Color){ 235, 230, 248, 255 };
+                    Color corMais  = CheckCollisionPointRec(posMouse, btnEfeitosMais)  ? (Color){ 255, 45, 140, 255 } : (Color){ 235, 230, 248, 255 };
+                    DrawTextEx(fontTeko, "-", (Vector2){ btnEfeitosMenos.x + 9, btnEfeitosMenos.y - 6 }, 40, 1.0f, corMenos);
+                    DesenharBarraCyberInclinada(sliderEfeitos, volEfeitos);
+                    DrawTextEx(fontTeko, "+", (Vector2){ btnEfeitosMais.x + 7, btnEfeitosMais.y - 6 }, 40, 1.0f, corMais);
+
+                    char pctB[16];
+                    snprintf(pctB, sizeof(pctB), "%d%%", (int)(volEfeitos * 100.0f + 0.5f));
+                    DrawTextEx(fontTeko, pctB, (Vector2){ 502, rowEfeitos.y + 10.0f }, 32, 1.0f, (Color){ 235, 230, 248, 240 });
+                }
+
+                // 4. Tela cheia (Ligada / Desligada)
+                {
+                    float h = configHover[3];
+                    DesenharHoverCyberRosa(btnTelaCheia, h, tempo);
+                    Color corLbl = {
+                        (unsigned char)(238 + (255 - 238) * h),
+                        (unsigned char)(235 + (45  - 235) * h),
+                        (unsigned char)(248 + (140 - 248) * h), 255
+                    };
+                    DrawTextEx(fontTeko, "tela cheia", (Vector2){ btnTelaCheia.x + 14.0f + 16.0f * h, btnTelaCheia.y + 8.0f }, 38, 1.1f, corLbl);
+                    const char* txtTela = telaCheia ? "ligada" : "desligada";
+                    Color corTela = telaCheia ? (Color){ 255, 65, 165, 255 } : (Color){ 185, 175, 210, 230 };
+                    DrawTextEx(fontTeko, txtTela, (Vector2){ 432, btnTelaCheia.y + 9.0f }, 36, 1.0f, corTela);
+                }
+
+                // 5. Voltar
+                {
+                    float h = configHover[4];
+                    DesenharHoverCyberRosa(btnVoltarMenu, h, tempo);
+                    Color corLbl = {
+                        (unsigned char)(238 + (255 - 238) * h),
+                        (unsigned char)(235 + (45  - 235) * h),
+                        (unsigned char)(248 + (140 - 248) * h), 255
+                    };
+                    DrawTextEx(fontTeko, "voltar", (Vector2){ btnVoltarMenu.x + 14.0f + 16.0f * h, btnVoltarMenu.y + 6.0f }, 40, 1.2f, corLbl);
                 }
                 break;
             }
@@ -2190,19 +2493,22 @@ int main(void) {
                 break;
 
 
-            case STATE_REGRAS:
+            case STATE_REGRAS: {
+                static float regrasHover = 0.0f;
+                AtualizarHover(&btnContinuarRegras, &regrasHover, 1, posMouse, GetFrameTime());
                 if (texRegras[paginaRegras].id != 0) {
                     DesenharTela(texRegras[paginaRegras], dest);
                 } else {
                     DrawText("REGRAS DO JOGO", 300, 200, 24, RAYWHITE);
                     DrawText("VOLTAR", (int)btnVoltarRegras.x, (int)btnVoltarRegras.y, 20, RAYWHITE);
                 }
-                DrawRectangleRec(btnContinuarRegras, WHITE);
-                DrawRectangleLinesEx(btnContinuarRegras, 3.0f, BLACK);
-                DrawText(paginaRegras == 4 ? "JOGAR" : "CONTINUAR",
-                         (int)btnContinuarRegras.x + (paginaRegras == 4 ? 22 : 8),
-                         (int)btnContinuarRegras.y + 8, 16, BLACK);
+                DrawRectangleRounded(btnContinuarRegras, 0.22f, 6, (Color){ 14, 22, 38, 240 });
+                DrawRectangleRoundedLinesEx(btnContinuarRegras, 0.22f, 6, 1.8f, (Color){ 0, 210, 255, 220 });
+                DesenharTextoCentralizadoUI(fontes.bold, paginaRegras == 4 ? "JOGAR" : "CONTINUAR",
+                                            btnContinuarRegras, 18.0f, (Color){ 170, 245, 255, 255 });
+                DesenharHoverMenu(btnContinuarRegras, regrasHover, GetTime());
                 break;
+            }
 
 
             // --- CENA 1 ---
@@ -2217,15 +2523,12 @@ int main(void) {
                 Vector2 v3 = { 430.0f, 170.0f };
                 DrawTriangle(v1, v2, v3, (Color){ 138, 43, 226, 255 });
                 DrawTriangleLines(v1, v2, v3, (Color){ 200, 140, 255, 255 });
-                DrawText("!", 396, 134, 28, RAYWHITE);
+                DesenharTextoUI(fontes.bold, "!", 395.0f, 134.0f, 28.0f, RAYWHITE);
 
-                // Botão "Acessar caso" sem fundo cinza, seguindo a paleta do jogo
-                DrawRectangleRounded(btnAcessarCaso, 0.22f, 8, (Color){ 24, 20, 48, 255 });
-                DrawRectangleRoundedLinesEx(btnAcessarCaso, 0.22f, 8, 2.0f, (Color){ 157, 78, 221, 255 });
-                int tw = MeasureText("Acessar caso", 20);
-                DrawText("Acessar caso",
-                         (int)(btnAcessarCaso.x + (btnAcessarCaso.width - tw) * 0.5f),
-                         (int)(btnAcessarCaso.y + 15), 20, RAYWHITE);
+                // Botão "Acessar caso" no estilo tecnológico padronizado do jogo
+                DrawRectangleRounded(btnAcessarCaso, 0.22f, 8, (Color){ 16, 22, 42, 245 });
+                DrawRectangleRoundedLinesEx(btnAcessarCaso, 0.22f, 8, 2.0f, (Color){ 0, 210, 255, 210 });
+                DesenharTextoCentralizadoUI(fontes.bold, "ACESSAR CASO", btnAcessarCaso, 22.0f, (Color){ 170, 245, 255, 255 });
                 DesenharHoverMenu(btnAcessarCaso, c1Hover, GetTime());
                 break;
             }
@@ -2408,6 +2711,11 @@ int main(void) {
             Rectangle painelPausa = { 245, 135, 310, 325 };
             DrawRectangleRounded(painelPausa, 0.06f, 8, (Color){ 14, 20, 34, 245 });
             DrawRectangleRoundedLinesEx(painelPausa, 0.06f, 8, 2.0f, (Color){ 0, 210, 255, 200 });
+            Color corCantoPausa = (Color){ 120, 245, 255, 235 };
+            DrawLineEx((Vector2){ painelPausa.x + 6, painelPausa.y + 18 }, (Vector2){ painelPausa.x + 6, painelPausa.y + 6 }, 2.2f, corCantoPausa);
+            DrawLineEx((Vector2){ painelPausa.x + 6, painelPausa.y + 6 }, (Vector2){ painelPausa.x + 18, painelPausa.y + 6 }, 2.2f, corCantoPausa);
+            DrawLineEx((Vector2){ painelPausa.x + painelPausa.width - 18, painelPausa.y + 6 }, (Vector2){ painelPausa.x + painelPausa.width - 6, painelPausa.y + 6 }, 2.2f, corCantoPausa);
+            DrawLineEx((Vector2){ painelPausa.x + painelPausa.width - 6, painelPausa.y + 6 }, (Vector2){ painelPausa.x + painelPausa.width - 6, painelPausa.y + 18 }, 2.2f, corCantoPausa);
             DesenharTextoCentralizadoUI(fontes.bold, "JOGO PAUSADO", (Rectangle){ 245, 154, 310, 34 }, 28, (Color){ 160, 245, 255, 255 });
 
             for (int i = 0; i < 4; i++) {
@@ -2440,15 +2748,10 @@ int main(void) {
 
 
     // ======= UNLOAD =======
-    for (int k = 0; k < 5; k++) UnloadTexture(texRegras[k]);
-    UnloadTexture(texConfigTudoOff);
-    UnloadTexture(texConfigVolOn);
-    UnloadTexture(texConfigTelaOn);
-    UnloadTexture(texCreditos);
-    UnloadTexture(imgMenu);
-    UnloadTexture(texConfigTudoOff);
-    UnloadTexture(texConfigVolOn);
-    UnloadTexture(texConfigTelaOn);
+    DescarregarMiniGame();
+    if (fontTeko.texture.id != GetFontDefault().texture.id) UnloadFont(fontTeko);
+    UnloadTexture(texMenuBg);
+    UnloadTexture(texMenuLogo);
     UnloadTexture(texCreditos);
     for (int k = 0; k < 5; k++) UnloadTexture(texRegras[k]);
 
