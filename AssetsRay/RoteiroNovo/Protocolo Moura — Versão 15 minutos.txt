@@ -1,0 +1,197 @@
+﻿Protocolo Moura — Versão 15 minutos
+Nov 19, 2026 · @raysha
+Versão enxuta do roteiro: 7 cenas, 4 provas e 3 finais, todas na delegacia e na sala de interrogatório, com as falas-chave marcadas para dublagem.
+Resumo da versão curta
+Ambientação: o cenário volta ao do roteiro original. Só existem a mesa da investigadora e a sala de interrogatório. Tribunal, perícia, sede da NEXARA e mãe de Gabriel saem como cenas; seus fatos aparecem em falas curtas. O mundo de 2045 é dito em três frases na Cena 1, sem lore extra.
+Tempo estimado (leitura + voz + desafios de até 20 s):
+Cena
+	Conteúdo
+	Prova
+	Tempo
+	1
+	A ocorrência
+	—
+	1 min
+	2
+	Interrogatório de Caio
+	—
+	2,5 min
+	3
+	Pacote anônimo
+	1: áudio (IA)
+	1,5 min
+	4
+	Interrogatório de Juliana
+	2: foto (IA)
+	2,5 min
+	5
+	O corpo
+	3: localização (real)
+	2 min
+	6
+	Juliana confrontada
+	4: corrida (real)
+	2 min
+	7
+	Veredito e final
+	—
+	2,5 min
+	Provas decisivas: todas as 4. Sem elas, não há como sustentar a acusação certa. Duração total estimada: cerca de 14 minutos.
+Dublagem: as falas marcadas com [DUB] são gravadas. As demais aparecem só em texto, com som de voz opcional (murmúrio). São 5 vozes: Helena, Delegado Meireles, Caio, Juliana e Gabriel (só em duas falas curtas). Estimativa de cerca de 35 falas dubladas.
+Regra de cada prova: botão Desbloquear nova evidência, desafio de lógica [a definir], acerto abre a análise, erro mostra "Evidência perdida" e o jogo continua. O jogador classifica a prova como Real ou IA. Cada desafio tem limite de 20 segundos e cada análise, de 30.
+Regra dos finais:
+* Final 1, A Verdade: acusa Juliana com 3 ou 4 provas decisivas validadas.
+* Final 2, A Injustiça: acusa Caio, em qualquer momento.
+* Final 3, A Dúvida: acusa Juliana com 2 ou menos provas decisivas. Ela é solta.
+Premissa em uma linha: Gabriel desapareceu depois de uma festa; Juliana o matou, mas usou IA para empurrar a suspeita para Caio e proteger a si mesma.
+Cena 1 — A ocorrência (1 min)
+[Tela escura. Som de telefone tocando. Corte para a delegacia: um computador sobre a mesa recebe uma nova ocorrência.]
+HELENA (narração) [DUB]: Recife, 2045. Quem tem tecnologia vive bem. E hoje qualquer foto, voz ou vídeo pode ser inventado.
+NOVA OCORRÊNCIA — DESAPARECIMENTO Gabriel Moura, 22 anos, estudante de Ciência da Computação. Última localização: festa universitária. Horário estimado: 03:00. Última informação: foi visto discutindo com o colega Caio Vasconcelos.
+[Foto de Gabriel, depois foto de Caio.]
+DELEGADO MEIRELES [DUB]: Investigadora, a equipe já está colhendo os depoimentos de quem estava na festa. Analise os álibis, as imagens, as mensagens.
+DELEGADO MEIRELES [DUB]: E não confie em prova só porque ela parece verdadeira.
+Botão: Ir interrogar Caio
+O botão Acusar fica disponível a partir daqui. Se o jogador acusar Caio cedo, vai ao Final 2.
+
+
+Cena 2 — Interrogatório de Caio (2,5 min)
+[Sala de interrogatório. Caio, nervoso, mexe no relógio.]
+HELENA [DUB]: Caio, você sabe onde o Gabriel está?
+CAIO [DUB]: Não. Não faço ideia.
+HELENA: Uma testemunha viu vocês discutindo do lado de fora da festa. O que aconteceu?
+CAIO: A gente discutiu, sim. Ele tava bêbado… e estava dizendo que ia contar uma coisa pra Juliana. E depois, começou a jogar na minha cara que eu pagava a mensalidade da faculdade dele pra ele me dever favor, e que até a vaga dele na NEXARA, aquela empresa enorme de tecnologia,  tinha vindo de indicação do meu pai. Eu disse que ele tava sendo cruel.
+HELENA: E depois?
+CAIO [DUB]: Fui embora, umas duas e quarenta. Peguei o carro e fui pra casa. Sozinho.
+HELENA: Então o seu álibi é a sua palavra.
+CAIO: ...É. Eu sei como isso parece.
+HELENA: Vamos conferir a câmera da saída do estacionamento. Se você saiu mesmo àquela hora, ela vai confirmar.
+Botão: Continuar investigação
+
+
+Cena 3 — O pacote anônimo (1,5 min)
+[Delegacia. O Delegado Meireles chega com uma caixa lacrada.]
+DELEGADO MEIRELES [DUB]: Chegou por entrega anônima. Dentro, tem um dispositivo com áudio. Disseram que explica a briga entre Caio e Gabriel.
+HELENA: Quem que  grava uma briga e manda anonimamente pra polícia?
+DELEGADO MEIRELES: Alguém que quer que a gente ouça. Ou alguém que quer que a gente acredite.
+!! Nova evidência disponível !! Áudio anônimo.
+Botão: Desbloquear nova evidência
+DESAFIO DE LÓGICA 1: [a definir]
+Prova 1 — Áudio anônimo
+GABRIEL (áudio) [DUB]: Você não vai fazer nada, Caio. Você nunca precisou fazer nada na vida.
+"CAIO" (áudio) [DUB]: Se você abrir a boca, eu juro que acabo com você.
+Pistas da Lupa Forense: nenhuma respiração na voz de "Caio"; música de fundo em loop a cada 4 segundos; corte seco em frequências altas; sotaque oscila no meio da frase.
+Resposta correta: Gerada por IA. (Decisiva.)
+Se o jogador marcar Real: Helena segue desconfiando de Caio na Cena 4. Se marcar IA: ela anota a pergunta que guia o resto do jogo.
+HELENA (narração) [DUB]: Se alguém forjou uma ameaça com a voz do Caio, alguém queria que eu olhasse pra ele. Eu preciso descobrir por quê.
+Botão: Voltar à sala de interrogatório
+
+
+Cena 4 — Interrogatório de Juliana (2,5 min)
+[Sala de interrogatório. Juliana chega com a mochila no ombro, segurando um celular de tela trincada.]
+JULIANA [DUB]: Desculpa, esse celular trava toda hora. É de segunda mão, sem garantia.
+HELENA: Você conhecia o Gabriel?
+JULIANA: Ele é o meu melhor amigo. A gente entrou junto no curso.
+HELENA: Falou com ele na festa?
+JULIANA [DUB]: Conversamos normal, depois voltei pra pista e não vi mais ele.
+HELENA: O Caio disse que o Gabriel queria te contar uma coisa naquela noite. Vocês tinham brigado?
+JULIANA: Brigamos. Eu descobri que o Gabriel entrou na NEXARA porque estava com o professor João Paulo. Eu dei três anos da minha vida pra aquela vaga, e ganhei nada.
+HELENA: E o Caio?
+JULIANA [DUB]: Quem sempre teve tudo acha fácil pedir pra gente "ouvir o outro lado".
+HELENA: Até que horas você ficou na festa?
+JULIANA: Até umas três. Peguei um carro de aplicativo. Tenho uma foto que mandei pra minha mãe, de dentro do carro. Pode olhar. E eu quero que você olhe.
+!! Nova evidência disponível !! Foto de Juliana enviada à mãe.
+Botão: Desbloquear nova evidência
+DESAFIO DE LÓGICA 2: [a definir]
+Prova 2 — Foto de Juliana no carro
+Conteúdo: Juliana no banco de trás de um carro, sorrindo de leve. Horário: 03:05.
+Pistas da Lupa Forense: o carro tem volante, e os carros de aplicativo da região não têm; o brinco esquerdo some no reflexo da janela; o texto do painel está embaralhado; o horário no cabeçalho foi editado depois do envio.
+Resposta correta: Gerada por IA. (Decisiva.)
+HELENA (narração) [DUB]: Uma prova falsa contra o Caio. Outra a favor da Juliana. Ou alguém brincava com os dois lados, ou um deles estava se defendendo.
+Botão: Sair da sala
+
+
+Cena 5 — O corpo (2 min)
+[Delegacia. O Delegado Meireles entra e fecha a porta.]
+DELEGADO MEIRELES [DUB]:Investigadora, acharam o Gabriel. Infelizmente, encontraram o corpo dele num barranco, a duzentos metros do galpão.
+HELENA: Perto da festa?
+DELEGADO MEIRELES: A perícia diz que ele morreu na própria noite, entre 2h50 e 3h05 da manhã. Teve um golpe na têmpora antes da queda. A partir de agora, o caso é de homicídio.
+!! Nova evidência disponível !! Registro de localização do celular de Gabriel.
+Botão: Desbloquear nova evidência
+DESAFIO DE LÓGICA 3: [a definir]
+Prova 3 — Localização do celular
+Conteúdo: o celular de Gabriel aparece parado no fundo do barranco às 03:20, a duzentos metros do galpão. O último sinal é às 03:22.
+Pistas da Lupa Forense: dados batem com três torres; consumo de bateria coerente; assinatura do chip íntegra; metadados sem edição.
+Resposta correta: Real. (Decisiva.)
+Conclusão: Gabriel nunca saiu da festa. Quem disse que o viu ir embora mentiu ou foi enganado.
+
+
+Cena 6 — Juliana confrontada (2 min)
+[Sala de interrogatório. Juliana, mais cansada. O celular vibra sem parar sobre a mesa, e ela não olha.]
+HELENA: Você disse que saiu às três, de carro de aplicativo.
+JULIANA: Disse.
+!! Nova evidência disponível !! Registro de corridas da Mobi, região da estrada.
+Botão: Desbloquear nova evidência
+DESAFIO DE LÓGICA 4: [a definir]
+Prova 4 — Corrida de Juliana
+Conteúdo: conta de Juliana Costa. Corrida solicitada às 03:41. Embarque na estrada de serviço, ao lado do galpão. Veículo autônomo, sem volante. Um passageiro.
+Pistas da Lupa Forense: assinatura da Mobi válida; trilha de GPS contínua; nenhuma outra corrida na conta naquela noite.
+Resposta correta: Real. (Decisiva.)
+HELENA [DUB]: A sua corrida foi pedida às três e quarenta e um. E o carro da Mobi não tem volante, como o da sua foto.
+JULIANA: Eu fiquei mais um tempo. Perdi a noção da hora.
+HELENA: Quarenta minutos?
+JULIANA [DUB]: Eu tava mal, tá? Fiquei sentada lá fora. Ele foi embora andando, na direção da estrada.
+HELENA: O celular dele estava a duzentos metros do galpão às 3h20. O corpo também. Ele nunca saiu.
+[Pausa longa. O celular de Juliana vibra de novo, e ela o vira de cabeça para baixo.]
+JULIANA [DUB]: ...Eu quero um advogado.
+*HELENA (narração) [DUB]: Quem fala a verdade pensa antes de responder. Ela respondeu antes de eu terminar a pergunta.
+Botão: Ir ao veredito
+
+
+Cena 7 — Veredito e final (2,5 min)
+[Sala do Delegado Meireles. Helena de pé, com o dossiê na mão.]
+DELEGADO MEIRELES [DUB]: Você chegou ao fim, Helena. Uma suspeita não é prova, e uma história convincente nem sempre é verdadeira. Quem é o responsável pela morte de Gabriel Moura?
+Escolha seu veredito: [A] Caio Vasconcelos é o culpado. [B] Juliana Costa é a culpada. [C] Ver o dossiê.
+Depois de [A] ou [B], aparece: "Você tem certeza? [1] Sim, [2] Não." Se [2], volta ao menu.
+[C] Dossiê: mostra cada prova (validada, classificada errado ou perdida) com a resposta correta. Ao fechar, volta ao menu.
+Regra: [A] leva ao Final 2. [B] leva ao Final 1 se houver 3 ou 4 provas validadas (das 4 do jogo), ou ao Final 3 se houver 2 ou menos.
+
+
+Final 1 — A Verdade
+[Sala de interrogatório. Helena coloca sobre a mesa a corrida, a foto e o áudio.]
+HELENA [DUB]: O Gabriel te chamou nos fundos do galpão pra contar que entregou o seu projeto ao professor. Vocês discutiram. Depois você voltou pra festa, fez uma foto falsa e, no dia seguinte, um áudio falso com a voz do Caio.
+JULIANA [DUB]: Ele chorou, sabe? Pediu desculpa. Disse que ia acusar o João Paulo. Eu gritei que era tarde demais. Ele me segurou, falou "me escuta, Ju"... e eu só queria que alguém me escutasse primeiro.
+JULIANA [DUB]: Eu bati. Ele caiu. Eu fiquei olhando o buraco. Fiquei com medo.
+HELENA [DUB]: Juliana Costa, você está presa pelo homicídio de Gabriel Moura.
+[Atrás do vidro, Caio assiste em silêncio.]
+HELENA (narração) [DUB]: Em 2045, qualquer um pode fabricar uma verdade. Mas a gente ainda sabe quando ela não cabe no lugar.
+RESULTADO: VEREDITO CORRETO. Juliana matou Gabriel ao descobrir que seu trabalho tinha sido usado para dar a ele uma vaga que também era dela. Depois, usou IA para forjar um álibi e incriminar Caio. CASO ENCERRADO — PARABÉNS, INVESTIGADORA!
+
+
+Final 2 — A Injustiça
+Ativado ao acusar Caio, a qualquer momento.
+HELENA [DUB]: Confirmo minha acusação contra Caio Vasconcelos.
+DELEGADO MEIRELES [DUB]: O álibi dele está na câmera, o áudio é falso, e as mensagens mostram um amigo pedindo calma. O que a gente tem contra ele?
+HELENA: Motivo. A dívida, o pai, a briga.
+DELEGADO MEIRELES: Motivo toda a cidade tem. Prova, não.
+[Semanas depois. Caio, de terno, o olhar vazio, ouve a sentença. Na última fila, uma mulher repete baixinho: "Não foi ele." Helena olha a foto de Juliana virada para baixo na parede e a desvira.]
+RESULTADO: VEREDITO INCORRETO. O verdadeiro culpado era Juliana Costa. CASO ENCERRADO — VOCÊ PERDEU.
+
+
+Final 3 — A Dúvida
+Ativado ao acusar Juliana com 2 ou menos provas decisivas validadas.
+[Delegacia. Na tela da mesa de Helena, a audiência por videochamada: Juliana, de camisa emprestada, ao lado de uma advogada pública firme.]
+JUIZ: A acusação tem alguma prova que uma máquina não pudesse ter fabricado?
+ADVOGADA [DUB]: Excelência, pela Lei da Dúvida Digital, qualquer prova sem cadeia de custódia completa pode ser anulada. A acusação tem uma suspeita e uma história. Não tem mais que isso.
+[Helena abre a boca. Fecha. Pensa em tudo que deixou passar.]
+HELENA [DUB]: ...Não, Excelência. Ainda não.
+JUIZ: Então, em nome da dúvida razoável, a ré é absolvida.
+[Quatro meses depois. Helena, na mesa da delegacia, lê no noticiário da tela: "Bem-vinda ao time, Juliana Costa — Engenheira de IA". A imagem mostra Juliana de crachá novo, sorrindo, com a vida que queria.]
+HELENA (narração) [DUB]: Em 2045, a verdade sozinha não basta. Ela precisa chegar com a prova certa, na hora certa. Eu cheguei sem.
+RESULTADO: VEREDITO CORRETO, MAS SEM PROVAS SUFICIENTES. CASO ARQUIVADO — A VERDADE FICOU PELO CAMINHO.
+
+
+Notas de produção
+* Se precisar cortar tempo: tire o memo de voz de Gabriel (Cena 5). Isso economiza cerca de 1 minuto, mas enfraquece a ambiguidade.
+* Se precisar de menos dublagem: mantenha só Helena e Juliana. Todas as outras falas ficam em texto com murmúrio.
+* Rejogabilidade: como cada final depende das provas validadas, uma partida completa dura de 14 a 15 minutos, e os três finais pedem pelo menos duas partidas.

@@ -2,11 +2,17 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
 #include "assets.h"
 #include "roteiro.h"
 #include "minigames.h"
 #include "celular.h"
 #include "progresso.h"
+
+typedef enum {
+    CULPADO_JULIANA = 0,
+    CULPADO_CAIO = 1
+} CulpadoRota;
 
 typedef enum {
     TELA_MENU = 0,
@@ -17,7 +23,6 @@ typedef enum {
     TELA_C1_OCORRENCIA,
     TELA_C1_GABRIEL,
     TELA_C1_CAIO,
-    TELA_C1_CELULAR,
     TELA_C1_INTERROGATORIO,
 
     // MOTOR DE DIALOGO
@@ -26,11 +31,10 @@ typedef enum {
     // FLUXO DE EVIDENCIAS E DESAFIOS
     TELA_NOVA_EVIDENCIA,
     TELA_MINIGAME,
-    TELA_CONFIRMA_CAIO,
+    TELA_CONFIRMA_PRECIPITADO,
     TELA_EVIDENCIA_PERDIDA,
     TELA_EVIDENCIA_DESBLOQUEADA,
     TELA_ANALISE_PROVA,
-    TELA_C6_HORAS_DEPOIS,
 
     // DECISAO FINAL E DOSSIE
     TELA_VEREDITO,
@@ -40,16 +44,26 @@ typedef enum {
 } TelaAtual;
 
 typedef enum {
-    SEQ_CENA2 = 0,
-    SEQ_ACUSA_CAIO,
+    SEQ_CENA1 = 0,
+    SEQ_CENA2,
     SEQ_CENA3,
+    SEQ_CENA3_POS,
     SEQ_CENA4,
+    SEQ_CENA4_POS,
     SEQ_CENA5,
-    SEQ_CENA6A,
-    SEQ_CENA6B,
-    SEQ_CENA7,
-    SEQ_CENA8
+    SEQ_CENA6,
+    SEQ_CENA6_POS,
+    SEQ_CENA7A,
+    SEQ_CENA7B,
+    SEQ_CENA8,
+    SEQ_FINAL_PERFEITO,
+    SEQ_FINAL_VERDADE,
+    SEQ_FINAL_DUVIDA,
+    SEQ_FINAL_COLAPSO,
+    SEQ_FINAL_PRECIPITADO,
+    SEQ_FINAL_INJUSTICA
 } SequenciaDialogo;
+#define TOTAL_SEQS 18
 
 typedef struct {
     TelaAtual tela;
@@ -62,22 +76,31 @@ typedef struct {
     float charsVisiveis;
     bool falaCompleta;
 
-    // Progresso das provas (index 2..7): 0=bloqueada, 1=desbloqueada, -1=perdida
+    // Rota sorteada (Juliana ou Caio) - evita repetir em partidas seguidas
+    CulpadoRota culpado;
+    int ultimoCulpado; // -1 = primeira partida da sessao
+
+    // Progresso das 5 provas (index 3..7 = Cenas 3..7): 0=bloqueada, 1=desbloqueada, -1=perdida
     int statusProva[8];
-    int respostaProva[8]; // 0=nao respondida, 1=verdadeira, 2=manipulada
+    int respostaProva[8]; // 0=nao respondida, 1=Real, 2=Gerada por IA
+    float analiseTempoRestante;
+    bool analiseTempoEsgotado;
 
     // Notas dinamicas do Dossie conforme as conversas avancam
     bool notaCaioCena2;
-    bool notaCaioCena4;
-    bool notaJulianaCena5;
-    bool notaGabrielCena6;
+    bool notaJulianaCena4;
+    bool notaGabrielCena5;
+    bool notaNuvemCena6;
+    bool notaConfrontoCena7;
+    bool podeAcusar;
 
     // Audio da Cena 3
     bool audioTocando;
     float audioTempo;
 
-    // Veredito
+    // Veredito e 6 Finais
     int acusadoFinal; // 1 = Caio, 2 = Juliana
+    int tipoFinal;    // 1=Verdade Absoluta, 2=A Verdade, 3=A Duvida, 4=Colapso Forense, 5=Precipitacao, 6=A Injustica
     bool vitoria;
 
     // Configuracoes
@@ -125,20 +148,77 @@ typedef struct {
     float autoTimer;
     bool historicoAberto;
     float historicoScroll;
-    bool seqVisitada[9];
+    bool seqVisitada[TOTAL_SEQS];
 } EstadoJogo;
 
-static void ObterSequencia(SequenciaDialogo seq, const Fala **outFalas, int *outTotal) {
+static int RespostaCorretaProva(int cena, CulpadoRota culpado) {
+    if (cena == 3) return (culpado == CULPADO_JULIANA) ? 2 : 1; // Audio: IA na rota Juliana, REAL na rota Caio
+    if (cena == 4) return (culpado == CULPADO_JULIANA) ? 2 : 1; // Foto:  IA na rota Juliana, REAL na rota Caio
+    if (cena == 5) return 1; // GPS: REAL em ambas
+    if (cena == 6) return 1; // Nuvem: REAL em ambas
+    if (cena == 7) return (culpado == CULPADO_JULIANA) ? 1 : 2; // Saida: Mobi REAL (Juliana) / Video IA (Caio)
+    return 0;
+}
+
+static int ContarProvasValidadas(const EstadoJogo *e) {
+    int count = 0;
+    for (int c = 3; c <= 7; c++) {
+        if (e->statusProva[c] == 1 && e->respostaProva[c] == RespostaCorretaProva(c, e->culpado)) {
+            count++;
+        }
+    }
+    return count;
+}
+
+static void ObterSequencia(SequenciaDialogo seq, CulpadoRota culpado, const Fala **outFalas, int *outTotal) {
+    bool ehJu = (culpado == CULPADO_JULIANA);
     switch (seq) {
-        case SEQ_CENA2:      *outFalas = falasCena2;     *outTotal = NUM_FALAS_CENA2; break;
-        case SEQ_ACUSA_CAIO: *outFalas = falasAcusaCaio; *outTotal = NUM_FALAS_ACUSA_CAIO; break;
-        case SEQ_CENA3:      *outFalas = falasCena3;     *outTotal = NUM_FALAS_CENA3; break;
-        case SEQ_CENA4:      *outFalas = falasCena4;     *outTotal = NUM_FALAS_CENA4; break;
-        case SEQ_CENA5:      *outFalas = falasCena5;     *outTotal = NUM_FALAS_CENA5; break;
-        case SEQ_CENA6A:     *outFalas = falasCena6A;    *outTotal = NUM_FALAS_CENA6A; break;
-        case SEQ_CENA6B:     *outFalas = falasCena6B;    *outTotal = NUM_FALAS_CENA6B; break;
-        case SEQ_CENA7:      *outFalas = falasCena7;     *outTotal = NUM_FALAS_CENA7; break;
-        case SEQ_CENA8:      *outFalas = falasCena8;     *outTotal = NUM_FALAS_CENA8; break;
+        case SEQ_CENA1:     *outFalas = falasCena1; *outTotal = NUM_FALAS_CENA1; break;
+        case SEQ_CENA2:     *outFalas = falasCena2; *outTotal = NUM_FALAS_CENA2; break;
+        case SEQ_CENA3:     *outFalas = falasCena3; *outTotal = NUM_FALAS_CENA3; break;
+        case SEQ_CENA3_POS:
+            *outFalas = ehJu ? falasCena3PosJuliana : falasCena3PosCaio;
+            *outTotal = ehJu ? NUM_FALAS_CENA3_POS_JULIANA : NUM_FALAS_CENA3_POS_CAIO;
+            break;
+        case SEQ_CENA4:     *outFalas = falasCena4; *outTotal = NUM_FALAS_CENA4; break;
+        case SEQ_CENA4_POS:
+            *outFalas = ehJu ? falasCena4PosJuliana : falasCena4PosCaio;
+            *outTotal = ehJu ? NUM_FALAS_CENA4_POS_JULIANA : NUM_FALAS_CENA4_POS_CAIO;
+            break;
+        case SEQ_CENA5:     *outFalas = falasCena5; *outTotal = NUM_FALAS_CENA5; break;
+        case SEQ_CENA6:     *outFalas = falasCena6; *outTotal = NUM_FALAS_CENA6; break;
+        case SEQ_CENA6_POS:
+            *outFalas = ehJu ? falasCena6PosJuliana : falasCena6PosCaio;
+            *outTotal = ehJu ? NUM_FALAS_CENA6_POS_JULIANA : NUM_FALAS_CENA6_POS_CAIO;
+            break;
+        case SEQ_CENA7A:
+            *outFalas = ehJu ? falasCena7A_Juliana : falasCena7A_Caio;
+            *outTotal = ehJu ? NUM_FALAS_CENA7A_JULIANA : NUM_FALAS_CENA7A_CAIO;
+            break;
+        case SEQ_CENA7B:
+            *outFalas = ehJu ? falasCena7B_Juliana : falasCena7B_Caio;
+            *outTotal = ehJu ? NUM_FALAS_CENA7B_JULIANA : NUM_FALAS_CENA7B_CAIO;
+            break;
+        case SEQ_CENA8:     *outFalas = falasCena8; *outTotal = NUM_FALAS_CENA8; break;
+        case SEQ_FINAL_PERFEITO:
+            *outFalas = ehJu ? falasFinalPerfeitoJuliana : falasFinalPerfeitoCaio;
+            *outTotal = ehJu ? NUM_FALAS_FINAL_PERF_JULIANA : NUM_FALAS_FINAL_PERF_CAIO;
+            break;
+        case SEQ_FINAL_VERDADE:
+            *outFalas = ehJu ? falasFinalVerdadeJuliana : falasFinalVerdadeCaio;
+            *outTotal = ehJu ? NUM_FALAS_FINAL_VERD_JULIANA : NUM_FALAS_FINAL_VERD_CAIO;
+            break;
+        case SEQ_FINAL_DUVIDA:
+            *outFalas = falasFinalDuvida; *outTotal = NUM_FALAS_FINAL_DUVIDA; break;
+        case SEQ_FINAL_COLAPSO:
+            *outFalas = falasFinalColapso; *outTotal = NUM_FALAS_FINAL_COLAPSO; break;
+        case SEQ_FINAL_PRECIPITADO:
+            *outFalas = falasFinalPrecipitado; *outTotal = NUM_FALAS_FINAL_PRECIPITADO; break;
+        case SEQ_FINAL_INJUSTICA:
+            // Se o culpado era Juliana, o inocente acusado foi Caio (e vice-versa)
+            *outFalas = ehJu ? falasFinalInjusticaCaio : falasFinalInjusticaJuliana;
+            *outTotal = ehJu ? NUM_FALAS_FINAL_INJ_CAIO : NUM_FALAS_FINAL_INJ_JULIANA;
+            break;
     }
 }
 
@@ -151,7 +231,7 @@ static void IniciarSequencia(EstadoJogo *e, SequenciaDialogo seq, int cenaNum) {
     e->falaCompleta = false;
     e->autoTimer = 0.0f;
     e->historicoAberto = false;
-    if ((int)seq >= 0 && (int)seq < 9) e->seqVisitada[(int)seq] = true;
+    if ((int)seq >= 0 && (int)seq < TOTAL_SEQS) e->seqVisitada[(int)seq] = true;
 }
 
 static void NovoJogo(EstadoJogo *e, EstadoCelular *cel, PlayerStats *stats) {
@@ -159,6 +239,7 @@ static void NovoJogo(EstadoJogo *e, EstadoCelular *cel, PlayerStats *stats) {
     bool tc = e->telaCheia;
     bool dev = e->devDesbloqueado;
     int jw = e->janelaW, jh = e->janelaH;
+    int ultCulp = e->ultimoCulpado;
     memset(e, 0, sizeof(*e));
     e->volMusica = vm;
     e->volSfx = vs;
@@ -166,6 +247,12 @@ static void NovoJogo(EstadoJogo *e, EstadoCelular *cel, PlayerStats *stats) {
     e->devDesbloqueado = dev;
     e->janelaW = jw;
     e->janelaH = jh;
+    if (ultCulp < 0) {
+        e->culpado = (GetRandomValue(0, 1) == 0) ? CULPADO_JULIANA : CULPADO_CAIO;
+    } else {
+        e->culpado = (ultCulp == (int)CULPADO_JULIANA) ? CULPADO_CAIO : CULPADO_JULIANA;
+    }
+    e->ultimoCulpado = (int)e->culpado;
     e->transicaoT = 1.0f;
     e->charAnimT = 1.0f;
     e->tela = TELA_C1_OCORRENCIA;
@@ -196,20 +283,26 @@ static void TocarBrilho(const GerenciadorAssets *g) {
 }
 
 static Color CorDoFalante(const char *falante) {
-    if (strcmp(falante, "VOCÊ") == 0 || strcmp(falante, "VOCE") == 0) return COR_CIANO_NEON;
+    if (strcmp(falante, "HELENA") == 0 || strcmp(falante, "VOCÊ") == 0 || strcmp(falante, "VOCE") == 0) return COR_CIANO_NEON;
     if (strcmp(falante, "CAIO") == 0) return (Color){ 190, 130, 255, 255 };
     if (strcmp(falante, "JULIANA") == 0) return COR_ROSA_NEON;
+    if (strcmp(falante, "ADVOGADO") == 0 || strcmp(falante, "ADVOGADA") == 0) return COR_VERDE_OK;
     return COR_AMARELO_AVISO;
 }
 
-static void DesenharBarraTopo(FontesUI *f, Vector2 mouse, double tempo, float hoverDos, int cenaAtual) {
+static void DesenharBarraTopo(FontesUI *f, Vector2 mouse, double tempo, float hoverDos, int cenaAtual, bool podeAcusar) {
     // Badge HUD esquerda
     if (cenaAtual >= 1) {
-        DesenharBadgeCyber(f->bold, (Vector2){ 22, 14 }, TextFormat("AI.LIBI // CASO 0%d", cenaAtual), 20, COR_ROXO_NEON);
+        DesenharBadgeCyber(f->bold, (Vector2){ 22, 14 }, TextFormat("AI.LIBI // CENA 0%d", cenaAtual), 20, COR_ROXO_NEON);
+    }
+    if (podeAcusar) {
+        Rectangle btnAcusar = { 808, 14, 186, 40 };
+        float hovAc = CheckCollisionPointRec(mouse, btnAcusar) ? 1.0f : 0.0f;
+        DesenharBotaoCyber(f->bold, btnAcusar, "ACUSAR", 21, hovAc, tempo, COR_VERMELHO_ERR);
     }
     Rectangle btnDos  = { 1008, 14, 190, 40 };
     Rectangle btnMenu = { 1210, 14, 48, 40 };
-    DesenharBotaoCyber(f->bold, btnDos, "DOSSIE [D]", 22, hoverDos, tempo, COR_CIANO_NEON);
+    DesenharBotaoCyber(f->bold, btnDos, "DOSSIÊ [D]", 22, hoverDos, tempo, COR_CIANO_NEON);
     DrawRectangleRec(btnMenu, (Color){ 20, 12, 38, 220 });
     DrawRectangleLinesEx(btnMenu, 1.5f, CheckCollisionPointRec(mouse, btnMenu) ? COR_ROSA_NEON : ColorAlpha(COR_ROXO_NEON, 0.7f));
     DesenharIconeMenu(btnMenu, mouse);
@@ -234,7 +327,7 @@ static void DesenharCardCentral(FontesUI *f, const char *titulo, const char *sub
     }
 }
 
-static void DesenharMapaCena6(FontesUI *f, Rectangle area, double tempo) {
+static void DesenharMapaLocalizacao(FontesUI *f, Rectangle area, double tempo) {
     DesenharPainelCyber(area, COR_CIANO_NEON);
     for (int x = (int)area.x + 40; x < (int)(area.x + area.width); x += 45) {
         DrawLine(x, (int)area.y + 16, x, (int)(area.y + area.height - 16), (Color){ 30, 65, 95, 120 });
@@ -248,22 +341,22 @@ static void DesenharMapaCena6(FontesUI *f, Rectangle area, double tempo) {
     DrawLineEx(p1, p2, 6.0f, (Color){ 75, 95, 130, 255 });
     DrawLineEx(p2, p3, 6.0f, (Color){ 75, 95, 130, 255 });
 
-    Vector2 pinCel = { area.x + area.width * 0.42f, area.y + area.height * 0.42f };
+    Vector2 pinCel = { area.x + area.width * 0.36f, area.y + area.height * 0.40f };
     float radar = fmodf((float)tempo * 28.0f, 38.0f);
     DrawCircleLines((int)pinCel.x, (int)pinCel.y, 10.0f + radar, ColorAlpha(COR_ROSA_NEON, 1.0f - radar / 38.0f));
     DrawCircleLines((int)pinCel.x, (int)pinCel.y, 28, ColorAlpha(COR_ROSA_NEON, 0.65f));
     DrawCircle((int)pinCel.x, (int)pinCel.y, 9, COR_ROSA_NEON);
-    DrawRectangleRounded((Rectangle){ pinCel.x + 16, pinCel.y - 42, 238, 60 }, 0.2f, 6, COR_PAINEL);
-    DrawRectangleRoundedLinesEx((Rectangle){ pinCel.x + 16, pinCel.y - 42, 238, 60 }, 0.2f, 6, 1.5f, COR_ROSA_NEON);
+    DrawRectangleRounded((Rectangle){ pinCel.x + 16, pinCel.y - 42, 248, 60 }, 0.2f, 6, COR_PAINEL);
+    DrawRectangleRoundedLinesEx((Rectangle){ pinCel.x + 16, pinCel.y - 42, 248, 60 }, 0.2f, 6, 1.5f, COR_ROSA_NEON);
     DrawTextEx(f->bold, "CELULAR GABRIEL", (Vector2){ pinCel.x + 26, pinCel.y - 36 }, 21, 1.0f, COR_ROSA_NEON);
-    DrawTextEx(f->regular, "03:20 (Aproximado)", (Vector2){ pinCel.x + 26, pinCel.y - 12 }, 20, 1.0f, WHITE);
+    DrawTextEx(f->regular, "03:20 | Ultimo: 03:22", (Vector2){ pinCel.x + 26, pinCel.y - 12 }, 20, 1.0f, WHITE);
 
-    Vector2 pinCorpo = { area.x + area.width * 0.50f, area.y + area.height * 0.64f };
+    Vector2 pinCorpo = { area.x + area.width * 0.42f, area.y + area.height * 0.64f };
     DrawCircle((int)pinCorpo.x, (int)pinCorpo.y, 8, COR_AMARELO_AVISO);
-    DrawRectangleRounded((Rectangle){ pinCorpo.x + 16, pinCorpo.y - 12, 245, 58 }, 0.2f, 6, COR_PAINEL);
-    DrawRectangleRoundedLinesEx((Rectangle){ pinCorpo.x + 16, pinCorpo.y - 12, 245, 58 }, 0.2f, 6, 1.5f, COR_AMARELO_AVISO);
-    DrawTextEx(f->bold, "CORPO ENCONTRADO", (Vector2){ pinCorpo.x + 26, pinCorpo.y - 6 }, 21, 1.0f, COR_AMARELO_AVISO);
-    DrawTextEx(f->regular, "Margem da estrada", (Vector2){ pinCorpo.x + 26, pinCorpo.y + 18 }, 20, 1.0f, WHITE);
+    DrawRectangleRounded((Rectangle){ pinCorpo.x + 16, pinCorpo.y - 12, 258, 58 }, 0.2f, 6, COR_PAINEL);
+    DrawRectangleRoundedLinesEx((Rectangle){ pinCorpo.x + 16, pinCorpo.y - 12, 258, 58 }, 0.2f, 6, 1.5f, COR_AMARELO_AVISO);
+    DrawTextEx(f->bold, "BARRANCO (200m GALPAO)", (Vector2){ pinCorpo.x + 26, pinCorpo.y - 6 }, 20, 1.0f, COR_AMARELO_AVISO);
+    DrawTextEx(f->regular, "3 torres / chip integro", (Vector2){ pinCorpo.x + 26, pinCorpo.y + 18 }, 20, 1.0f, WHITE);
 }
 
 static void DesenharPlayerAudio(FontesUI *f, Rectangle area, bool tocando, float tempo, Vector2 mouse) {
@@ -279,15 +372,14 @@ static void DesenharPlayerAudio(FontesUI *f, Rectangle area, bool tocando, float
     }
 
     const char *transcricao =
-        "\"Eu avisei pra voce ficar calado... [inaudivel]\n"
-        "Agora vai se arrepender. Acha que pode falar e sair daqui como se nada tivesse acontecido?\n"
-        "[inaudivel] Voce nao vai a lugar nenhum.\"";
-    DesenharTextoQuebrado(f->regular, transcricao, (Rectangle){ area.x + 30, area.y + 118, area.width - 60, 130 }, 24, 1.0f, WHITE);
+        "GABRIEL: \"Você não vai fazer nada, Caio. Você nunca precisou fazer nada na vida.\"\n\n"
+        "\"CAIO\": \"Se você abrir a boca, eu juro que acabo com você.\"";
+    DesenharTextoQuebrado(f->regular, transcricao, (Rectangle){ area.x + 30, area.y + 118, area.width - 60, 145 }, 24, 1.0f, WHITE);
 
     Rectangle btnPlay = { area.x + 30, area.y + area.height - 62, 155, 42 };
     bool hoverPlay = CheckCollisionPointRec(mouse, btnPlay);
     DesenharBotaoCyber(f->bold, btnPlay, tocando ? "|| PAUSAR" : "> OUVIR", 22, hoverPlay ? 1.0f : 0.0f, tempo, tocando ? COR_ROSA_NEON : COR_CIANO_NEON);
-    DrawTextEx(f->regular, "Duracao: 00:18 | Entrega Anonima", (Vector2){ area.x + 198, area.y + area.height - 52 }, 22, 1.0f, LIGHTGRAY);
+    DrawTextEx(f->regular, "Duração: 00:12 | Entrega Anônima", (Vector2){ area.x + 198, area.y + area.height - 52 }, 22, 1.0f, LIGHTGRAY);
 }
 
 static void AtualizarDevOverlay(EstadoJogo *e, EstadoCelular *cel, PlayerStats *stats, const GerenciadorAssets *assets, Vector2 mouse) {
@@ -356,17 +448,17 @@ static void AtualizarDevOverlay(EstadoJogo *e, EstadoCelular *cel, PlayerStats *
                 e->devPainelAberto = false;
                 e->audioTocando = false;
                 switch (i) {
-                    case 0: e->tela = TELA_C1_OCORRENCIA; e->cenaAtual = 1; break;
-                    case 1: e->tela = TELA_C1_CELULAR; e->cenaAtual = 1; break;
-                    case 2: IniciarSequencia(e, SEQ_CENA2, 2); break;
-                    case 3: IniciarSequencia(e, SEQ_CENA3, 3); break;
-                    case 4: IniciarSequencia(e, SEQ_CENA4, 4); break;
-                    case 5: IniciarSequencia(e, SEQ_CENA5, 5); break;
-                    case 6: IniciarSequencia(e, SEQ_CENA6A, 6); break;
-                    case 7: IniciarSequencia(e, SEQ_CENA6B, 6); break;
-                    case 8: IniciarSequencia(e, SEQ_CENA7, 7); break;
-                    case 9: IniciarSequencia(e, SEQ_CENA8, 8); break;
-                    case 10: e->tela = TELA_VEREDITO; e->cenaAtual = 8; break;
+                    case 0: e->tela = TELA_C1_OCORRENCIA; e->cenaAtual = 1; e->podeAcusar = false; break;
+                    case 1: IniciarSequencia(e, SEQ_CENA1, 1); e->podeAcusar = false; break;
+                    case 2: IniciarSequencia(e, SEQ_CENA2, 2); e->podeAcusar = false; break;
+                    case 3: IniciarSequencia(e, SEQ_CENA3, 3); e->podeAcusar = false; break;
+                    case 4: IniciarSequencia(e, SEQ_CENA4, 4); e->podeAcusar = false; break;
+                    case 5: e->podeAcusar = true; IniciarSequencia(e, SEQ_CENA5, 5); break;
+                    case 6: e->podeAcusar = true; IniciarSequencia(e, SEQ_CENA6, 6); break;
+                    case 7: e->podeAcusar = true; IniciarSequencia(e, SEQ_CENA7A, 7); break;
+                    case 8: e->podeAcusar = true; IniciarSequencia(e, SEQ_CENA7B, 7); break;
+                    case 9: e->podeAcusar = false; IniciarSequencia(e, SEQ_CENA8, 8); break;
+                    case 10: e->podeAcusar = false; e->tela = TELA_VEREDITO; e->cenaAtual = 8; break;
                     case 11: e->telaAnterior = (e->tela == TELA_DOSSIE) ? TELA_MENU : e->tela; e->tela = TELA_DOSSIE; break;
                 }
                 return;
@@ -380,27 +472,30 @@ static void AtualizarDevOverlay(EstadoJogo *e, EstadoCelular *cel, PlayerStats *
                 TocarClick(assets);
                 switch (i) {
                     case 0:
-                        for (int k = 2; k <= 7; k++) e->statusProva[k] = 1;
-                        e->notaCaioCena2 = e->notaCaioCena4 = e->notaJulianaCena5 = e->notaGabrielCena6 = true;
+                        for (int k = 3; k <= 7; k++) { e->statusProva[k] = 1; e->respostaProva[k] = RespostaCorretaProva(k, e->culpado); }
+                        e->notaCaioCena2 = e->notaJulianaCena4 = e->notaGabrielCena5 = e->notaNuvemCena6 = e->notaConfrontoCena7 = true;
                         break;
                     case 1:
-                        for (int k = 2; k <= 7; k++) { e->statusProva[k] = 0; e->respostaProva[k] = 0; }
-                        e->notaCaioCena2 = e->notaCaioCena4 = e->notaJulianaCena5 = e->notaGabrielCena6 = false;
+                        for (int k = 3; k <= 7; k++) { e->statusProva[k] = 0; e->respostaProva[k] = 0; }
+                        e->notaCaioCena2 = e->notaJulianaCena4 = e->notaGabrielCena5 = e->notaNuvemCena6 = e->notaConfrontoCena7 = false;
                         break;
                     case 2:
-                        if (e->cenaAtual < 2 || e->cenaAtual > 7) e->cenaAtual = 2;
+                        if (e->cenaAtual < 3 || e->cenaAtual > 7) e->cenaAtual = 3;
                         e->statusProva[e->cenaAtual] = 1;
+                        e->analiseTempoRestante = 30.0f;
+                        e->analiseTempoEsgotado = false;
                         e->devPainelAberto = false;
                         e->tela = TELA_ANALISE_PROVA;
                         break;
                     case 3:
+                        e->culpado = (e->culpado == CULPADO_JULIANA) ? CULPADO_CAIO : CULPADO_JULIANA;
+                        e->ultimoCulpado = (int)e->culpado;
+                        break;
+                    case 4:
                         e->devPainelAberto = false;
                         NovoJogo(e, cel, stats);
                         break;
-                    case 4:
-                        ReiniciarProgresso(stats);
-                        break;
-                    case 5: gEfeitoScanlines = !gEfeitoScanlines; break;
+                    case 5: ReiniciarProgresso(stats); break;
                     case 6: gEfeitoGrid = !gEfeitoGrid; break;
                     case 7: gEfeitoGlitch = !gEfeitoGlitch; break;
                 }
@@ -448,9 +543,9 @@ static void DesenharDevOverlay(const EstadoJogo *e, FontesUI *f, Vector2 mouse, 
 
         DrawTextEx(f->bold, "PULAR / VOLTAR PARA CENA:", (Vector2){ 160, 158 }, 22, 1.0f, COR_CIANO_NEON);
         const char *cenasTxt[12] = {
-            "C1: Ocorrencia", "C1: Celular", "C2: Caio", "C3: Audio",
-            "C4: Mensagens", "C5: Juliana", "C6A: Mapa/Corpo", "C6B: Horas Depois",
-            "C7: Foto Festa", "C8: Juiz", "Veredito", "Abrir Dossie"
+            "C1: Ocorrência", "C1: Delegado", "C2: Caio", "C3: Pacote",
+            "C4: Juliana", "C5: O Corpo", "C6: Nuvem", "C7A: Confronto",
+            "C7B: Pós-Saída", "C8: Delegado", "Veredito", "Abrir Dossiê"
         };
         for (int i = 0; i < 12; i++) {
             int col = i % 2;
@@ -459,21 +554,20 @@ static void DesenharDevOverlay(const EstadoJogo *e, FontesUI *f, Vector2 mouse, 
             DesenharBotaoCyber(f->bold, b, cenasTxt[i], 20, CheckCollisionPointRec(mouse, b) ? 1.0f : 0.0f, tempo, COR_CIANO_NEON);
         }
 
-        DrawTextEx(f->bold, "EVIDENCIAS, RUN & EFEITOS:", (Vector2){ 650, 158 }, 22, 1.0f, COR_ROSA_NEON);
+        DrawTextEx(f->bold, "EVIDÊNCIAS, ROTA & EFEITOS:", (Vector2){ 650, 158 }, 22, 1.0f, COR_ROSA_NEON);
         const char *acoesTxt[8] = {
-            "DESBLOQUEAR TODAS EVIDENCIAS (+NOTAS)",
-            "RESETAR EVIDENCIAS & RESPOSTAS",
-            "ANALISAR EVIDENCIA DA CENA ATUAL",
-            "REINICIAR RUN (NOVO JOGO)",
+            "VALIDAR TODAS AS 5 PROVAS (+NOTAS)",
+            "RESETAR PROVAS & RESPOSTAS",
+            "ANALISAR PROVA DA CENA ATUAL",
+            (e->culpado == CULPADO_JULIANA) ? "ROTA ATIVA: JULIANA (CLIQUE P/ CAIO)" : "ROTA ATIVA: CAIO (CLIQUE P/ JULIANA)",
+            "REINICIAR RUN (SORTEIA OUTRA ROTA)",
             "ZERAR PROGRESSO SALVO (ACERTOS/ERROS)",
-            gEfeitoScanlines ? "EFEITO SCANLINES HUD: [ON]" : "EFEITO SCANLINES HUD: [OFF]",
-            gEfeitoGrid      ? "EFEITO GRID & PARTICULAS: [ON]" : "EFEITO GRID & PARTICULAS: [OFF]",
+            gEfeitoGrid      ? "EFEITO GRID & PARTÍCULAS: [ON]" : "EFEITO GRID & PARTÍCULAS: [OFF]",
             gEfeitoGlitch    ? "EFEITO GLITCH NA LOGO: [ON]" : "EFEITO GLITCH NA LOGO: [OFF]"
         };
         for (int i = 0; i < 8; i++) {
             Rectangle b = { 650, 195 + i * 54, 450, 44 };
-            Color cor = (i < 3) ? COR_ROXO_NEON : (i < 5) ? COR_AMARELO_AVISO : COR_VERDE_OK;
-            if (i == 5 && !gEfeitoScanlines) cor = GRAY;
+            Color cor = (i < 3) ? COR_ROXO_NEON : (i == 3) ? COR_ROSA_NEON : (i < 6) ? COR_AMARELO_AVISO : COR_VERDE_OK;
             if (i == 6 && !gEfeitoGrid) cor = GRAY;
             if (i == 7 && !gEfeitoGlitch) cor = GRAY;
             DesenharBotaoCyber(f->bold, b, acoesTxt[i], 19, CheckCollisionPointRec(mouse, b) ? 1.0f : 0.0f, tempo, cor);
@@ -497,6 +591,7 @@ int main(void) {
     }
     SetExitKey(0);
     SetTargetFPS(60);
+    SetRandomSeed((unsigned int)time(NULL));
     InitAudioDevice();
 
     RenderTexture2D canvas = LoadRenderTexture(RENDER_W, RENDER_H);
@@ -508,6 +603,7 @@ int main(void) {
     IniciarGerenciadorAssets(&assets);
 
     EstadoJogo e = {0};
+    e.ultimoCulpado = -1;
     e.tela = TELA_MENU;
     e.telaUltima = TELA_MENU;
     e.transicaoT = 1.0f;
@@ -603,13 +699,24 @@ int main(void) {
                 else if (CheckCollisionPointRec(mouse, pausaBtns[3])) { CloseWindow(); }
             }
         } else {
+            Rectangle btnAcuTop  = { 808, 14, 186, 40 };
             Rectangle btnDosTop  = { 1008, 14, 190, 40 };
             Rectangle btnMenuTop = { 1210, 14, 48, 40 };
             AtualizarHover(&btnDosTop, &e.hoverDossieTop[0], 1, mouse, dt);
             bool clicouBarra = false;
 
             if (emGameplay && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-                if (CheckCollisionPointRec(mouse, btnMenuTop)) {
+                if (e.podeAcusar && CheckCollisionPointRec(mouse, btnAcuTop)) {
+                    TocarClick(&assets);
+                    e.telaAnterior = e.tela;
+                    if (e.cenaAtual < 7) {
+                        e.tela = TELA_CONFIRMA_PRECIPITADO;
+                    } else {
+                        e.podeAcusar = false;
+                        e.tela = TELA_VEREDITO;
+                    }
+                    clicouBarra = true;
+                } else if (CheckCollisionPointRec(mouse, btnMenuTop)) {
                     TocarClick(&assets);
                     e.menuPausa = true;
                     clicouBarra = true;
@@ -735,13 +842,7 @@ int main(void) {
                 case TELA_C1_CAIO:
                     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)) {
                         TocarClick(&assets);
-                        e.tela = TELA_C1_CELULAR;
-                    }
-                    break;
-
-                case TELA_C1_CELULAR:
-                    if (AtualizarCelular(&celular, mouse, dt, assets.sfxClick, assets.temSfxClick) == 1) {
-                        e.tela = TELA_C1_INTERROGATORIO;
+                        IniciarSequencia(&e, SEQ_CENA1, 1);
                     }
                     break;
 
@@ -797,7 +898,7 @@ int main(void) {
 
                     const Fala *falas = NULL;
                     int total = 0;
-                    ObterSequencia(e.seq, &falas, &total);
+                    ObterSequencia(e.seq, e.culpado, &falas, &total);
                     int lenTexto = (int)strlen(falas[e.falaIdx].texto);
 
                     // Efeito typing rapido e fluido
@@ -814,9 +915,10 @@ int main(void) {
 
                     // Atualiza notas dinamicas do dossie conforme o dialogo avanca
                     if (e.seq == SEQ_CENA2 && e.falaIdx >= 5) e.notaCaioCena2 = true;
-                    if (e.seq == SEQ_CENA4 && e.falaIdx >= 4) e.notaCaioCena4 = true;
-                    if (e.seq == SEQ_CENA5 && e.falaIdx >= 7) e.notaJulianaCena5 = true;
-                    if (e.seq == SEQ_CENA6A && e.falaIdx >= 2) e.notaGabrielCena6 = true;
+                    if (e.seq == SEQ_CENA4 && e.falaIdx >= 6) e.notaJulianaCena4 = true;
+                    if (e.seq == SEQ_CENA5 && e.falaIdx >= 2) { e.notaGabrielCena5 = true; e.podeAcusar = true; }
+                    if (e.seq == SEQ_CENA6_POS) e.notaNuvemCena6 = true;
+                    if (e.seq == SEQ_CENA7B && e.falaIdx >= 5) e.notaConfrontoCena7 = true;
 
                     bool autoAvancou = (e.autoDialogo && e.falaCompleta && e.autoTimer >= 3.0f);
                     bool clicouAvancar = (!clicouBotaoCaixa && IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && mouse.y > 65) ||
@@ -834,14 +936,35 @@ int main(void) {
                                 e.charsVisiveis = 0.0f;
                                 e.falaCompleta = false;
                             } else {
-                                if (e.seq == SEQ_ACUSA_CAIO) {
-                                    e.vitoria = false;
-                                    e.acusadoFinal = 1;
-                                    e.tela = TELA_FINAL;
-                                } else if (e.seq == SEQ_CENA6A) {
-                                    e.tela = TELA_C6_HORAS_DEPOIS;
+                                if (e.seq == SEQ_CENA1) {
+                                    e.tela = TELA_C1_INTERROGATORIO;
+                                } else if (e.seq == SEQ_CENA2) {
+                                    IniciarSequencia(&e, SEQ_CENA3, 3);
+                                } else if (e.seq == SEQ_CENA3_POS) {
+                                    IniciarSequencia(&e, SEQ_CENA4, 4);
+                                } else if (e.seq == SEQ_CENA4_POS) {
+                                    e.podeAcusar = true;
+                                    IniciarSequencia(&e, SEQ_CENA5, 5);
+                                } else if (e.seq == SEQ_CENA6_POS) {
+                                    IniciarSequencia(&e, SEQ_CENA7A, 7);
+                                } else if (e.seq == SEQ_CENA7B) {
+                                    e.podeAcusar = false;
+                                    IniciarSequencia(&e, SEQ_CENA8, 8);
                                 } else if (e.seq == SEQ_CENA8) {
+                                    e.podeAcusar = false;
                                     e.tela = TELA_VEREDITO;
+                                } else if (e.seq == SEQ_FINAL_PERFEITO) {
+                                    e.vitoria = true; e.tipoFinal = 1; e.tela = TELA_FINAL;
+                                } else if (e.seq == SEQ_FINAL_VERDADE) {
+                                    e.vitoria = true; e.tipoFinal = 2; e.tela = TELA_FINAL;
+                                } else if (e.seq == SEQ_FINAL_DUVIDA) {
+                                    e.vitoria = false; e.tipoFinal = 3; e.tela = TELA_FINAL;
+                                } else if (e.seq == SEQ_FINAL_COLAPSO) {
+                                    e.vitoria = false; e.tipoFinal = 4; e.tela = TELA_FINAL;
+                                } else if (e.seq == SEQ_FINAL_PRECIPITADO) {
+                                    e.vitoria = false; e.tipoFinal = 5; e.tela = TELA_FINAL;
+                                } else if (e.seq == SEQ_FINAL_INJUSTICA) {
+                                    e.vitoria = false; e.tipoFinal = 6; e.tela = TELA_FINAL;
                                 } else {
                                     TocarBrilho(&assets);
                                     e.tela = TELA_NOVA_EVIDENCIA;
@@ -872,25 +995,24 @@ int main(void) {
                     } else if (res == -1) {
                         e.statusProva[e.cenaAtual] = -1;
                         stats.erros++;
-                        snprintf(stats.evidenciaPerdida, sizeof(stats.evidenciaPerdida), "Cena %d", e.cenaAtual);
+                        snprintf(stats.evidenciaPerdida, sizeof(stats.evidenciaPerdida), "Prova %d (Cena %d)", e.cenaAtual - 2, e.cenaAtual);
                         SalvarProgresso(stats);
                         e.tela = TELA_EVIDENCIA_PERDIDA;
-                    } else if (res == 2) {
-                        e.tela = TELA_CONFIRMA_CAIO;
                     }
                 } break;
 
-                case TELA_CONFIRMA_CAIO: {
-                    Rectangle btns[2] = { { 300, 420, 310, 52 }, { 670, 420, 310, 52 } };
+                case TELA_CONFIRMA_PRECIPITADO: {
+                    Rectangle btns[2] = { { 290, 420, 325, 52 }, { 665, 420, 325, 52 } };
                     AtualizarHover(btns, e.hoverSimNao, 2, mouse, dt);
                     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
                         if (CheckCollisionPointRec(mouse, btns[0])) {
                             TocarClick(&assets);
-                            IniciarSequencia(&e, SEQ_ACUSA_CAIO, 2);
+                            e.podeAcusar = false;
+                            e.tipoFinal = 5;
+                            IniciarSequencia(&e, SEQ_FINAL_PRECIPITADO, 8);
                         } else if (CheckCollisionPointRec(mouse, btns[1])) {
                             TocarClick(&assets);
-                            IniciarMiniGame(&miniGame);
-                            e.tela = TELA_MINIGAME;
+                            e.tela = e.telaAnterior;
                         }
                     }
                 } break;
@@ -900,12 +1022,11 @@ int main(void) {
                     AtualizarHover(&btn, &e.hoverBtnUnico, 1, mouse, dt);
                     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(mouse, btn)) {
                         TocarClick(&assets);
-                        if (e.cenaAtual == 2) IniciarSequencia(&e, SEQ_CENA3, 3);
-                        else if (e.cenaAtual == 3) IniciarSequencia(&e, SEQ_CENA4, 4);
-                        else if (e.cenaAtual == 4) IniciarSequencia(&e, SEQ_CENA5, 5);
-                        else if (e.cenaAtual == 5) IniciarSequencia(&e, SEQ_CENA6A, 6);
-                        else if (e.cenaAtual == 6) IniciarSequencia(&e, SEQ_CENA7, 7);
-                        else if (e.cenaAtual == 7) IniciarSequencia(&e, SEQ_CENA8, 8);
+                        if (e.cenaAtual == 3) IniciarSequencia(&e, SEQ_CENA4, 4);
+                        else if (e.cenaAtual == 4) { e.podeAcusar = true; IniciarSequencia(&e, SEQ_CENA5, 5); }
+                        else if (e.cenaAtual == 5) IniciarSequencia(&e, SEQ_CENA6, 6);
+                        else if (e.cenaAtual == 6) IniciarSequencia(&e, SEQ_CENA7A, 7);
+                        else if (e.cenaAtual == 7) IniciarSequencia(&e, SEQ_CENA7B, 7);
                     }
                 } break;
 
@@ -916,16 +1037,25 @@ int main(void) {
                         TocarClick(&assets);
                         e.audioTocando = false;
                         e.audioTempo = 0.0f;
+                        e.analiseTempoRestante = 30.0f;
+                        e.analiseTempoEsgotado = false;
                         e.tela = TELA_ANALISE_PROVA;
                     }
                 } break;
 
                 case TELA_ANALISE_PROVA: {
                     if (e.cenaAtual == 3) {
-                        Rectangle btnPlay = { 155, 443, 155, 42 };
+                        Rectangle btnPlay = { 145, 443, 155, 42 };
                         if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(mouse, btnPlay)) {
                             TocarClick(&assets);
                             e.audioTocando = !e.audioTocando;
+                        }
+                    }
+                    if (e.respostaProva[e.cenaAtual] == 0 && !e.analiseTempoEsgotado) {
+                        e.analiseTempoRestante -= dt;
+                        if (e.analiseTempoRestante <= 0.0f) {
+                            e.analiseTempoRestante = 0.0f;
+                            e.analiseTempoEsgotado = true;
                         }
                     }
                     Rectangle btns[3] = {
@@ -935,28 +1065,27 @@ int main(void) {
                     };
                     AtualizarHover(btns, e.hoverAnalise, 3, mouse, dt);
                     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-                        if (e.respostaProva[e.cenaAtual] == 0) {
+                        if (e.respostaProva[e.cenaAtual] == 0 && !e.analiseTempoEsgotado) {
                             if (CheckCollisionPointRec(mouse, btns[0])) { TocarClick(&assets); e.respostaProva[e.cenaAtual] = 1; }
                             else if (CheckCollisionPointRec(mouse, btns[1])) { TocarClick(&assets); e.respostaProva[e.cenaAtual] = 2; }
                         } else if (CheckCollisionPointRec(mouse, btns[2])) {
                             TocarClick(&assets);
                             e.audioTocando = false;
-                            if (e.cenaAtual == 2) IniciarSequencia(&e, SEQ_CENA3, 3);
-                            else if (e.cenaAtual == 3) IniciarSequencia(&e, SEQ_CENA4, 4);
-                            else if (e.cenaAtual == 4) IniciarSequencia(&e, SEQ_CENA5, 5);
-                            else if (e.cenaAtual == 5) IniciarSequencia(&e, SEQ_CENA6A, 6);
-                            else if (e.cenaAtual == 6) IniciarSequencia(&e, SEQ_CENA7, 7);
-                            else if (e.cenaAtual == 7) IniciarSequencia(&e, SEQ_CENA8, 8);
+                            bool acertou = (e.respostaProva[e.cenaAtual] == RespostaCorretaProva(e.cenaAtual, e.culpado));
+                            if (e.cenaAtual == 3) {
+                                if (acertou) IniciarSequencia(&e, SEQ_CENA3_POS, 3);
+                                else IniciarSequencia(&e, SEQ_CENA4, 4);
+                            } else if (e.cenaAtual == 4) {
+                                if (acertou) IniciarSequencia(&e, SEQ_CENA4_POS, 4);
+                                else { e.podeAcusar = true; IniciarSequencia(&e, SEQ_CENA5, 5); }
+                            } else if (e.cenaAtual == 5) {
+                                IniciarSequencia(&e, SEQ_CENA6, 6);
+                            } else if (e.cenaAtual == 6) {
+                                IniciarSequencia(&e, SEQ_CENA6_POS, 6);
+                            } else if (e.cenaAtual == 7) {
+                                IniciarSequencia(&e, SEQ_CENA7B, 7);
+                            }
                         }
-                    }
-                } break;
-
-                case TELA_C6_HORAS_DEPOIS: {
-                    Rectangle btn = { 455, 455, 370, 54 };
-                    AtualizarHover(&btn, &e.hoverBtnUnico, 1, mouse, dt);
-                    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(mouse, btn)) {
-                        TocarClick(&assets);
-                        IniciarSequencia(&e, SEQ_CENA6B, 6);
                     }
                 } break;
 
@@ -980,8 +1109,33 @@ int main(void) {
                     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
                         if (CheckCollisionPointRec(mouse, btns[0])) {
                             TocarClick(&assets);
-                            e.vitoria = (e.acusadoFinal == 2);
-                            e.tela = TELA_FINAL;
+                            e.podeAcusar = false;
+                            bool acusouCorreto = (e.acusadoFinal == 2 && e.culpado == CULPADO_JULIANA) ||
+                                                 (e.acusadoFinal == 1 && e.culpado == CULPADO_CAIO);
+                            if (!acusouCorreto) {
+                                e.vitoria = false;
+                                e.tipoFinal = 6;
+                                IniciarSequencia(&e, SEQ_FINAL_INJUSTICA, 8);
+                            } else {
+                                int validadas = ContarProvasValidadas(&e);
+                                if (validadas == 5) {
+                                    e.vitoria = true;
+                                    e.tipoFinal = 1;
+                                    IniciarSequencia(&e, SEQ_FINAL_PERFEITO, 8);
+                                } else if (validadas == 4) {
+                                    e.vitoria = true;
+                                    e.tipoFinal = 2;
+                                    IniciarSequencia(&e, SEQ_FINAL_VERDADE, 8);
+                                } else if (validadas >= 2) {
+                                    e.vitoria = false;
+                                    e.tipoFinal = 3;
+                                    IniciarSequencia(&e, SEQ_FINAL_DUVIDA, 8);
+                                } else {
+                                    e.vitoria = false;
+                                    e.tipoFinal = 4;
+                                    IniciarSequencia(&e, SEQ_FINAL_COLAPSO, 8);
+                                }
+                            }
                         } else if (CheckCollisionPointRec(mouse, btns[1])) {
                             TocarClick(&assets);
                             e.tela = TELA_VEREDITO;
@@ -1016,7 +1170,7 @@ int main(void) {
                         } else if (CheckCollisionPointRec(mouse, topBtns[1])) {
                             TocarClick(&assets); e.dossieAba = 1; e.dossieItem = 0;
                         } else {
-                            int maxItens = (e.dossieAba == 0) ? 6 : 3;
+                            int maxItens = (e.dossieAba == 0) ? 5 : 3;
                             for (int i = 0; i < maxItens; i++) {
                                 Rectangle item = { 95, 154 + i * 74, 320, 62 };
                                 if (CheckCollisionPointRec(mouse, item)) {
@@ -1025,7 +1179,7 @@ int main(void) {
                                     e.audioTocando = false;
                                 }
                             }
-                            if (e.dossieAba == 0 && e.dossieItem == 1 && e.statusProva[3] == 1) {
+                            if (e.dossieAba == 0 && e.dossieItem == 0 && e.statusProva[3] == 1) {
                                 Rectangle btnPlay = { 510, 528, 155, 42 };
                                 if (CheckCollisionPointRec(mouse, btnPlay)) {
                                     TocarClick(&assets);
@@ -1123,7 +1277,7 @@ int main(void) {
             } break;
 
             case TELA_C1_OCORRENCIA:
-                DesenharCardCentral(&assets.fontes, "NOVA OCORRENCIA", "Novo caso de desaparecimento registrado no sistema.\nAcesse os arquivos iniciais para iniciar a investigacao.", "ACESSAR CASO >>", e.hoverBtnUnico, tempo, COR_ROSA_NEON);
+                DesenharCardCentral(&assets.fontes, "NOVA OCORRÊNCIA", "Novo caso de desaparecimento registrado no sistema.\nAcesse os arquivos iniciais para começar a investigação.", "ACESSAR CASO >>", e.hoverBtnUnico, tempo, COR_ROSA_NEON);
                 break;
 
             case TELA_C1_GABRIEL: {
@@ -1138,10 +1292,10 @@ int main(void) {
                 DrawLineEx((Vector2){ moldura.x, scanG }, (Vector2){ moldura.x + moldura.width, scanG }, 2.0f, ColorAlpha(COR_CIANO_NEON, 0.65f));
 
                 DesenharBadgeCyber(assets.fontes.titulo, (Vector2){ 195, 135 }, "GABRIEL MOURA - 22 ANOS", 28, COR_ROSA_NEON);
-                DrawTextEx(assets.fontes.bold, "ESTUDANTE UNIVERSITARIO | RECIFE - PE", (Vector2){ 195, 215 }, 27, 1.0f, WHITE);
-                DrawTextEx(assets.fontes.bold, "ULTIMA LOCALIZACAO:", (Vector2){ 195, 282 }, 26, 1.0f, COR_AMARELO_AVISO);
-                DrawTextEx(assets.fontes.regular, "Festa Universitaria", (Vector2){ 195, 318 }, 28, 1.0f, WHITE);
-                DrawTextEx(assets.fontes.bold, "HORARIO ESTIMADO:", (Vector2){ 195, 385 }, 26, 1.0f, COR_AMARELO_AVISO);
+                DrawTextEx(assets.fontes.bold, "CIÊNCIA DA COMPUTAÇÃO | RECIFE - PE", (Vector2){ 195, 215 }, 27, 1.0f, WHITE);
+                DrawTextEx(assets.fontes.bold, "ÚLTIMA LOCALIZAÇÃO:", (Vector2){ 195, 282 }, 26, 1.0f, COR_AMARELO_AVISO);
+                DrawTextEx(assets.fontes.regular, "Festa Universitária", (Vector2){ 195, 318 }, 28, 1.0f, WHITE);
+                DrawTextEx(assets.fontes.bold, "HORÁRIO ESTIMADO:", (Vector2){ 195, 385 }, 26, 1.0f, COR_AMARELO_AVISO);
                 DrawTextEx(assets.fontes.regular, "03:00", (Vector2){ 195, 421 }, 28, 1.0f, WHITE);
                 float p = 0.55f + 0.45f * sinf((float)tempo * 4.5f);
                 DrawTextEx(assets.fontes.bold, "CLIQUE PARA CONTINUAR >>", (Vector2){ 195, 558 }, 24, 1.0f, ColorAlpha(COR_CIANO_NEON, p));
@@ -1158,24 +1312,20 @@ int main(void) {
                 float scanC = moldura.y + fmodf((float)tempo * 120.0f, moldura.height);
                 DrawLineEx((Vector2){ moldura.x, scanC }, (Vector2){ moldura.x + moldura.width, scanC }, 2.0f, ColorAlpha(COR_ROSA_NEON, 0.65f));
 
-                DesenharBadgeCyber(assets.fontes.titulo, (Vector2){ 195, 135 }, "ULTIMA INFORMACAO", 28, COR_CIANO_NEON);
-                DesenharTextoQuebrado(assets.fontes.bold, "Ele foi visto tendo uma discussao com seu colega, CAIO VASCONCELOS.", (Rectangle){ 195, 232, 535, 170 }, 30, 1.0f, WHITE);
+                DesenharBadgeCyber(assets.fontes.titulo, (Vector2){ 195, 135 }, "ÚLTIMA INFORMAÇÃO", 28, COR_CIANO_NEON);
+                DesenharTextoQuebrado(assets.fontes.bold, "Foi visto discutindo com o colega CAIO VASCONCELOS.", (Rectangle){ 195, 232, 535, 170 }, 30, 1.0f, WHITE);
                 float p = 0.55f + 0.45f * sinf((float)tempo * 4.5f);
-                DrawTextEx(assets.fontes.bold, "CLIQUE PARA ACESSAR O NEXUS-MSG >>", (Vector2){ 195, 552 }, 24, 1.0f, ColorAlpha(COR_CIANO_NEON, p));
+                DrawTextEx(assets.fontes.bold, "CLIQUE PARA CONTINUAR >>", (Vector2){ 195, 552 }, 24, 1.0f, ColorAlpha(COR_CIANO_NEON, p));
             } break;
 
-            case TELA_C1_CELULAR:
-                DesenharCelular(&celular, &assets.fontes, tempo);
-                break;
-
             case TELA_C1_INTERROGATORIO:
-                DesenharCardCentral(&assets.fontes, "INTERROGATORIO", "E hora de ouvir os envolvidos e buscar respostas.", "IR INTERROGAR CAIO >>", e.hoverBtnUnico, tempo, COR_ROXO_NEON);
+                DesenharCardCentral(&assets.fontes, "INTERROGATÓRIO", "Hora de ouvir os envolvidos e confrontar cada versão dos fatos.", "IR INTERROGAR CAIO >>", e.hoverBtnUnico, tempo, COR_ROXO_NEON);
                 break;
 
             case TELA_DIALOGO: {
                 const Fala *falas = NULL;
                 int total = 0;
-                ObterSequencia(e.seq, &falas, &total);
+                ObterSequencia(e.seq, e.culpado, &falas, &total);
                 const Fala *atual = &falas[e.falaIdx];
 
                 if (strcmp(e.ultimoPersonagem, atual->personagem) != 0) {
@@ -1251,11 +1401,11 @@ int main(void) {
 
                     // Calcula altura total e desenha com scissor
                     float totalH = 0.0f;
-                    for (int s = 0; s < 9; s++) {
+                    for (int s = 0; s < TOTAL_SEQS; s++) {
                         if (!e.seqVisitada[s] && (SequenciaDialogo)s != e.seq) continue;
                         const Fala *sf = NULL;
                         int stot = 0;
-                        ObterSequencia((SequenciaDialogo)s, &sf, &stot);
+                        ObterSequencia((SequenciaDialogo)s, e.culpado, &sf, &stot);
                         int lim = ((SequenciaDialogo)s == e.seq) ? (e.falaIdx + 1) : stot;
                         for (int k = 0; k < lim; k++) totalH += 72.0f;
                     }
@@ -1264,11 +1414,11 @@ int main(void) {
 
                     BeginScissorMode((int)(145 * cam.zoom), (int)(150 * cam.zoom), (int)(990 * cam.zoom), (int)(475 * cam.zoom));
                     float cy = 154.0f - e.historicoScroll;
-                    for (int s = 0; s < 9; s++) {
+                    for (int s = 0; s < TOTAL_SEQS; s++) {
                         if (!e.seqVisitada[s] && (SequenciaDialogo)s != e.seq) continue;
                         const Fala *sf = NULL;
                         int stot = 0;
-                        ObterSequencia((SequenciaDialogo)s, &sf, &stot);
+                        ObterSequencia((SequenciaDialogo)s, e.culpado, &sf, &stot);
                         int lim = ((SequenciaDialogo)s == e.seq) ? (e.falaIdx + 1) : stot;
                         for (int k = 0; k < lim; k++) {
                             if (cy + 70.0f >= 145.0f && cy <= 630.0f) {
@@ -1285,86 +1435,110 @@ int main(void) {
             } break;
 
             case TELA_NOVA_EVIDENCIA:
-                DesenharCardCentral(&assets.fontes, "NOVA EVIDENCIA ENCONTRADA", "Uma nova pista pode ajudar na investigacao.\nResolva o desafio de logica para ter acesso a ela.", "RESOLVER DESAFIO >>", e.hoverBtnUnico, tempo, COR_ROXO_NEON);
+                DesenharCardCentral(&assets.fontes, "NOVA EVIDÊNCIA DISPONÍVEL", "Uma nova pista pode mudar o rumo da investigação.\nResolva o desafio de lógica em até 20 segundos para desbloqueá-la.", "DESBLOQUEAR EVIDÊNCIA >>", e.hoverBtnUnico, tempo, COR_ROXO_NEON);
                 break;
 
             case TELA_MINIGAME:
                 DesenharMiniGame(&miniGame, &assets.fontes, e.cenaAtual, tempo);
                 break;
 
-            case TELA_CONFIRMA_CAIO:
-                DesenharCardCentral(&assets.fontes, "ACUSAR CAIO AGORA?", "Voce selecionou: Caio e o culpado.\nTem certeza dessa decisao?", NULL, 0, tempo, COR_AMARELO_AVISO);
-                DesenharBotaoCyber(assets.fontes.bold, (Rectangle){ 300, 420, 310, 54 }, "a) SIM, ACUSAR CAIO", 24, e.hoverSimNao[0], tempo, COR_VERMELHO_ERR);
-                DesenharBotaoCyber(assets.fontes.bold, (Rectangle){ 670, 420, 310, 54 }, "b) NAO, INVESTIGAR", 24, e.hoverSimNao[1], tempo, COR_CIANO_NEON);
+            case TELA_CONFIRMA_PRECIPITADO:
+                DesenharCardCentral(&assets.fontes, "ACUSAR ANTES DO FIM?", "Você ainda não concluiu todas as perícias nem o confronto final.\nTem certeza que quer formalizar a acusação agora?", NULL, 0, tempo, COR_AMARELO_AVISO);
+                DesenharBotaoCyber(assets.fontes.bold, (Rectangle){ 290, 420, 325, 54 }, "[1] SIM, ACUSAR AGORA", 23, e.hoverSimNao[0], tempo, COR_VERMELHO_ERR);
+                DesenharBotaoCyber(assets.fontes.bold, (Rectangle){ 665, 420, 325, 54 }, "[2] NÃO, CONTINUAR", 23, e.hoverSimNao[1], tempo, COR_CIANO_NEON);
                 break;
 
             case TELA_EVIDENCIA_PERDIDA:
-                DesenharCardCentral(&assets.fontes, "EVIDENCIA PERDIDA", "Voce nao resolveu o desafio logico.\nA investigacao deve continuar sem esta evidencia.", "CONTINUAR >>", e.hoverBtnUnico, tempo, COR_VERMELHO_ERR);
+                DesenharCardCentral(&assets.fontes, "EVIDÊNCIA PERDIDA", "Você não concluiu o desafio de lógica.\nA investigação segue sem esta prova no dossiê.", "CONTINUAR >>", e.hoverBtnUnico, tempo, COR_VERMELHO_ERR);
                 break;
 
             case TELA_EVIDENCIA_DESBLOQUEADA:
-                DesenharCardCentral(&assets.fontes, "EVIDENCIA DESBLOQUEADA", "Nova pista registrada no seu Dossie.\nAnalise os detalhes com atencao antes de tirar conclusoes.", "ACESSAR EVIDENCIA >>", e.hoverBtnUnico, tempo, COR_VERDE_OK);
+                DesenharCardCentral(&assets.fontes, "EVIDÊNCIA DESBLOQUEADA", "Pista liberada para análise na Lupa Forense.\nVocê terá 30 segundos para classificá-la como Real ou Gerada por IA.", "ABRIR LUPA FORENSE >>", e.hoverBtnUnico, tempo, COR_VERDE_OK);
                 break;
 
             case TELA_ANALISE_PROVA: {
                 DesenharFundoCyberGrid(tempo, COR_ROXO_NEON);
                 DesenharPainelCyber((Rectangle){ 75, 68, 1130, 604 }, COR_ROXO_NEON);
 
-                const char *titulo = "ANALISE DE EVIDENCIA";
+                bool ehJu = (e.culpado == CULPADO_JULIANA);
+                const char *titulo = "ANÁLISE DE EVIDÊNCIA";
                 const char *desc = "";
-                bool ehManipulada = false;
+                bool ehManipulada = (RespostaCorretaProva(e.cenaAtual, e.culpado) == 2);
                 const char *motivo = "";
                 Rectangle imgRect = { 115, 145, 500, 385 };
                 bool temScannerImg = false;
 
-                if (e.cenaAtual == 2) {
-                    titulo = "CAMERA 03 - SAIDA DA FESTA (02:48)";
-                    desc = "Registro da camera de seguranca da saida da festa mostrando Caio indo embora as 02:48.";
-                    DesenharTexturaContain(ObterTexturaCache(&assets.evidencia, "AssetsRay/Evidências/CaioTrueEvidence.png"), imgRect, WHITE);
-                    temScannerImg = true;
-                    ehManipulada = false;
-                    motivo = "Metadados e iluminacao consistentes com a cena real da saida.";
-                } else if (e.cenaAtual == 3) {
-                    titulo = "AUDIO ANONIMO DA FESTA";
-                    desc = "Audio enviado anonimamente com trechos distorcidos e voz semelhante a de Caio.";
+                if (e.cenaAtual == 3) {
+                    titulo = "PROVA 1 - ÁUDIO ANÔNIMO";
                     DesenharPlayerAudio(&assets.fontes, (Rectangle){ 115, 145, 500, 360 }, e.audioTocando, e.audioTempo, mouse);
-                    ehManipulada = true;
-                    motivo = "Glitches e trechos robotizados tipicos de sintese de voz por IA.";
+                    if (ehJu) {
+                        desc = "LUPA FORENSE: Nenhuma respiração na voz de \"Caio\"; música de fundo em loop a cada 4s; corte seco em frequências altas; sotaque oscila no meio da frase.";
+                        motivo = "Gerada por IA: ausência de respiração e corte seco nas frequências.";
+                    } else {
+                        desc = "LUPA FORENSE: Ruído de vento natural contínuo; respiração ofegante compatível com esforço; assinatura acústica do ambiente sem cortes; frequência vocal estável.";
+                        motivo = "Prova Real: gravação limpa, sem sinais de síntese ou montagem.";
+                    }
                 } else if (e.cenaAtual == 4) {
-                    titulo = "MENSAGENS EXTRAIDAS DO CELULAR";
-                    desc = "Origem: Celular de Caio, extraido pela pericia com autorizacao judicial.";
-                    DesenharPainelCyber((Rectangle){ 115, 145, 500, 440 }, COR_CIANO_NEON);
-                    const char *chatTxt =
-                        "GABRIEL (02:11): cara, eu vou falar. precisam saber o que ela fez\n"
-                        "CAIO (02:12): fala com ela primeiro, na frente de todo mundo nao\n"
-                        "GABRIEL (02:12): ela nao falou com ninguem quando pegou o premio\n"
-                        "CAIO (02:14): to pedindo so isso\n"
-                        "GABRIEL (02:15): desce aqui que a gente resolve\n"
-                        "CAIO (02:31): faz o que quiser entao. eu vou embora\n"
-                        "GABRIEL (02:33): vai nessa";
-                    DesenharTextoQuebrado(assets.fontes.regular, chatTxt, (Rectangle){ 138, 168, 454, 395 }, 22, 1.0f, WHITE);
-                    ehManipulada = false;
-                    motivo = "Extracao oficial da pericia judicial, compativel com o horario 02:48.";
-                } else if (e.cenaAtual == 5) {
-                    titulo = "FOTO DO ALIBI DE JULIANA (03:07)";
-                    desc = "Selfie dentro do carro apresentada por Juliana. Observe o reflexo na janela.";
+                    titulo = "PROVA 2 - FOTO DE JULIANA NO CARRO (03:05)";
+                    // TODO: Asset faltando - foto REAL de Juliana em carro autonomo sem volante para a Rota Caio
                     DesenharTexturaContain(ObterTexturaCache(&assets.evidencia, "AssetsRay/Evidências/JuliaDeepfake.png"), imgRect, WHITE);
                     temScannerImg = true;
-                    ehManipulada = true;
-                    motivo = "Inconsistencia visual: o reflexo na janela nao corresponde a pose real.";
+                    if (ehJu) {
+                        desc = "LUPA FORENSE: O carro tem volante (os autônomos da região não têm); o brinco esquerdo some no reflexo da janela; texto do painel embaralhado; horário editado.";
+                        motivo = "Gerada por IA: volante inexistente na frota, reflexo falho e horário adulterado.";
+                    } else {
+                        desc = "LUPA FORENSE: Veículo autônomo sem volante (padrão da frota local); reflexo da janela coerente com a iluminação externa; metadados originais da câmera intactos.";
+                        motivo = "Prova Real: iluminação, reflexo e metadados confirmam o horário 03:05.";
+                    }
+                } else if (e.cenaAtual == 5) {
+                    titulo = "PROVA 3 - LOCALIZAÇÃO DO CELULAR DE GABRIEL";
+                    desc = "LUPA FORENSE: Celular parado no barranco a 200m do galpão às 03:20 (último sinal 03:22). Dados batem com três torres; bateria coerente; chip íntegro; metadados sem edição.";
+                    DesenharMapaLocalizacao(&assets.fontes, imgRect, tempo);
+                    motivo = "Prova Real: Gabriel nunca saiu da festa. Morreu no local antes das 03:05.";
                 } else if (e.cenaAtual == 6) {
-                    titulo = "LOCALIZACAO DO CELULAR DE GABRIEL";
-                    desc = "Registro de antena as 03:20 proximo ao barranco. Sem todos os metadados tecnicos.";
-                    DesenharMapaCena6(&assets.fontes, imgRect, tempo);
-                    ehManipulada = false;
-                    motivo = "Registro compativel com o local onde o corpo foi encontrado.";
+                    titulo = "PROVA 4 - ARQUIVO OCULTO NA NUVEM";
+                    DesenharPainelCyber((Rectangle){ 115, 145, 500, 385 }, COR_CIANO_NEON);
+                    if (ehJu) {
+                        const char *nuvemTxt =
+                            "RASCUNHO DE E-MAIL // 02:15\n"
+                            "Para: Comitê de Ética da Faculdade\n\n"
+                            "\"Não consigo mais segurar isso. Entreguei o código-fonte do projeto da Juliana pro prof. João Paulo em troca da vaga na NEXARA. Vou contar tudo pra ela hoje.\"";
+                        DesenharTextoQuebrado(assets.fontes.regular, nuvemTxt, (Rectangle){ 142, 172, 446, 335 }, 23, 1.0f, WHITE);
+                        desc = "LUPA FORENSE: Timestamp do servidor validado; IP de origem compatível com o Wi-Fi da festa; histórico de digitação orgânico.";
+                        motivo = "Prova Real: Gabriel confessou ter roubado o projeto de três anos de Juliana.";
+                    } else {
+                        const char *nuvemTxt =
+                            "PLANILHA CRIPTOGRAFADA // EXTRATOS\n\n"
+                            "Origem: Bolsas falsas (Vasconcelos Holdings)\n"
+                            "Conta intermediária: Gabriel Moura\n"
+                            "Destino final: Empresa de fachada (Caio V.)\n"
+                            "Status: Comprovantes de transferência intactos";
+                        DesenharTextoQuebrado(assets.fontes.regular, nuvemTxt, (Rectangle){ 142, 172, 446, 335 }, 23, 1.0f, WHITE);
+                        desc = "LUPA FORENSE: Assinatura criptográfica do Banco Central válida; chaves de autenticação íntegras; documentos sem alteração.";
+                        motivo = "Prova Real: o pai de Caio usava Gabriel como laranja para lavar dinheiro.";
+                    }
                 } else if (e.cenaAtual == 7) {
-                    titulo = "FOTO RECUPERADA DO CELULAR DE GABRIEL (02:58)";
-                    desc = "Foto recebida por Gabriel naquela noite. Observe a roda do carro e a calcada.";
-                    DesenharTexturaContain(ObterTexturaCache(&assets.evidencia, "AssetsRay/Evidências/JulianaDeepfake.png"), imgRect, WHITE);
-                    temScannerImg = true;
-                    ehManipulada = true;
-                    motivo = "Distorcoes geometricas na roda/meio-fio indicam manipulacao por IA.";
+                    if (ehJu) {
+                        titulo = "PROVA 5 - CORRIDA DE JULIANA (MOBI)";
+                        desc = "LUPA FORENSE: Assinatura da Mobi válida; trilha de GPS contínua; nenhuma outra corrida registrada na conta naquela noite.";
+                        DesenharPainelCyber((Rectangle){ 115, 145, 500, 385 }, COR_CIANO_NEON);
+                        const char *mobiTxt =
+                            "MOBI // REGISTRO OFICIAL DE CORRIDA\n\n"
+                            "Conta: Juliana Costa\n"
+                            "Solicitada às: 03:41\n"
+                            "Embarque: Estrada de serviço (ao lado do galpão)\n"
+                            "Veículo: Autônomo, SEM volante\n"
+                            "Passageiros: 1";
+                        DesenharTextoQuebrado(assets.fontes.regular, mobiTxt, (Rectangle){ 142, 175, 446, 330 }, 24, 1.0f, WHITE);
+                        motivo = "Prova Real: derruba o álibi das 03:00 e o carro com volante da foto.";
+                    } else {
+                        titulo = "PROVA 5 - CÂMERA DO ESTACIONAMENTO (02:42)";
+                        // TODO: Asset faltando - versao forjada (placa borrada/sombra errada) de CaioTrueEvidence.png
+                        DesenharTexturaContain(ObterTexturaCache(&assets.evidencia, "AssetsRay/Evidências/CaioTrueEvidence.png"), imgRect, WHITE);
+                        temScannerImg = true;
+                        desc = "LUPA FORENSE: Carro de Caio na cancela às 02:42. Placa com caracteres distorcidos; sombra dos postes no ângulo errado para o horário; ruído digital injetado sobre o frame original.";
+                        motivo = "Gerada por IA: Caio forjou o vídeo de saída para encobrir o horário real.";
+                    }
                 }
 
                 if (temScannerImg) {
@@ -1373,48 +1547,88 @@ int main(void) {
                     DrawLineEx((Vector2){ imgRect.x, sy }, (Vector2){ imgRect.x + imgRect.width, sy }, 2.0f, ColorAlpha(COR_CIANO_NEON, 0.7f));
                 }
 
-                DrawTextEx(assets.fontes.titulo, titulo, (Vector2){ 115, 90 }, 28, 1.0f, COR_CIANO_NEON);
-                DesenharTextoQuebrado(assets.fontes.regular, desc, (Rectangle){ 655, 155, 505, 145 }, 26, 1.0f, WHITE);
-                DrawTextEx(assets.fontes.bold, "Essa prova e verdadeira ou manipulada por IA?", (Vector2){ 655, 368 }, 26, 1.0f, COR_ROSA_NEON);
+                DrawTextEx(assets.fontes.titulo, titulo, (Vector2){ 115, 90 }, 26, 1.0f, COR_CIANO_NEON);
+                if (e.respostaProva[e.cenaAtual] == 0) {
+                    Color corT = (e.analiseTempoRestante <= 7.0f) ? COR_VERMELHO_ERR : COR_AMARELO_AVISO;
+                    DesenharBadgeCyber(assets.fontes.bold, (Vector2){ 995, 86 }, TextFormat("TEMPO: %02ds", (int)ceilf(e.analiseTempoRestante)), 21, corT);
+                }
 
-                DesenharBotaoCyber(assets.fontes.bold, (Rectangle){ 655, 446, 230, 54 }, "VERDADEIRA", 25, e.hoverAnalise[0], tempo,
+                DesenharTextoQuebrado(assets.fontes.regular, desc, (Rectangle){ 655, 145, 505, 155 }, 24, 1.0f, WHITE);
+                DrawTextEx(assets.fontes.bold, "Classifique esta evidência:", (Vector2){ 655, 396 }, 26, 1.0f, COR_ROSA_NEON);
+
+                DesenharBotaoCyber(assets.fontes.bold, (Rectangle){ 655, 446, 230, 54 }, "REAL", 25, e.hoverAnalise[0], tempo,
                     (e.respostaProva[e.cenaAtual] == 1) ? COR_CIANO_NEON : COR_ROXO_NEON);
-                DesenharBotaoCyber(assets.fontes.bold, (Rectangle){ 905, 446, 230, 54 }, "MANIPULADA", 25, e.hoverAnalise[1], tempo,
+                DesenharBotaoCyber(assets.fontes.bold, (Rectangle){ 905, 446, 230, 54 }, "GERADA POR IA", 23, e.hoverAnalise[1], tempo,
                     (e.respostaProva[e.cenaAtual] == 2) ? COR_ROSA_NEON : COR_ROXO_NEON);
 
-                if (e.respostaProva[e.cenaAtual] != 0) {
+                if (e.respostaProva[e.cenaAtual] != 0 || e.analiseTempoEsgotado) {
                     bool acertou = (e.respostaProva[e.cenaAtual] == (ehManipulada ? 2 : 1));
-                    DrawTextEx(assets.fontes.bold, acertou ? "ANALISE CORRETA!" : "ATENCAO AS PISTAS!", (Vector2){ 655, 305 }, 25, 1.0f, acertou ? COR_VERDE_OK : COR_AMARELO_AVISO);
-                    DesenharTextoQuebrado(assets.fontes.regular, motivo, (Rectangle){ 655, 336, 505, 65 }, 22, 1.0f, LIGHTGRAY);
-                    DesenharBotaoCyber(assets.fontes.bold, (Rectangle){ 655, 542, 480, 54 }, "CONTINUAR INVESTIGACAO >>", 25, e.hoverAnalise[2], tempo, COR_VERDE_OK);
+                    const char *statusTit = e.analiseTempoEsgotado && e.respostaProva[e.cenaAtual] == 0
+                        ? "TEMPO ESGOTADO! (NÃO VALIDADA)"
+                        : (acertou ? "PROVA VALIDADA!" : "CLASSIFICAÇÃO INCORRETA!");
+                    Color corRes = (e.respostaProva[e.cenaAtual] != 0 && acertou) ? COR_VERDE_OK : COR_AMARELO_AVISO;
+                    DrawTextEx(assets.fontes.bold, statusTit, (Vector2){ 655, 305 }, 24, 1.0f, corRes);
+                    DesenharTextoQuebrado(assets.fontes.regular, motivo, (Rectangle){ 655, 336, 505, 65 }, 21, 1.0f, LIGHTGRAY);
+                    DesenharBotaoCyber(assets.fontes.bold, (Rectangle){ 655, 542, 480, 54 }, "CONTINUAR INVESTIGAÇÃO >>", 25, e.hoverAnalise[2], tempo, COR_VERDE_OK);
                 }
             } break;
 
-            case TELA_C6_HORAS_DEPOIS:
-                DesenharCardCentral(&assets.fontes, "ALGUMAS HORAS DEPOIS", "Enquanto a pericia analisa os arquivos, voce revisa os depoimentos em busca de conexoes.", "CONTINUAR >>", e.hoverBtnUnico, tempo, COR_CIANO_NEON);
-                break;
-
             case TELA_VEREDITO:
-                DesenharCardCentral(&assets.fontes, "ESCOLHA O SEU VEREDITO", "Quem e responsavel pelo desaparecimento e morte de Gabriel Moura?", NULL, 0, tempo, COR_ROXO_NEON);
-                DesenharBotaoCyber(assets.fontes.bold, (Rectangle){ 310, 322, 660, 54 }, "a) Caio Vasconcelos e o culpado.", 25, e.hoverVeredito[0], tempo, COR_ROXO_NEON);
-                DesenharBotaoCyber(assets.fontes.bold, (Rectangle){ 310, 392, 660, 54 }, "b) Juliana Costa e a culpada.", 25, e.hoverVeredito[1], tempo, COR_ROXO_NEON);
-                DesenharBotaoCyber(assets.fontes.bold, (Rectangle){ 310, 462, 660, 54 }, "c) Revisar o Dossie de Evidencias [D]", 25, e.hoverVeredito[2], tempo, COR_CIANO_NEON);
+                DesenharCardCentral(&assets.fontes, "ESCOLHA SEU VEREDITO", "Quem é o responsável pela morte de Gabriel Moura?", NULL, 0, tempo, COR_ROXO_NEON);
+                DesenharBotaoCyber(assets.fontes.bold, (Rectangle){ 310, 322, 660, 54 }, "[A] Caio Vasconcelos é o culpado.", 25, e.hoverVeredito[0], tempo, COR_ROXO_NEON);
+                DesenharBotaoCyber(assets.fontes.bold, (Rectangle){ 310, 392, 660, 54 }, "[B] Juliana Costa é a culpada.", 25, e.hoverVeredito[1], tempo, COR_ROXO_NEON);
+                DesenharBotaoCyber(assets.fontes.bold, (Rectangle){ 310, 462, 660, 54 }, "[C] Ver o dossiê [D]", 25, e.hoverVeredito[2], tempo, COR_CIANO_NEON);
                 break;
 
             case TELA_CONFIRMA_VEREDITO: {
                 const char *alvo = (e.acusadoFinal == 1) ? "Caio Vasconcelos" : "Juliana Costa";
-                DesenharCardCentral(&assets.fontes, "CONFIRMAR VEREDITO", TextFormat("Voce esta acusando %s.\nTem certeza dessa decisao?", alvo), NULL, 0, tempo, COR_AMARELO_AVISO);
-                DesenharBotaoCyber(assets.fontes.bold, (Rectangle){ 340, 420, 260, 54 }, "SIM, CONFIRMAR", 25, e.hoverSimNao[0], tempo, COR_VERDE_OK);
-                DesenharBotaoCyber(assets.fontes.bold, (Rectangle){ 680, 420, 260, 54 }, "NAO, VOLTAR", 25, e.hoverSimNao[1], tempo, COR_CIANO_NEON);
+                DesenharCardCentral(&assets.fontes, "CONFIRMAR VEREDITO", TextFormat("Você está acusando %s.\nVocê tem certeza?", alvo), NULL, 0, tempo, COR_AMARELO_AVISO);
+                DesenharBotaoCyber(assets.fontes.bold, (Rectangle){ 340, 420, 260, 54 }, "[1] SIM", 25, e.hoverSimNao[0], tempo, COR_VERDE_OK);
+                DesenharBotaoCyber(assets.fontes.bold, (Rectangle){ 680, 420, 260, 54 }, "[2] NÃO", 25, e.hoverSimNao[1], tempo, COR_CIANO_NEON);
             } break;
 
             case TELA_FINAL: {
-                const char *tit = e.vitoria ? "VEREDITO CORRETO!" : "VEREDITO INCORRETO";
-                const char *txt = e.vitoria
-                    ? "Voce revelou a verdade! Caio tinha alibi comprovado (02:48) e as fotos apresentadas por Juliana tinham sinais claros de manipulacao por IA. Caso encerrado com sucesso!"
-                    : "Voce acusou a pessoa errada. Reavalie as contradicoes nos depoimentos e nas evidencias digitais e tente novamente!";
-                DesenharCardCentral(&assets.fontes, tit, txt, "VOLTAR AO MENU", e.hoverBtnUnico, tempo, e.vitoria ? COR_VERDE_OK : COR_VERMELHO_ERR);
-                DrawTextEx(assets.fontes.bold, TextFormat("Desafios de Logica: %d acertos | %d erros", stats.acertos, stats.erros), (Vector2){ 400, 520 }, 24, 1.0f, COR_CIANO_NEON);
+                const char *nomeCulpado = (e.culpado == CULPADO_JULIANA) ? "Juliana Costa" : "Caio Vasconcelos";
+                const char *tit = "CASO ENCERRADO";
+                char txt[512] = "";
+                Color corFinal = COR_VERMELHO_ERR;
+                if (e.tipoFinal == 1) {
+                    tit = "FINAL 1 - VERDADE ABSOLUTA";
+                    snprintf(txt, sizeof(txt),
+                        "CASO PERFEITO (5/5 PROVAS)! Você prendeu %s e ainda expôs o esquema inteiro nos bastidores da NEXARA.\nCASO ENCERRADO - EXCELENTE TRABALHO, INVESTIGADORA!",
+                        nomeCulpado);
+                    corFinal = COR_VERDE_OK;
+                } else if (e.tipoFinal == 2) {
+                    tit = "FINAL 2 - A VERDADE";
+                    snprintf(txt, sizeof(txt),
+                        "VEREDITO CORRETO! %s confessou o crime diante das provas técnicas validadas.\nCASO ENCERRADO - PARABÉNS, INVESTIGADORA!",
+                        nomeCulpado);
+                    corFinal = COR_VERDE_OK;
+                } else if (e.tipoFinal == 3) {
+                    tit = "FINAL 3 - A DÚVIDA";
+                    snprintf(txt, sizeof(txt),
+                        "VEREDITO CORRETO, MAS SEM PROVAS SUFICIENTES. %s foi absolvido(a) pela Lei da Dúvida Digital.\nCASO ARQUIVADO - A VERDADE FICOU PELO CAMINHO.",
+                        nomeCulpado);
+                    corFinal = COR_AMARELO_AVISO;
+                } else if (e.tipoFinal == 4) {
+                    tit = "FINAL 4 - COLAPSO FORENSE";
+                    snprintf(txt, sizeof(txt),
+                        "INQUÉRITO ARQUIVADO ANTES DO TRIBUNAL. Com quase nenhuma prova validada, o Ministério Público rejeitou o caso.\nDICA: Valide pelo menos 4 provas para sustentar a prisão.");
+                    corFinal = COR_VERMELHO_ERR;
+                } else if (e.tipoFinal == 5) {
+                    tit = "FINAL 5 - A PRECIPITAÇÃO";
+                    snprintf(txt, sizeof(txt),
+                        "ACUSAÇÃO PRECIPITADA! Você tentou encerrar o caso antes de concluir a perícia da nuvem e o confronto final.\nO Delegado Meireles te afastou da investigação.");
+                    corFinal = COR_AMARELO_AVISO;
+                } else {
+                    tit = "FINAL 6 - A INJUSTIÇA";
+                    snprintf(txt, sizeof(txt),
+                        "VEREDITO INCORRETO. Um inocente pagou pelo crime. O verdadeiro culpado era %s.\nCASO ENCERRADO - VOCÊ PERDEU.",
+                        nomeCulpado);
+                    corFinal = COR_VERMELHO_ERR;
+                }
+                DesenharCardCentral(&assets.fontes, tit, txt, "VOLTAR AO MENU", e.hoverBtnUnico, tempo, corFinal);
+                DrawTextEx(assets.fontes.bold, TextFormat("Provas Validadas: %d/5 | Desafios: %d acertos, %d erros", ContarProvasValidadas(&e), stats.acertos, stats.erros), (Vector2){ 290, 525 }, 23, 1.0f, COR_CIANO_NEON);
             } break;
 
             case TELA_DOSSIE: {
@@ -1427,53 +1641,86 @@ int main(void) {
                 DrawRectangle(95, 136, 1090, 2, ColorAlpha(COR_ROXO_NEON, 0.45f));
 
                 if (e.dossieAba == 0) {
-                    const char *nomesEv[6] = {
-                        "1. Camera Saida (02:48)", "2. Audio Anonimo", "3. Mensagens Celular",
-                        "4. Foto Carro (03:07)", "5. Localizacao (03:20)", "6. Foto Festa (02:58)"
+                    bool ehJu = (e.culpado == CULPADO_JULIANA);
+                    const char *nomesEv[5] = {
+                        "1. Áudio Anônimo (Cena 3)",
+                        "2. Foto no Carro (03:05)",
+                        "3. Localização Celular",
+                        "4. Backup na Nuvem",
+                        ehJu ? "5. Corrida Mobi (03:41)" : "5. Câmera Saída (02:42)"
                     };
-                    for (int i = 0; i < 6; i++) {
-                        int st = e.statusProva[i + 2];
+                    for (int i = 0; i < 5; i++) {
+                        int cenaEv = i + 3;
+                        int st = e.statusProva[cenaEv];
+                        int resp = e.respostaProva[cenaEv];
+                        bool correta = (resp == RespostaCorretaProva(cenaEv, e.culpado));
                         Rectangle item = { 95, 154 + i * 74, 320, 62 };
                         bool sel = (e.dossieItem == i);
                         bool hov = CheckCollisionPointRec(mouse, item);
                         if (sel || hov) DesenharHoverCyberRosa(item, sel ? 1.0f : 0.6f, tempo);
-                        DrawTextEx(assets.fontes.bold, nomesEv[i], (Vector2){ item.x + 26, item.y + 6 }, 23, 1.0f, sel ? COR_ROSA_NEON : WHITE);
-                        const char *sub = (st == 1) ? "COLETADA" : (st == -1) ? "PERDIDA" : "BLOQUEADA";
-                        Color csub = (st == 1) ? COR_VERDE_OK : (st == -1) ? COR_VERMELHO_ERR : GRAY;
-                        DrawTextEx(assets.fontes.regular, sub, (Vector2){ item.x + 26, item.y + 34 }, 20, 1.0f, csub);
+                        DrawTextEx(assets.fontes.bold, nomesEv[i], (Vector2){ item.x + 26, item.y + 6 }, 22, 1.0f, sel ? COR_ROSA_NEON : WHITE);
+
+                        const char *sub = "BLOQUEADA";
+                        Color csub = GRAY;
+                        if (st == -1) { sub = "PERDIDA"; csub = COR_VERMELHO_ERR; }
+                        else if (st == 1) {
+                            if (resp == 0) { sub = "NÃO CLASSIFICADA"; csub = COR_AMARELO_AVISO; }
+                            else if (correta) { sub = "VALIDADA"; csub = COR_VERDE_OK; }
+                            else { sub = "CLASSIFICADA ERRADO"; csub = COR_VERMELHO_ERR; }
+                        }
+                        DrawTextEx(assets.fontes.regular, sub, (Vector2){ item.x + 26, item.y + 34 }, 19, 1.0f, csub);
                     }
 
-                    int cenaEv = e.dossieItem + 2;
+                    int idxEv = (e.dossieItem >= 0 && e.dossieItem < 5) ? e.dossieItem : 0;
+                    int cenaEv = idxEv + 3;
                     Rectangle det = { 445, 150, 745, 496 };
                     DesenharPainelCyber(det, ColorAlpha(COR_ROXO_NEON, 0.55f));
 
+                    const char *respCorretaTxt = (RespostaCorretaProva(cenaEv, e.culpado) == 2) ? "Resposta correta: GERADA POR IA" : "Resposta correta: REAL";
+
                     if (e.statusProva[cenaEv] != 1) {
-                        DrawTextEx(assets.fontes.bold, e.statusProva[cenaEv] == -1 ? "EVIDENCIA PERDIDA NO DESAFIO" : "EVIDENCIA AINDA NAO COLETADA", (Vector2){ 595, 375 }, 26, 1.0f, GRAY);
-                    } else if (cenaEv == 2) {
-                        DesenharTexturaContain(ObterTexturaCache(&assets.evidencia, "AssetsRay/Evidências/CaioTrueEvidence.png"), (Rectangle){ 480, 172, 675, 360 }, WHITE);
-                        DrawTextEx(assets.fontes.regular, "Registro da camera de saida da festa as 02:48.", (Vector2){ 485, 558 }, 24, 1.0f, LIGHTGRAY);
+                        DrawTextEx(assets.fontes.bold, e.statusProva[cenaEv] == -1 ? "EVIDÊNCIA PERDIDA NO DESAFIO" : "EVIDÊNCIA AINDA NÃO COLETADA", (Vector2){ 595, 360 }, 26, 1.0f, GRAY);
+                        if (e.telaAnterior == TELA_VEREDITO || e.statusProva[cenaEv] == -1) {
+                            DrawTextEx(assets.fontes.regular, respCorretaTxt, (Vector2){ 665, 405 }, 24, 1.0f, COR_CIANO_NEON);
+                        }
                     } else if (cenaEv == 3) {
-                        DesenharPlayerAudio(&assets.fontes, (Rectangle){ 480, 172, 675, 418 }, e.audioTocando, e.audioTempo, mouse);
+                        DesenharPlayerAudio(&assets.fontes, (Rectangle){ 480, 172, 675, 378 }, e.audioTocando, e.audioTempo, mouse);
+                        DrawTextEx(assets.fontes.bold, respCorretaTxt, (Vector2){ 485, 575 }, 23, 1.0f, COR_CIANO_NEON);
                     } else if (cenaEv == 4) {
-                        DesenharTextoQuebrado(assets.fontes.regular,
-                            "ORIGEM: Celular de Caio (Pericia Judicial)\n\n"
-                            "GABRIEL (02:11): cara, eu vou falar. precisam saber o que ela fez\n"
-                            "CAIO (02:12): fala com ela primeiro, na frente de todo mundo nao\n"
-                            "CAIO (02:31): faz o que quiser entao. eu vou embora\n"
-                            "GABRIEL (02:33): vai nessa",
-                            (Rectangle){ 485, 182, 665, 420 }, 25, 1.0f, WHITE);
+                        DesenharTexturaContain(ObterTexturaCache(&assets.evidencia, "AssetsRay/Evidências/JuliaDeepfake.png"), (Rectangle){ 480, 170, 675, 350 }, WHITE);
+                        DrawTextEx(assets.fontes.regular, ehJu ? "Foto enviada por Juliana à mãe (03:05). Carro com volante." : "Foto enviada por Juliana à mãe (03:05). Metadados intactos.", (Vector2){ 485, 540 }, 23, 1.0f, LIGHTGRAY);
+                        DrawTextEx(assets.fontes.bold, respCorretaTxt, (Vector2){ 485, 575 }, 23, 1.0f, COR_CIANO_NEON);
                     } else if (cenaEv == 5) {
-                        DesenharTexturaContain(ObterTexturaCache(&assets.evidencia, "AssetsRay/Evidências/JuliaDeepfake.png"), (Rectangle){ 480, 170, 675, 360 }, WHITE);
-                        DrawTextEx(assets.fontes.regular, "Foto enviada por Juliana a mae, marcada com horario 03:07.", (Vector2){ 485, 558 }, 24, 1.0f, LIGHTGRAY);
+                        DesenharMapaLocalizacao(&assets.fontes, (Rectangle){ 480, 172, 675, 350 }, tempo);
+                        DrawTextEx(assets.fontes.regular, "Celular de Gabriel no barranco às 03:20 (último sinal 03:22).", (Vector2){ 485, 540 }, 23, 1.0f, LIGHTGRAY);
+                        DrawTextEx(assets.fontes.bold, respCorretaTxt, (Vector2){ 485, 575 }, 23, 1.0f, COR_CIANO_NEON);
                     } else if (cenaEv == 6) {
-                        DesenharMapaCena6(&assets.fontes, (Rectangle){ 480, 172, 675, 360 }, tempo);
-                        DrawTextEx(assets.fontes.regular, "Sinal de antena do celular de Gabriel as 03:20.", (Vector2){ 485, 558 }, 24, 1.0f, LIGHTGRAY);
+                        const char *txtNuvem = ehJu
+                            ? "BACKUP NA NUVEM // RASCUNHO DE E-MAIL (02:15)\n\n"
+                              "Gabriel confessou que entregou o código-fonte do projeto de Juliana ao Prof. João Paulo em troca da vaga na NEXARA.\n"
+                              "Timestamp do servidor e IP da festa validados."
+                            : "BACKUP NA NUVEM // EXTRATOS E PLANILHA\n\n"
+                              "Comprovantes mostram que o pai de Caio depositava bolsas falsas na conta de Gabriel, repassadas à empresa de fachada de Caio.\n"
+                              "Assinatura criptográfica do Banco Central íntegra.";
+                        DesenharTextoQuebrado(assets.fontes.regular, txtNuvem, (Rectangle){ 485, 190, 665, 340 }, 25, 1.0f, WHITE);
+                        DrawTextEx(assets.fontes.bold, respCorretaTxt, (Vector2){ 485, 575 }, 23, 1.0f, COR_CIANO_NEON);
                     } else if (cenaEv == 7) {
-                        DesenharTexturaContain(ObterTexturaCache(&assets.evidencia, "AssetsRay/Evidências/JulianaDeepfake.png"), (Rectangle){ 480, 170, 675, 360 }, WHITE);
-                        DrawTextEx(assets.fontes.regular, "Foto recuperada do aparelho de Gabriel, marcada as 02:58.", (Vector2){ 485, 558 }, 24, 1.0f, LIGHTGRAY);
+                        if (ehJu) {
+                            DesenharTextoQuebrado(assets.fontes.regular,
+                                "MOBI // REGISTRO DE CORRIDA\n\n"
+                                "Conta: Juliana Costa\n"
+                                "Solicitada às 03:41 | Embarque na estrada ao lado do galpão\n"
+                                "Veículo autônomo, sem volante | 1 passageiro\n"
+                                "Assinatura válida e GPS contínuo.",
+                                (Rectangle){ 485, 190, 665, 340 }, 25, 1.0f, WHITE);
+                        } else {
+                            DesenharTexturaContain(ObterTexturaCache(&assets.evidencia, "AssetsRay/Evidências/CaioTrueEvidence.png"), (Rectangle){ 480, 170, 675, 350 }, WHITE);
+                            DrawTextEx(assets.fontes.regular, "Câmera da cancela (02:42): placa distorcida e sombra no ângulo errado.", (Vector2){ 485, 540 }, 22, 1.0f, LIGHTGRAY);
+                        }
+                        DrawTextEx(assets.fontes.bold, respCorretaTxt, (Vector2){ 485, 575 }, 23, 1.0f, COR_CIANO_NEON);
                     }
                 } else {
-                    const char *sus[3] = { "Caio Vasconcelos", "Juliana Costa", "Gabriel Moura (Vitima)" };
+                    const char *sus[3] = { "Caio Vasconcelos", "Juliana Costa", "Gabriel Moura (Vítima)" };
                     const char *fotos[3] = {
                         "AssetsRay/Personagens/Caio/CaioMugshot.png",
                         "AssetsRay/Personagens/Julia/juliana retrato.png",
@@ -1497,34 +1744,29 @@ int main(void) {
                     if (idx == 0) {
                         snprintf(infoFicha, sizeof(infoFicha),
                             "Nome: Caio Vasconcelos\n"
-                            "Idade: 22 anos | Cidade: Recife - PE | Altura: 1,78m\n"
-                            "Perfil: Estudante de Computacao, reservado e direto.\n"
-                            "Personalidade: Defensivo sob pressao, leal aos amigos.\n"
-                            "Relacao: Colega de faculdade de Gabriel.\n\n"
-                            "ANOTACOES DO DEPOIMENTO:\n%s%s",
-                            e.notaCaioCena2 ? "- Afirmou ter discutido com Gabriel e ido embora por volta das 2h40.\n" : "- Ainda nao interrogado.\n",
-                            e.notaCaioCena4 ? "- Alegou que a discussao foi sobre um suposto trabalho de Juliana.\n" : ""
+                            "Idade: 22 anos | Cidade: Recife - PE\n"
+                            "Perfil: Estudante de Computação, colega de Gabriel.\n\n"
+                            "ANOTAÇÕES DO DEPOIMENTO:\n%s%s",
+                            e.notaCaioCena2 ? "- Discutiu com Gabriel na festa. Diz ter saído às 02:40 de carro (relógio sem bateria).\n" : "- Ainda não interrogado.\n",
+                            (e.notaConfrontoCena7 && e.culpado == CULPADO_CAIO) ? "- Confrontado sobre a câmera adulterada e os repasses; chamou o advogado da família." : ""
                         );
                     } else if (idx == 1) {
                         snprintf(infoFicha, sizeof(infoFicha),
                             "Nome: Juliana Costa\n"
-                            "Idade: 21 anos | Cidade: Recife - PE | Altura: 1,68m\n"
-                            "Perfil: Estudante destaque de Engenharia, muito articulada.\n"
-                            "Personalidade: Confiante, fria e calculista em conversas.\n"
-                            "Relacao: Colega de curso e conhecida de Gabriel e Caio.\n\n"
-                            "ANOTACOES DO DEPOIMENTO:\n%s",
-                            e.notaJulianaCena5 ? "- Afirmou ter conversado normalmente com Gabriel, ficado ate ~3h e enviado foto a mae.\n" : "- Ainda nao interrogada.\n"
+                            "Idade: 21 anos | Cidade: Recife - PE\n"
+                            "Perfil: Estudante, melhor amiga de Gabriel.\n\n"
+                            "ANOTAÇÕES DO DEPOIMENTO:\n%s%s",
+                            e.notaJulianaCena4 ? "- Brigou com Gabriel pela vaga na NEXARA. Diz ter saído às 03:00 de app.\n" : "- Ainda não interrogada.\n",
+                            (e.notaConfrontoCena7 && e.culpado == CULPADO_JULIANA) ? "- Confrontada sobre a corrida da Mobi às 03:41; pediu advogado." : ""
                         );
                     } else {
                         snprintf(infoFicha, sizeof(infoFicha),
                             "Nome: Gabriel Moura\n"
-                            "Idade: 22 anos | Cidade: Recife - PE | Altura: 1,81m\n"
-                            "Perfil: Estudante universitario, envolvido em projetos academicos.\n"
-                            "Personalidade: Idealista, transparente e firme nas proprias conviccoes.\n"
-                            "Relacao: Vitima do caso (visto pela ultima vez na festa).\n\n"
-                            "REGISTROS DA INVESTIGACAO:\n"
-                            "- Ultima localizacao conhecida: Festa universitaria (~03:00).\n%s",
-                            e.notaGabrielCena6 ? "- Corpo encontrado em um barranco as margens da estrada (caso tratado como homicidio).\n" : ""
+                            "Idade: 22 anos | Cidade: Recife - PE\n"
+                            "Perfil: Estudante de Ciência da Computação.\n\n"
+                            "REGISTROS DA INVESTIGAÇÃO:\n"
+                            "- Última localização: Festa universitária (~03:00).\n%s",
+                            e.notaGabrielCena5 ? "- Corpo encontrado num barranco a 200m do galpão (morte entre 02:50 e 03:05; golpe na têmpora)." : ""
                         );
                     }
                     DrawTextEx(assets.fontes.titulo, sus[idx], (Vector2){ 705, 172 }, 28, 1.0f, COR_ROSA_NEON);
@@ -1535,8 +1777,8 @@ int main(void) {
         }
 
         if (emGameplay) {
-            DesenharBarraTopo(&assets.fontes, mouse, tempo, e.hoverDossieTop[0], e.cenaAtual);
-            if (e.tela != TELA_DIALOGO && e.tela != TELA_C1_CELULAR && e.tela != TELA_MINIGAME) {
+            DesenharBarraTopo(&assets.fontes, mouse, tempo, e.hoverDossieTop[0], e.cenaAtual, e.podeAcusar);
+            if (e.tela != TELA_DIALOGO && e.tela != TELA_MINIGAME) {
                 DesenharScanlinesHUD(tempo);
             }
         }
