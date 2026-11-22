@@ -8,6 +8,7 @@
 #include "minigames.h"
 #include "celular.h"
 #include "progresso.h"
+#include "cutscene.h"
 
 typedef enum {
     CULPADO_JULIANA = 0,
@@ -39,6 +40,7 @@ typedef enum {
     // DECISAO FINAL E DOSSIE
     TELA_VEREDITO,
     TELA_CONFIRMA_VEREDITO,
+    TELA_CUTSCENE,
     TELA_FINAL,
     TELA_DOSSIE
 } TelaAtual;
@@ -617,6 +619,8 @@ int main(void) {
     EstadoCelular celular;
     IniciarCelular(&celular);
 
+    EstadoCutscene cutscene = {0};
+
     PlayerStats stats = {0};
     strcpy(stats.evidenciaPerdida, "Nenhuma");
     CarregarProgresso(&stats);
@@ -921,10 +925,12 @@ int main(void) {
                     if (e.seq == SEQ_CENA7B && e.falaIdx >= 5) e.notaConfrontoCena7 = true;
 
                     bool autoAvancou = (e.autoDialogo && e.falaCompleta && e.autoTimer >= 3.0f);
+                    bool devSkipDlg = (e.devDesbloqueado && IsKeyPressed(KEY_S));
                     bool clicouAvancar = (!clicouBotaoCaixa && IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && mouse.y > 65) ||
-                                         IsKeyPressed(KEY_SPACE) || IsKeyPressed(KEY_ENTER);
+                                         IsKeyPressed(KEY_SPACE) || IsKeyPressed(KEY_ENTER) || devSkipDlg;
                     if (clicouAvancar || autoAvancou) {
-                        if (!e.falaCompleta && !autoAvancou) {
+                        if (devSkipDlg) e.falaIdx = total - 1;
+                        if (!e.falaCompleta && !autoAvancou && !devSkipDlg) {
                             e.charsVisiveis = (float)lenTexto;
                             e.falaCompleta = true;
                             e.autoTimer = 0.0f;
@@ -954,17 +960,29 @@ int main(void) {
                                     e.podeAcusar = false;
                                     e.tela = TELA_VEREDITO;
                                 } else if (e.seq == SEQ_FINAL_PERFEITO) {
-                                    e.vitoria = true; e.tipoFinal = 1; e.tela = TELA_FINAL;
+                                    e.vitoria = true; e.tipoFinal = 1;
+                                    MontarCutsceneFinal(&cutscene, e.tipoFinal, (int)e.culpado, e.statusProva, e.respostaProva);
+                                    e.tela = TELA_CUTSCENE;
                                 } else if (e.seq == SEQ_FINAL_VERDADE) {
-                                    e.vitoria = true; e.tipoFinal = 2; e.tela = TELA_FINAL;
+                                    e.vitoria = true; e.tipoFinal = 2;
+                                    MontarCutsceneFinal(&cutscene, e.tipoFinal, (int)e.culpado, e.statusProva, e.respostaProva);
+                                    e.tela = TELA_CUTSCENE;
                                 } else if (e.seq == SEQ_FINAL_DUVIDA) {
-                                    e.vitoria = false; e.tipoFinal = 3; e.tela = TELA_FINAL;
+                                    e.vitoria = false; e.tipoFinal = 3;
+                                    MontarCutsceneFinal(&cutscene, e.tipoFinal, (int)e.culpado, e.statusProva, e.respostaProva);
+                                    e.tela = TELA_CUTSCENE;
                                 } else if (e.seq == SEQ_FINAL_COLAPSO) {
-                                    e.vitoria = false; e.tipoFinal = 4; e.tela = TELA_FINAL;
+                                    e.vitoria = false; e.tipoFinal = 4;
+                                    MontarCutsceneFinal(&cutscene, e.tipoFinal, (int)e.culpado, e.statusProva, e.respostaProva);
+                                    e.tela = TELA_CUTSCENE;
                                 } else if (e.seq == SEQ_FINAL_PRECIPITADO) {
-                                    e.vitoria = false; e.tipoFinal = 5; e.tela = TELA_FINAL;
+                                    e.vitoria = false; e.tipoFinal = 5;
+                                    MontarCutsceneFinal(&cutscene, e.tipoFinal, (int)e.culpado, e.statusProva, e.respostaProva);
+                                    e.tela = TELA_CUTSCENE;
                                 } else if (e.seq == SEQ_FINAL_INJUSTICA) {
-                                    e.vitoria = false; e.tipoFinal = 6; e.tela = TELA_FINAL;
+                                    e.vitoria = false; e.tipoFinal = 6;
+                                    MontarCutsceneFinal(&cutscene, e.tipoFinal, (int)e.culpado, e.statusProva, e.respostaProva);
+                                    e.tela = TELA_CUTSCENE;
                                 } else {
                                     TocarBrilho(&assets);
                                     e.tela = TELA_NOVA_EVIDENCIA;
@@ -1140,6 +1158,12 @@ int main(void) {
                             TocarClick(&assets);
                             e.tela = TELA_VEREDITO;
                         }
+                    }
+                } break;
+
+                case TELA_CUTSCENE: {
+                    if (AtualizarCutscene(&cutscene, mouse, dt, e.devDesbloqueado, assets.sfxClick, assets.temSfxClick) == 1) {
+                        e.tela = TELA_FINAL;
                     }
                 } break;
 
@@ -1587,6 +1611,10 @@ int main(void) {
                 DesenharBotaoCyber(assets.fontes.bold, (Rectangle){ 680, 420, 260, 54 }, "[2] NÃO", 25, e.hoverSimNao[1], tempo, COR_CIANO_NEON);
             } break;
 
+            case TELA_CUTSCENE:
+                DesenharCutscene(&cutscene, &assets, mouse, tempo, e.devDesbloqueado);
+                break;
+
             case TELA_FINAL: {
                 const char *nomeCulpado = (e.culpado == CULPADO_JULIANA) ? "Juliana Costa" : "Caio Vasconcelos";
                 const char *tit = "CASO ENCERRADO";
@@ -1776,7 +1804,7 @@ int main(void) {
             } break;
         }
 
-        if (emGameplay) {
+        if (emGameplay && e.tela != TELA_CUTSCENE) {
             DesenharBarraTopo(&assets.fontes, mouse, tempo, e.hoverDossieTop[0], e.cenaAtual, e.podeAcusar);
             if (e.tela != TELA_DIALOGO && e.tela != TELA_MINIGAME) {
                 DesenharScanlinesHUD(tempo);
@@ -1809,6 +1837,7 @@ int main(void) {
         EndDrawing();
     }
 
+    DescarregarCutsceneCaches(&cutscene);
     UnloadRenderTexture(canvas);
     DescarregarGerenciadorAssets(&assets);
     CloseAudioDevice();
