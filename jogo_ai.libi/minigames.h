@@ -6,116 +6,130 @@
 #include <stdio.h>
 #include <string.h>
 
-#define TEMPO_LIMITE_DESAFIO 20.0f
+#define TEMPO_LIMITE_DESAFIO 30.0f
 
 typedef struct {
     const char *proposicao;
     const char *pergunta;
-    const char *opcoes[4];
-    int numOpcoes;
-    int respostaCorreta;
+    const char *opcoes[3];
+    int respostaCorreta; // 0, 1 ou 2
     const char *explicacao;
 } DesafioLogica;
 
 typedef struct {
-    int opcaoSelecionada;
-    int resultado; // 0 = jogando, 1 = acertou, -1 = errou/tempo esgotado
-    float hoverOpcoes[4];
+    int selecionada;        // -1 = nenhuma, 0..2
+    int tentativasRestantes; // 2 tentativas
+    bool mostrandoTutorial;
+    bool tutorialVisto;
+    bool erroPrimeiraTentativa;
+    int resultado;          // 0 = jogando, 1 = acertou, -1 = errou/tempo esgotado
+    float hoverOp[3];
     float hoverCont;
     float animFeedback;
     float tempoRestante;
     bool tempoEsgotado;
 } EstadoMiniGame;
 
-// Desafios de logica das 5 provas (Cenas 3, 4, 5, 6 e 7)
+// Desafios intuitivos de Logica Proposicional (Cenas 3, 4, 5, 6 e 7)
 static const DesafioLogica desafiosCenas[8] = {
     {0}, {0}, {0},
-    // CENA 3 - Prova 1: Audio anonimo
+    // CENA 3 - Prova 1: Negacao do E
     {
-        "\"O áudio é autêntico E a voz é de Caio.\"",
-        "Considere que a frase inteira é falsa. Qual é a sua negação lógica?",
+        "Afirmação: \"O áudio é real E a voz é de Caio.\"",
+        "Se descobrirmos que essa frase inteira é FALSA, o que precisa ser verdade?",
         {
-            "a) O áudio não é autêntico e a voz não é de Caio.",
-            "b) O áudio não é autêntico ou a voz não é de Caio.",
-            "c) O áudio é autêntico ou a voz não é de Caio.",
-            "d) O áudio é autêntico e a voz não é de Caio."
+            "O áudio NÃO é real OU a voz NÃO é de Caio.",
+            "O áudio é real E a voz é de Caio ao mesmo tempo.",
+            "Nenhum áudio foi gravado naquela noite."
         },
-        4, 1,
-        "Lei de De Morgan: negar (P E Q) resulta em (não P OU não Q)."
+        0,
+        "Correto! Para uma frase com 'E' ser falsa, basta UMA das partes ser falsa (troca 'E' por 'OU' e nega)."
     },
-    // CENA 4 - Prova 2: Foto de Juliana no carro
+    // CENA 4 - Prova 2: Negacao do OU
     {
-        "\"Juliana estava no carro às 03:05 OU ela continuou na festa.\"",
-        "Se descobrirmos que essa afirmação inteira é FALSA, o que é verdade?",
+        "Afirmação: \"Juliana foi de carro OU ficou na festa.\"",
+        "Se essa frase inteira for FALSA, o que realmente aconteceu?",
         {
-            "a) Ela não estava no carro E não continuou na festa.",
-            "b) Ela não estava no carro OU não continuou na festa.",
-            "c) Ela estava no carro às 03:05.",
-            "d) Nenhuma das anteriores."
+            "Ela foi de carro, mas não ficou na festa.",
+            "Ela NÃO foi de carro E NÃO ficou na festa.",
+            "Ela ficou na festa OU foi de carro."
         },
-        4, 0,
-        "Lei de De Morgan: negar (P OU Q) resulta em (não P E não Q)."
+        1,
+        "Correto! Uma frase com 'OU' só é falsa quando AS DUAS partes são falsas ao mesmo tempo."
     },
-    // CENA 5 - Prova 3: Localizacao do celular de Gabriel
+    // CENA 5 - Prova 3: Conjuncao (E)
     {
-        "\"O sinal estava no barranco às 03:20 E o corpo foi encontrado lá.\"",
-        "Para uma proposição com o conectivo E (conjunção) ser VERDADEIRA, o que é necessário?",
+        "Afirmação: \"O celular estava no barranco E o corpo estava lá.\"",
+        "O que precisa acontecer para essa frase com 'E' ser VERDADEIRA?",
         {
-            "a) Basta que apenas uma das partes seja verdadeira.",
-            "b) As duas partes precisam ser falsas.",
-            "c) Ambas as partes precisam ser verdadeiras.",
-            "d) A primeira parte precisa ser falsa."
+            "Apenas o celular precisa estar no barranco.",
+            "As duas coisas precisam ser verdadeiras ao mesmo tempo.",
+            "Basta que uma das duas seja falsa."
         },
-        4, 2,
-        "Na conjunção (P E Q), ambas as partes precisam ser verdadeiras."
+        1,
+        "Correto! Na lógica, 'P E Q' só é verdadeiro quando P e Q são verdadeiros juntos."
     },
-    // CENA 6 - Prova 4: Backup na nuvem de Gabriel
+    // CENA 6 - Prova 4: Se... Entao (Contrapositiva)
     {
-        "\"Se o arquivo foi salvo na nuvem antes das 03:05, então Gabriel estava vivo.\"",
-        "Sabendo que Gabriel NÃO estava vivo após 03:05, o que podemos concluir?",
+        "Regra: \"SE Gabriel estava vivo às 02:15, ENTÃO ele salvou o arquivo.\"",
+        "Sabemos que ele NÃO salvou nada depois das 03:05. O que concluímos?",
         {
-            "a) O arquivo foi salvo após as 03:05.",
-            "b) O arquivo NÃO foi salvo antes das 03:05.",
-            "c) O servidor da nuvem foi invadido.",
-            "d) Nada pode ser concluído."
+            "Ele NÃO estava vivo depois das 03:05.",
+            "Ele com certeza salvou o arquivo às 04:00.",
+            "O arquivo foi apagado automaticamente."
         },
-        4, 1,
-        "Contrapositiva (Modus Tollens): se (P -> Q) e (não Q), então (não P)."
+        0,
+        "Correto! Se 'SE P, ENTÃO Q' vale e Q não aconteceu, então P também não aconteceu."
     },
-    // CENA 7 - Prova 5: Registro de saida (Mobi ou Camera do estacionamento)
+    // CENA 7 - Prova 5: Se... Entao com condicao falsa
     {
-        "\"Se o registro de saída é válido, então o horário do álibi é confirmado.\"",
-        "Se o registro de saída NÃO for válido, o que a lógica garante apenas por essa frase?",
+        "Regra: \"SE o registro de saída for válido, ENTÃO o álibi é confirmado.\"",
+        "Se o registro NÃO for válido, o que essa regra garante?",
         {
-            "a) O horário do álibi com certeza é falso.",
-            "b) O horário do álibi com certeza é verdadeiro.",
-            "c) Nada pode ser garantido apenas por essa implicação.",
-            "d) O suspeito necessariamente fugiu a pé."
+            "O álibi é automaticamente verdadeiro.",
+            "O suspeito com certeza fugiu a pé.",
+            "Nada garantido: o álibi pode ser verdadeiro ou falso."
         },
-        4, 2,
-        "Em uma implicação (Se P então Q), quando P é falso, Q pode ser verdadeiro ou falso."
+        2,
+        "Correto! Quando a condição do 'SE' é falsa, a regra não garante nada sobre o resultado."
     }
 };
 
-static inline void IniciarMiniGame(EstadoMiniGame *mg) {
+static inline void IniciarMiniGame(EstadoMiniGame *mg, int cena) {
+    bool tutVisto = mg->tutorialVisto;
     memset(mg, 0, sizeof(*mg));
-    mg->opcaoSelecionada = -1;
+    mg->tutorialVisto = tutVisto;
+    mg->selecionada = -1;
+    mg->tentativasRestantes = 2;
     mg->tempoRestante = TEMPO_LIMITE_DESAFIO;
+
+    // Tutorial aparece APENAS na primeira evidencia (Cena 3)
+    if (cena == 3 && !mg->tutorialVisto) {
+        mg->mostrandoTutorial = true;
+        mg->tutorialVisto = true;
+    }
 }
 
 static inline int AtualizarMiniGame(EstadoMiniGame *mg, int cena, Vector2 mouse, float dt, Sound sfxClick, bool temSfx) {
     if (cena < 3 || cena > 7) return 0;
     const DesafioLogica *d = &desafiosCenas[cena];
 
+    if (mg->mostrandoTutorial) {
+        Rectangle btnOk = { 440, 536, 400, 52 };
+        AtualizarHover(&btnOk, &mg->hoverCont, 1, mouse, dt);
+        if ((IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(mouse, btnOk)) ||
+            IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)) {
+            if (temSfx) PlaySound(sfxClick);
+            mg->mostrandoTutorial = false;
+        }
+        return 0;
+    }
+
     if (mg->resultado != 0 && mg->animFeedback < 1.0f) {
         mg->animFeedback += dt * 4.0f;
         if (mg->animFeedback > 1.0f) mg->animFeedback = 1.0f;
     }
 
-    Rectangle opts[4];
-    for (int i = 0; i < d->numOpcoes; i++) {
-        opts[i] = (Rectangle){ 155, 294 + i * 62, 970, 52 };
-    }
     if (mg->resultado == 0) {
         mg->tempoRestante -= dt;
         if (mg->tempoRestante <= 0.0f) {
@@ -125,18 +139,45 @@ static inline int AtualizarMiniGame(EstadoMiniGame *mg, int cena, Vector2 mouse,
             mg->animFeedback = 0.0f;
             return 0;
         }
-        AtualizarHover(opts, mg->hoverOpcoes, d->numOpcoes, mouse, dt);
-        for (int i = 0; i < d->numOpcoes; i++) {
-            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(mouse, opts[i])) {
-                if (temSfx) PlaySound(sfxClick);
-                mg->opcaoSelecionada = i;
+
+        Rectangle ops[3] = {
+            { 160, 290, 960, 62 },
+            { 160, 366, 960, 62 },
+            { 160, 442, 960, 62 }
+        };
+        AtualizarHover(ops, mg->hoverOp, 3, mouse, dt);
+
+        int escolha = -1;
+        if (IsKeyPressed(KEY_ONE) || IsKeyPressed(KEY_KP_1)) escolha = 0;
+        else if (IsKeyPressed(KEY_TWO) || IsKeyPressed(KEY_KP_2)) escolha = 1;
+        else if (IsKeyPressed(KEY_THREE) || IsKeyPressed(KEY_KP_3)) escolha = 2;
+        else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+            for (int i = 0; i < 3; i++) {
+                if (CheckCollisionPointRec(mouse, ops[i])) {
+                    escolha = i;
+                    break;
+                }
+            }
+        }
+
+        if (escolha >= 0) {
+            if (temSfx) PlaySound(sfxClick);
+            mg->selecionada = escolha;
+            if (escolha == d->respostaCorreta) {
+                mg->resultado = 1;
                 mg->animFeedback = 0.0f;
-                mg->resultado = (i == d->respostaCorreta) ? 1 : -1;
-                break;
+            } else {
+                mg->tentativasRestantes--;
+                if (mg->tentativasRestantes <= 0) {
+                    mg->resultado = -1;
+                    mg->animFeedback = 0.0f;
+                } else {
+                    mg->erroPrimeiraTentativa = true;
+                }
             }
         }
     } else {
-        Rectangle btnCont = { 465, 600, 350, 50 };
+        Rectangle btnCont = { 440, 560, 400, 52 };
         AtualizarHover(&btnCont, &mg->hoverCont, 1, mouse, dt);
         if ((IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(mouse, btnCont)) ||
             IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)) {
@@ -144,51 +185,75 @@ static inline int AtualizarMiniGame(EstadoMiniGame *mg, int cena, Vector2 mouse,
             return mg->resultado;
         }
     }
+
     return 0;
 }
 
-static inline void DesenharMiniGame(const EstadoMiniGame *mg, FontesUI *f, int cena, double tempo) {
+static inline void DesenharMiniGame(const EstadoMiniGame *mg, const FontesUI *f, int cena, double tempo) {
     if (cena < 3 || cena > 7) return;
     const DesafioLogica *d = &desafiosCenas[cena];
 
     DesenharFundoCyberGrid(tempo, COR_ROXO_NEON);
-    float shakeX = 0.0f;
-    if (mg->resultado == -1 && mg->animFeedback < 0.6f) {
-        shakeX = sinf(mg->animFeedback * 48.0f) * 8.0f * (1.0f - mg->animFeedback / 0.6f);
+    DesenharPainelCyber((Rectangle){ 95, 76, 1090, 568 }, COR_ROXO_NEON);
+
+    if (mg->mostrandoTutorial) {
+        DesenharBadgeCyber(f->titulo, (Vector2){ 140, 104 }, "TUTORIAL // LÓGICA PROPOSICIONAL", 25, COR_CIANO_NEON);
+        DrawRectangle((int)140, (int)156, 1000, 2, ColorAlpha(COR_CIANO_NEON, 0.45f));
+
+        const char *tut =
+            "Na perícia da AI.libi, você usa Lógica Proposicional para testar se uma afirmação faz sentido:\n\n"
+            "• E (Conjunção): Só é verdade se AS DUAS partes forem verdadeiras.\n"
+            "   Se for FALSA, basta uma parte falhar -> negue e troque 'E' por 'OU'.\n\n"
+            "• OU (Disjunção): É verdade se pelo menos UMA parte for verdadeira.\n"
+            "   Se for FALSA, AS DUAS falharam -> negue e troque 'OU' por 'E'.\n\n"
+            "• SE... ENTÃO: Se o resultado final NÃO aconteceu, a condição inicial também NÃO aconteceu.\n\n"
+            "Você terá 2 tentativas por desafio. Boa investigação!";
+        DesenharTextoQuebrado(f->regular, tut, (Rectangle){ 145, 178, 990, 330 }, 24, 1.0f, WHITE);
+
+        DesenharBotaoCyber(f->bold, (Rectangle){ 440, 536, 400, 52 }, "ENTENDI, COMEÇAR >>", 23, mg->hoverCont, tempo, COR_VERDE_OK);
+        return;
     }
-    DesenharPainelCyber((Rectangle){ 95 + shakeX, 52, 1090, 622 }, COR_ROXO_NEON);
 
-    DesenharBadgeCyber(f->bold, (Vector2){ 155 + shakeX, 74 }, TextFormat("DESAFIO DE LÓGICA // PROVA 0%d", cena - 2), 22, COR_CIANO_NEON);
+    DesenharBadgeCyber(f->bold, (Vector2){ 140, 102 }, TextFormat("DESAFIO LÓGICO // CENA %d", cena), 22, COR_CIANO_NEON);
+    DesenharBadgeCyber(f->bold, (Vector2){ 490, 102 }, TextFormat("TENTATIVAS: %d/2", mg->tentativasRestantes), 20,
+        (mg->tentativasRestantes == 2) ? COR_VERDE_OK : COR_AMARELO_AVISO);
 
-    Color corTimer = (mg->tempoRestante <= 5.0f) ? COR_VERMELHO_ERR : COR_AMARELO_AVISO;
-    DesenharBadgeCyber(f->bold, (Vector2){ 965 + shakeX, 74 }, TextFormat("TEMPO: %02ds", (int)ceilf(mg->tempoRestante)), 22, corTimer);
+    if (mg->resultado == 0) {
+        Color corT = (mg->tempoRestante <= 7.0f) ? COR_VERMELHO_ERR : COR_AMARELO_AVISO;
+        DesenharBadgeCyber(f->bold, (Vector2){ 965, 102 }, TextFormat("TEMPO: %02ds", (int)ceilf(mg->tempoRestante)), 22, corT);
+    }
 
-    DesenharTextoQuebrado(f->titulo, d->proposicao, (Rectangle){ 155 + shakeX, 124, 970, 88 }, 27, 1.0f, COR_ROSA_NEON);
-    DesenharTextoQuebrado(f->regular, d->pergunta, (Rectangle){ 155 + shakeX, 224, 970, 62 }, 25, 1.0f, WHITE);
+    DesenharTextoQuebrado(f->bold, d->proposicao, (Rectangle){ 145, 162, 990, 60 }, 27, 1.0f, WHITE);
+    DesenharTextoQuebrado(f->regular, d->pergunta, (Rectangle){ 145, 224, 990, 52 }, 23, 1.0f, COR_ROSA_NEON);
 
-    for (int i = 0; i < d->numOpcoes; i++) {
-        Rectangle opt = { 155 + shakeX, 294 + i * 62, 970, 52 };
-        Color corBorda = COR_ROXO_NEON;
-        float hov = (mg->resultado == 0) ? mg->hoverOpcoes[i] : 0.0f;
+    for (int i = 0; i < 3; i++) {
+        Rectangle op = { 160, 290 + i * 76, 960, 62 };
+        Color corOp = COR_ROXO_NEON;
         if (mg->resultado != 0) {
-            if (i == d->respostaCorreta) { corBorda = COR_VERDE_OK; hov = 0.85f; }
-            else if (i == mg->opcaoSelecionada) { corBorda = COR_VERMELHO_ERR; hov = 0.75f; }
-            else corBorda = ColorAlpha(GRAY, 0.45f);
+            if (i == d->respostaCorreta) corOp = COR_VERDE_OK;
+            else if (i == mg->selecionada) corOp = COR_VERMELHO_ERR;
+        } else if (mg->erroPrimeiraTentativa && i == mg->selecionada) {
+            corOp = COR_VERMELHO_ERR;
         }
-        DesenharBotaoCyber(f->regular, opt, d->opcoes[i], 25, hov, tempo, corBorda);
+        DesenharBotaoCyber(f->regular, op, TextFormat("[%d] %s", i + 1, d->opcoes[i]), 23, mg->hoverOp[i], tempo, corOp);
+    }
+
+    if (mg->erroPrimeiraTentativa && mg->resultado == 0) {
+        DesenharBadgeCyber(f->bold, (Vector2){ 160, 525 },
+            "Incorreto! Você ainda tem 1 tentativa — releia os conectivos (E / OU / SE...ENTÃO).", 20, COR_AMARELO_AVISO);
     }
 
     if (mg->resultado != 0) {
-        const char *titulo = (mg->resultado == 1) ? "DESAFIO RESOLVIDO!" :
-                             mg->tempoEsgotado ? "TEMPO ESGOTADO!" : "RESPOSTA INCORRETA";
-        Color corRes = (mg->resultado == 1) ? COR_VERDE_OK : COR_VERMELHO_ERR;
-
-        DrawTextEx(f->bold, titulo, (Vector2){ 155, 550 }, 25, 1.0f, corRes);
-        DesenharTextoQuebrado(f->regular, d->explicacao, (Rectangle){ 415, 551, 710, 48 }, 22, 1.0f, LIGHTGRAY);
-        Rectangle btnCont = { 465, 600, 350, 50 };
-        DesenharBotaoCyber(f->bold, btnCont, "CONTINUAR >>", 25, mg->hoverCont, tempo, corRes);
+        bool ok = (mg->resultado == 1);
+        Color corRes = ok ? COR_VERDE_OK : COR_VERMELHO_ERR;
+        const char *titRes = ok ? "VALIDAÇÃO LÓGICA CONFIRMADA!"
+            : (mg->tempoEsgotado ? "TEMPO ESGOTADO! (NÃO VALIDADA)" : "NÃO VALIDADA! (2 ERROS)");
+        DrawTextEx(f->bold, titRes, (Vector2){ 160, 514 }, 23, 1.0f, corRes);
+        if (ok) {
+            DesenharTextoQuebrado(f->regular, d->explicacao, (Rectangle){ 160, 540, 270, 80 }, 17, 1.0f, LIGHTGRAY);
+        }
+        DesenharBotaoCyber(f->bold, (Rectangle){ 440, 560, 400, 52 }, "CONTINUAR >>", 24, mg->hoverCont, tempo, corRes);
     }
-    DesenharScanlinesHUD(tempo);
 }
 
 #endif

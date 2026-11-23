@@ -7,15 +7,14 @@
 #include <string.h>
 #include <math.h>
 
-#define NUM_PAGINAS_HQ 4
-#define MAX_QUADROS_PAG 4
+#define NUM_PAGINAS_HQ 5
+#define MAX_QUADROS_PAG 5
 
 typedef struct {
-    Rectangle rect;       // Posicao e tamanho do quadradinho na pagina (coordenadas virtuais 1280x720)
-    const char *tag;      // Etiqueta curta no topo do quadrinho
-    char texto[320];      // Legenda narrativa do quadrinho
-    const char *imagem;   // Caminho da imagem do quadrinho
-    Color corBorda;       // Cor de destaque da borda
+    Vector2 v[4];         // 4 vertices em sentido horario: 0=TL, 1=TR, 2=BR, 3=BL
+    const char *tag;      // Etiqueta curta do quadro
+    char texto[320];      // Legenda narrativa exibida ao revelar
+    Color corBorda;       // Cor neon da moldura (rosa, roxo, ciano, etc.)
 } QuadroHQ;
 
 typedef struct {
@@ -25,13 +24,12 @@ typedef struct {
 } PaginaHQ;
 
 typedef struct {
-    int paginaIdx;          // 0..3
-    int quadrosVisiveis;    // 1..numQuadros (aparecem um por vez)
-    float fadeQuadro;       // 0.0 -> 1.0 (fade in do ultimo quadro revelado)
-    float fadePagina;       // 1.0 -> 0.0 ao trocar de pagina ou sair
+    int paginaIdx;          // 0..4 (5 paginas)
+    int quadrosVisiveis;    // 1..numQuadros (aparecem um por vez com fade-in)
+    float fadeQuadro;       // 0.0 -> 1.0
+    float fadePagina;       // 1.0 -> 0.0
     int estadoTransicao;    // 0=revelando quadro, 1=pagina parada, 2=fade out prox pagina, 3=fade out fim
     float hoverPular;
-    CacheTextura caches[MAX_QUADROS_PAG];
     PaginaHQ paginas[NUM_PAGINAS_HQ];
 } EstadoCutscene;
 
@@ -48,17 +46,10 @@ static inline bool _ProvaValidadaHQ(int cena, int culpado, const int statusProva
 }
 
 static inline void DescarregarCutsceneCaches(EstadoCutscene *cs) {
-    for (int i = 0; i < MAX_QUADROS_PAG; i++) {
-        if (cs->caches[i].tex.id != 0) {
-            UnloadTexture(cs->caches[i].tex);
-            cs->caches[i].tex = (Texture2D){0};
-        }
-        cs->caches[i].caminho[0] = '\0';
-    }
+    (void)cs;
 }
 
 static inline void MontarCutsceneFinal(EstadoCutscene *cs, int tipoFinal, int culpado, const int statusProva[8], const int respostaProva[8]) {
-    DescarregarCutsceneCaches(cs);
     memset(cs, 0, sizeof(*cs));
     cs->quadrosVisiveis = 1;
     cs->fadeQuadro = 0.0f;
@@ -74,206 +65,225 @@ static inline void MontarCutsceneFinal(EstadoCutscene *cs, int tipoFinal, int cu
     int totalVal = (p1?1:0) + (p2?1:0) + (p3?1:0) + (p4?1:0) + (p5?1:0);
 
     // =========================================================================
-    // PAGINA 1: BACKSTORY NA FACULDADE (4 quadradinhos separados)
+    // PAGINA 1/5: BACKSTORY (Layout fiel ao TemplateGibi.png: 2 Esq + 3 Dir)
+    // Area util: x=95..1185, y=66..546, divisoria central inclinada x=665->545
     // =========================================================================
-    cs->paginas[0].tituloPagina = "PÁGINA 1/4 // OS DIAS DE FACULDADE";
-    cs->paginas[0].numQuadros = 4;
+    cs->paginas[0].tituloPagina = "PÁGINA 1/5 // BACKSTORY: OS DIAS DE FACULDADE";
+    cs->paginas[0].numQuadros = 5;
 
+    // Q1: Topo Esquerda
     cs->paginas[0].quadros[0] = (QuadroHQ){
-        { 75, 76, 365, 345 }, "GABRIEL",
-        "", "AssetsRay/Cutscenes/Q_GabrielFaculdade.png", COR_CIANO_NEON
+        { {95, 66}, {658, 66}, {602, 294}, {95, 326} },
+        "01 // GABRIEL", "", COR_CIANO_NEON
     };
-    snprintf(cs->paginas[0].quadros[0].texto, 320,
-        "No curso de Computação, Gabriel virava madrugadas no laboratório. Idealista, mas pressionado por dívidas e promessas.");
+    snprintf(cs->paginas[0].quadros[0].texto, 320, "Gabriel na faculdade: idealista no laboratório, mas pressionado por dívidas e promessas.");
 
+    // Q2: Topo Direita
     cs->paginas[0].quadros[1] = (QuadroHQ){
-        { 458, 76, 365, 345 }, "JULIANA",
-        "", "AssetsRay/Cutscenes/Q_JulianaFaculdade.png", COR_ROSA_NEON
+        { {672, 66}, {1185, 66}, {1185, 198}, {622, 250} },
+        "02 // JULIANA", "", COR_ROSA_NEON
     };
-    snprintf(cs->paginas[0].quadros[1].texto, 320,
-        "Juliana dedicou três anos ao próprio projeto de IA, acreditando que o esforço sozinho garantiria a vaga na NEXARA.");
+    snprintf(cs->paginas[0].quadros[1].texto, 320, "Juliana: três anos dedicados ao próprio projeto de IA pela vaga na NEXARA.");
 
+    // Q3: Meio Direita
     cs->paginas[0].quadros[2] = (QuadroHQ){
-        { 841, 76, 364, 345 }, "CAIO",
-        "", "AssetsRay/Evidências/CaioTrueEvidence.png", COR_ROXO_NEON
+        { {618, 264}, {1185, 212}, {1185, 404}, {580, 366} },
+        "03 // CAIO", "", COR_ROXO_NEON
     };
-    snprintf(cs->paginas[0].quadros[2].texto, 320,
-        "Caio, herdeiro reservado, pagava a mensalidade de Gabriel e abria portas através da influência do pai na NEXARA.");
+    snprintf(cs->paginas[0].quadros[2].texto, 320, "Caio: reservado e influente, bancava despesas de Gabriel pela família Vasconcelos.");
 
+    // Q4: Baixo Esquerda
     cs->paginas[0].quadros[3] = (QuadroHQ){
-        { 75, 438, 1130, 232 }, "O TRIO ANTES DA QUEDA",
-        "", "AssetsRay/Cutscenes/Q_TrioCampus.png", COR_AMARELO_AVISO
+        { {95, 340}, {598, 308}, {540, 546}, {95, 546} },
+        "04 // A AMIZADE", "", COR_AMARELO_AVISO
     };
-    snprintf(cs->paginas[0].quadros[3].texto, 320,
-        "Por fora, eram colegas inseparáveis no campus de Recife em 2045. Por dentro, uma única vaga na NEXARA e segredos de família já rachavam a amizade antes mesmo da festa.");
+    snprintf(cs->paginas[0].quadros[3].texto, 320, "Por fora, colegas inseparáveis no campus de Recife em 2045.");
+
+    // Q5: Baixo Direita
+    cs->paginas[0].quadros[4] = (QuadroHQ){
+        { {576, 380}, {1185, 418}, {1185, 546}, {554, 546} },
+        "05 // A RUPTURA SILENCIOSA", "", COR_ROSA_NEON
+    };
+    snprintf(cs->paginas[0].quadros[4].texto, 320, "Por dentro, uma única vaga na NEXARA e segredos já rachavam o trio antes da festa.");
 
     // =========================================================================
-    // PAGINA 2: A FESTA E AS PISTAS DA INVESTIGACAO (3 quadradinhos)
+    // PAGINA 2/5: A FESTA E AS PROVAS DIGITAIS (4 quadros inclinados 2x2)
     // =========================================================================
-    cs->paginas[1].tituloPagina = "PÁGINA 2/4 // A FESTA E OS RASTROS";
-    cs->paginas[1].numQuadros = 3;
+    cs->paginas[1].tituloPagina = "PÁGINA 2/5 // A FESTA E AS PISTAS";
+    cs->paginas[1].numQuadros = 4;
 
     cs->paginas[1].quadros[0] = (QuadroHQ){
-        { 75, 76, 555, 310 }, "BRIGA DO LADO DE FORA",
-        "", "AssetsRay/Cutscenes/Q_FestaDiscussao.png", COR_ROXO_NEON
+        { {95, 66}, {655, 66}, {605, 308}, {95, 282} },
+        "01 // BRIGA NA SAÍDA", "", COR_ROXO_NEON
     };
-    snprintf(cs->paginas[1].quadros[0].texto, 320,
-        "Na madrugada da festa, Caio e Gabriel discutiram feio do lado de fora. Testemunhas ouviram acusações sobre a vaga na NEXARA.");
+    snprintf(cs->paginas[1].quadros[0].texto, 320, "Do lado de fora da festa, Caio e Gabriel discutiram diante de testemunhas.");
 
     cs->paginas[1].quadros[1] = (QuadroHQ){
-        { 650, 76, 555, 310 },
-        p4 ? "NUVEM VALIDADA" : "NUVEM NÃO VALIDADA",
-        "", "AssetsRay/Cutscenes/Painel2_TensaoFesta.png",
-        p4 ? COR_VERDE_OK : COR_AMARELO_AVISO
+        { {669, 66}, {1185, 66}, {1185, 336}, {619, 308} },
+        p4 ? "02 // NUVEM VALIDADA" : "02 // NUVEM PERDIDA", "", p4 ? COR_VERDE_OK : COR_AMARELO_AVISO
     };
-    if (ehJu) {
-        snprintf(cs->paginas[1].quadros[1].texto, 320, p4
-            ? "O backup da nuvem que você validou revelou: Gabriel entregou o código de Juliana ao Prof. João Paulo em troca da vaga."
-            : "Sem o laudo do backup na nuvem, o roubo do projeto de Juliana apareceu só nas falas — sem prova documental no dossiê.");
-    } else {
-        snprintf(cs->paginas[1].quadros[1].texto, 320, p4
-            ? "Os extratos da nuvem que você validou provaram: o pai de Caio usava Gabriel de laranja para lavar dinheiro e comprar a vaga."
-            : "Sem os extratos da nuvem validados, o esquema financeiro por trás da vaga na NEXARA ficou sem comprovação técnica.");
-    }
+    snprintf(cs->paginas[1].quadros[1].texto, 320, ehJu
+        ? (p4 ? "Nuvem validada: Gabriel entregou o código de Juliana ao Prof. João Paulo." : "Nuvem não validada: o roubo do projeto ficou sem prova documental.")
+        : (p4 ? "Nuvem validada: esquema de laranja e lavagem de dinheiro do pai de Caio." : "Nuvem não validada: o esquema financeiro ficou sem lastro técnico."));
 
     cs->paginas[1].quadros[2] = (QuadroHQ){
-        { 75, 404, 1130, 266 },
-        (p1 && p2) ? "MÁSCARAS DE IA DESMASCARADAS" : "LACUNAS NAS PROVAS DIGITAIS",
-        "", "AssetsRay/Evidências/JuliaDeepfake.png",
-        (p1 && p2) ? COR_CIANO_NEON : COR_VERMELHO_ERR
+        { {95, 296}, {595, 322}, {655, 546}, {95, 546} },
+        "03 // PROVA 1 (ÁUDIO)", "", p1 ? COR_CIANO_NEON : COR_VERMELHO_ERR
     };
-    if (ehJu) {
-        snprintf(cs->paginas[1].quadros[2].texto, 320, (p1 && p2)
-            ? "Sua Lupa Forense provou que tanto o áudio contra Caio quanto a foto de Juliana no carro (com volante inexistente) foram gerados por IA."
-            : "Juliana usou IA para criar uma foto no carro e um áudio incriminando Caio — parte dessa farsa escapou da sua validação (%s/%s).",
-            p1 ? "Áudio OK" : "Áudio Perdido", p2 ? "Foto OK" : "Foto Perdida");
-    } else {
-        snprintf(cs->paginas[1].quadros[2].texto, 320, (p1 && p2)
-            ? "Você confirmou que o áudio da ameaça de Caio e a foto de Juliana saindo às 03:05 eram reais — desmontando a defesa dele."
-            : "O áudio real da briga e a foto autêntica de Juliana eram peças-chave contra Caio, mas nem todas foram validadas (%s/%s).",
-            p1 ? "Áudio OK" : "Áudio Perdido", p2 ? "Foto OK" : "Foto Perdida");
-    }
+    snprintf(cs->paginas[1].quadros[2].texto, 320, ehJu
+        ? (p1 ? "Áudio anônimo validado: voz do Caio foi sintetizada por IA." : "Áudio anônimo não validado no mural.")
+        : (p1 ? "Áudio anônimo validado: Caio realmente ameaçou Gabriel." : "Áudio anônimo não validado no mural."));
+
+    cs->paginas[1].quadros[3] = (QuadroHQ){
+        { {609, 322}, {1185, 350}, {1185, 546}, {669, 546} },
+        "04 // PROVA 2 (FOTO NO CARRO)", "", p2 ? COR_CIANO_NEON : COR_VERMELHO_ERR
+    };
+    snprintf(cs->paginas[1].quadros[3].texto, 320, ehJu
+        ? (p2 ? "Foto no carro validada como IA: volante inexistente e horário editado." : "Foto no carro não validada no mural.")
+        : (p2 ? "Foto no carro validada como real: Juliana saiu às 03:05." : "Foto no carro não validada no mural."));
 
     // =========================================================================
-    // PAGINA 3: A CENA DO BARRANCO E A SAIDA (3 quadradinhos)
+    // PAGINA 3/5: O BARRANCO (3 quadros inclinados em cima + faixa panoramica)
     // =========================================================================
-    cs->paginas[2].tituloPagina = "PÁGINA 3/4 // O BARRANCO (02:50 - 03:41)";
-    cs->paginas[2].numQuadros = 3;
+    cs->paginas[2].tituloPagina = "PÁGINA 3/5 // O BARRANCO (02:50 - 03:41)";
+    cs->paginas[2].numQuadros = 4;
 
     cs->paginas[2].quadros[0] = (QuadroHQ){
-        { 75, 76, 1130, 275 }, "ATRÁS DO GALPÃO",
-        "", "AssetsRay/Cutscenes/Painel3_Barranco.png", COR_ROSA_NEON
+        { {95, 66}, {465, 66}, {415, 382}, {95, 382} },
+        "01 // ATRÁS DO GALPÃO", "", COR_ROSA_NEON
     };
     snprintf(cs->paginas[2].quadros[0].texto, 320, ehJu
-        ? "Nos fundos do galpão, perto do barranco, Gabriel pediu desculpas e segurou o braço de Juliana. Tomada pela raiva, ela o golpeou na têmpora; ele caiu no escuro."
-        : "Na estrada atrás do galpão, Gabriel ameaçou denunciar o esquema. Caio o empurrou à beira do barranco — e a queda contra a pedra foi fatal.");
+        ? "Nos fundos do galpão, Juliana golpeou Gabriel após a confissão."
+        : "Na estrada atrás do galpão, Caio empurrou Gabriel para calar a denúncia.");
 
     cs->paginas[2].quadros[1] = (QuadroHQ){
-        { 75, 368, 555, 302 },
-        p3 ? "GPS VALIDADO (03:20)" : "GPS SEM VALIDAÇÃO",
-        "", "AssetsRay/Cutscenes/Q_CelularBarranco.png",
-        p3 ? COR_VERDE_OK : COR_AMARELO_AVISO
+        { {479, 66}, {845, 66}, {795, 382}, {429, 382} },
+        p3 ? "02 // GPS 03:20 OK" : "02 // GPS PERDIDO", "", p3 ? COR_VERDE_OK : COR_AMARELO_AVISO
     };
     snprintf(cs->paginas[2].quadros[1].texto, 320, p3
-        ? "Você validou o sinal das três torres: o celular de Gabriel nunca saiu da festa e parou no fundo do barranco às 03:20."
-        : "Sem validar o registro de localização, a hora exata em que o celular de Gabriel ficou parado no barranco perdeu força técnica.");
+        ? "GPS validado: celular de Gabriel parou no fundo do barranco às 03:20."
+        : "GPS não validado: faltou confirmar tecnicamente o último sinal.");
 
     cs->paginas[2].quadros[2] = (QuadroHQ){
-        { 650, 368, 555, 302 },
-        p5 ? "REGISTRO DE SAÍDA VALIDADO" : "REGISTRO DE SAÍDA PERDIDO",
-        "", ehJu ? "AssetsRay/Locais/SalaInterrogatorio.png" : "AssetsRay/Evidências/CaioTrueEvidence.png",
-        p5 ? COR_CIANO_NEON : COR_VERMELHO_ERR
+        { {859, 66}, {1185, 66}, {1185, 382}, {809, 382} },
+        p5 ? "03 // SAÍDA VALIDADA" : "03 // SAÍDA PERDIDA", "", p5 ? COR_CIANO_NEON : COR_VERMELHO_ERR
     };
-    if (ehJu) {
-        snprintf(cs->paginas[2].quadros[2].texto, 320, p5
-            ? "A corrida da Mobi às 03:41 (em veículo autônomo sem volante) que você validou derrubou de vez o álibi de Juliana."
-            : "Sem validar o registro da Mobi das 03:41, faltou a prova final de que Juliana ainda estava no galpão após a morte.");
-    } else {
-        snprintf(cs->paginas[2].quadros[2].texto, 320, p5
-            ? "Você provou que o vídeo da cancela às 02:42 tinha placa distorcida e sombra errada — Caio forjou a própria saída com IA."
-            : "Sem validar a fraude no vídeo da cancela, o álibi de Caio das 02:40 permaneceu de pé para a defesa.");
-    }
+    snprintf(cs->paginas[2].quadros[2].texto, 320, ehJu
+        ? (p5 ? "Mobi 03:41 validada: derrubou o álibi de Juliana das 03:00." : "Corrida da Mobi não validada no mural.")
+        : (p5 ? "Câmera 02:42 desmascarada: vídeo forjado por IA." : "Fraude na câmera 02:42 não validada no mural."));
+
+    cs->paginas[2].quadros[3] = (QuadroHQ){
+        { {95, 396}, {1185, 396}, {1185, 546}, {95, 546} },
+        "04 // LINHA DO TEMPO", "", COR_AMARELO_AVISO
+    };
+    snprintf(cs->paginas[2].quadros[3].texto, 320, "Entre 02h50 e 03h41, os rastros digitais cruzaram a verdade e a tentativa de encobrimento.");
 
     // =========================================================================
-    // PAGINA 4: O VEREDITO E AS CONSEQUENCIAS (3 quadradinhos)
+    // PAGINA 4/5: TRIBUNAL E SENTENCA (1 vertical esq + 2 empilhados dir)
     // =========================================================================
-    cs->paginas[3].tituloPagina = "PÁGINA 4/4 // VEREDITO E CONSEQUÊNCIAS";
+    cs->paginas[3].tituloPagina = "PÁGINA 4/5 // TRIBUNAL E O PESO DO MURAL";
     cs->paginas[3].numQuadros = 3;
 
     cs->paginas[3].quadros[0] = (QuadroHQ){
-        { 75, 76, 555, 290 }, "PESO DO SEU DOSSIÊ",
-        "", "AssetsRay/Locais/SalaEvidencias.png", COR_CIANO_NEON
+        { {95, 66}, {615, 66}, {555, 546}, {95, 546} },
+        "01 // DOSSIÊ FINAL", "", COR_CIANO_NEON
     };
-    snprintf(cs->paginas[3].quadros[0].texto, 320,
-        "Você encerrou a investigação com %d/5 provas validadas: P1[%s] P2[%s] P3[%s] P4[%s] P5[%s].",
-        totalVal, p1?"OK":"X", p2?"OK":"X", p3?"OK":"X", p4?"OK":"X", p5?"OK":"X");
+    snprintf(cs->paginas[3].quadros[0].texto, 320, "Provas validadas e ligadas no Mural: %d/5.\nToda a acusação se apoiou nas conexões feitas por você.", totalVal);
 
     cs->paginas[3].quadros[1] = (QuadroHQ){
-        { 650, 76, 555, 290 }, "A SENTENÇA",
-        "",
-        (tipoFinal == 1 || tipoFinal == 2) ? "AssetsRay/Cutscenes/Painel4_FinalPrisao.png"
-        : (tipoFinal == 3 || tipoFinal == 4) ? "AssetsRay/Cutscenes/Painel4_FinalAbsolvicao.png"
-        : "AssetsRay/Cutscenes/Painel4_FinalInjustica.png",
-        (tipoFinal <= 2) ? COR_VERDE_OK : (tipoFinal == 3 || tipoFinal == 5) ? COR_AMARELO_AVISO : COR_VERMELHO_ERR
+        { {629, 66}, {1185, 66}, {1185, 290}, {598, 315} },
+        "02 // AUDIÊNCIA NO TRIBUNAL", "", COR_ROXO_NEON
     };
-    if (tipoFinal == 1) {
-        snprintf(cs->paginas[3].quadros[1].texto, 320,
-            "FINAL 1 - VERDADE ABSOLUTA: Com 5/5 provas fechadas, %s foi preso(a) sem margem para recurso digital.",
-            ehJu ? "Juliana" : "Caio");
-    } else if (tipoFinal == 2) {
-        snprintf(cs->paginas[3].quadros[1].texto, 320,
-            "FINAL 2 - A VERDADE: Com %d/5 provas validadas, %s não resistiu às contradições e confessou o crime.",
-            totalVal, ehJu ? "Juliana" : "Caio");
-    } else if (tipoFinal == 3) {
-        snprintf(cs->paginas[3].quadros[1].texto, 320,
-            "FINAL 3 - A DÚVIDA: Com apenas %d/5 provas validadas, a defesa invocou a Lei da Dúvida Digital e anulou a acusação.",
-            totalVal);
-    } else if (tipoFinal == 4) {
-        snprintf(cs->paginas[3].quadros[1].texto, 320,
-            "FINAL 4 - COLAPSO FORENSE: Com só %d/5 provas validadas, o Ministério Público rejeitou o inquérito antes do tribunal.",
-            totalVal);
-    } else if (tipoFinal == 5) {
-        snprintf(cs->paginas[3].quadros[1].texto, 320,
-            "FINAL 5 - A PRECIPITAÇÃO: Você acusou antes da nuvem e do confronto final. O Delegado Meireles te afastou do caso.");
-    } else {
-        snprintf(cs->paginas[3].quadros[1].texto, 320,
-            "FINAL 6 - A INJUSTIÇA: Sem provas contra o verdadeiro culpado, você condenou %s apenas por motivo aparente.",
-            ehJu ? "Caio" : "Juliana");
-    }
+    snprintf(cs->paginas[3].quadros[1].texto, 320, (tipoFinal <= 2)
+        ? "A defesa invocou a Lei da Dúvida Digital, mas suas provas sustentaram a acusação."
+        : "No tribunal, a falta de cadeia de custódia completa pesou contra a acusação.");
 
     cs->paginas[3].quadros[2] = (QuadroHQ){
-        { 75, 384, 1130, 286 }, "MESES DEPOIS...",
-        "",
-        (tipoFinal == 1 || tipoFinal == 2) ? "AssetsRay/Cutscenes/Painel4_FinalPrisao.png"
-        : (tipoFinal == 3 || tipoFinal == 4) ? "AssetsRay/Cutscenes/Painel4_FinalAbsolvicao.png"
-        : "AssetsRay/Cutscenes/Painel4_FinalInjustica.png",
-        (tipoFinal <= 2) ? COR_VERDE_OK : COR_ROSA_NEON
+        { {596, 329}, {1185, 304}, {1185, 546}, {569, 546} },
+        "03 // SENTENÇA", "", (tipoFinal <= 2) ? COR_VERDE_OK : COR_VERMELHO_ERR
     };
-    if (tipoFinal == 1) {
-        snprintf(cs->paginas[3].quadros[2].texto, 320, ehJu
-            ? "O esquema com o Prof. João Paulo caiu e a NEXARA foi investigada. Em Recife, 2045, nenhuma mentira sintética resistiu às 5 provas."
-            : "A empresa de fachada da família Vasconcelos foi bloqueada e o esquema na NEXARA desmoronou. Justiça completa.");
-    } else if (tipoFinal == 2) {
-        snprintf(cs->paginas[3].quadros[2].texto, 320,
-            "O caso foi encerrado com sucesso. Atrás do vidro, o inocente respirou aliviado enquanto a verdade prevaleceu.");
-    } else if (tipoFinal == 3) {
-        snprintf(cs->paginas[3].quadros[2].texto, 320,
-            "Quatro meses depois, %s assumiu a nova liderança de Engenharia de IA na NEXARA. A verdade sem prova chegou tarde demais.",
-            ehJu ? "Juliana Costa" : "Caio Vasconcelos");
-    } else if (tipoFinal == 4) {
-        snprintf(cs->paginas[3].quadros[2].texto, 320,
-            "O processo foi engavetado por falta de lastro técnico. A família de Gabriel ficou sem respostas e o culpado seguiu livre.");
-    } else if (tipoFinal == 5) {
-        snprintf(cs->paginas[3].quadros[2].texto, 320,
-            "Afastada da investigação, Helena viu o culpado ganhar tempo para apagar rastros. Na perícia digital, pressa custa a verdade.");
-    } else {
-        snprintf(cs->paginas[3].quadros[2].texto, 320,
-            "Enquanto um inocente cumpria pena, Helena encarou a foto de %s na parede da delegacia e percebeu o tamanho do erro.",
-            ehJu ? "Juliana Costa" : "Caio Vasconcelos");
-    }
+    snprintf(cs->paginas[3].quadros[2].texto, 320,
+        (tipoFinal == 1) ? "FINAL 1 - VERDADE ABSOLUTA: Condenação total e inquérito na NEXARA." :
+        (tipoFinal == 2) ? "FINAL 2 - A VERDADE: Culpado condenado após confissão em audiência." :
+        (tipoFinal == 3) ? "FINAL 3 - A DÚVIDA: Réu absolvido pela Lei da Dúvida Digital." :
+        (tipoFinal == 4) ? "FINAL 4 - COLAPSO FORENSE: Caso arquivado por falta de provas válidas." :
+        (tipoFinal == 5) ? "FINAL 5 - A PRECIPITAÇÃO: Afastamento do caso antes da perícia." :
+                           "FINAL 6 - A INJUSTIÇA: Inocente condenado sem lastro técnico.");
+
+    // =========================================================================
+    // PAGINA 5/5: EPILOGO E CONSEQUENCIAS (2 grandes divididos na diagonal)
+    // =========================================================================
+    cs->paginas[4].tituloPagina = "PÁGINA 5/5 // EPÍLOGO E CONSEQUÊNCIAS";
+    cs->paginas[4].numQuadros = 2;
+
+    cs->paginas[4].quadros[0] = (QuadroHQ){
+        { {95, 66}, {680, 66}, {585, 546}, {95, 546} },
+        "01 // DESTINO DO ACUSADO", "", (tipoFinal <= 2) ? COR_VERDE_OK : COR_AMARELO_AVISO
+    };
+    snprintf(cs->paginas[4].quadros[0].texto, 320,
+        (tipoFinal <= 2) ? "Consequência direta para o culpado e queda do esquema oculto na NEXARA." :
+        (tipoFinal == 3) ? "Quatro meses depois, o culpado assumiu cargo de destaque na NEXARA." :
+        (tipoFinal == 6) ? "O inocente atrás das grades enquanto o verdadeiro culpado segue livre." :
+                           "O culpado escapou do tribunal enquanto o caso esfriava.");
+
+    cs->paginas[4].quadros[1] = (QuadroHQ){
+        { {694, 66}, {1185, 66}, {1185, 546}, {599, 546} },
+        "02 // REFLEXÃO FINAL", "", COR_CIANO_NEON
+    };
+    snprintf(cs->paginas[4].quadros[1].texto, 320,
+        (tipoFinal <= 2) ? "Em Recife, 2045, nenhuma mentira sintética resistiu às provas bem amarradas." :
+                           "Em 2045, a verdade sem cadeia de custódia completa não basta.");
 }
 
-// Retorna 1 quando terminar todas as 4 paginas ou pular no Modo Dev
+static inline Vector2 _LerparV2(Vector2 a, Vector2 b, float t) {
+    return (Vector2){ a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t };
+}
+
+static inline void DesenharQuadroCyberHQ(const QuadroHQ *q, FontesUI *f, float alpha, double tempo) {
+    (void)tempo;
+    const Vector2 *v = q->v;
+    Vector2 centro = {
+        (v[0].x + v[1].x + v[2].x + v[3].x) * 0.25f,
+        (v[0].y + v[1].y + v[2].y + v[3].y) * 0.25f
+    };
+
+    // Fundo escuro estilo paineis murais ailibi
+    Color bg = (Color){ 20, 14, 34, (unsigned char)(242 * alpha) };
+    DrawTriangle(v[0], v[2], v[1], bg);
+    DrawTriangle(v[0], v[3], v[2], bg);
+
+    // Glow externo + borda principal neon
+    Color cGlow = ColorAlpha(q->corBorda, 0.20f * alpha);
+    Color cBorda = ColorAlpha(q->corBorda, alpha);
+    Color cInterna = ColorAlpha(COR_ROXO_NEON, 0.55f * alpha);
+    for (int i = 0; i < 4; i++) {
+        Vector2 a = v[i], b = v[(i + 1) % 4];
+        DrawLineEx(a, b, 7.0f, cGlow);
+        DrawLineEx(a, b, 2.8f, cBorda);
+
+        // Borda interna paralela recuada em direcao ao centro
+        Vector2 ia = _LerparV2(a, centro, 0.045f);
+        Vector2 ib = _LerparV2(b, centro, 0.045f);
+        DrawLineEx(ia, ib, 1.3f, cInterna);
+    }
+
+    // Barra de acento neon no topo esquerdo (inspirada nos PNGs murais ailibi)
+    Vector2 barFim = _LerparV2(v[0], v[1], 0.28f);
+    DrawLineEx(v[0], barFim, 5.5f, cBorda);
+    Vector2 barInfIni = _LerparV2(v[3], v[2], 0.72f);
+    DrawLineEx(barInfIni, v[2], 4.5f, ColorAlpha(COR_ROSA_NEON, alpha));
+
+    // Etiqueta do quadro dentro do poligono
+    float padX = fmaxf(v[0].x, v[3].x) + 16.0f;
+    if (padX > v[0].x + 28.0f) padX = v[0].x + 16.0f;
+    float padY = v[0].y + 14.0f;
+    DrawTextEx(f->bold, q->tag, (Vector2){ padX, padY }, 18, 1.0f, cBorda);
+
+    // Numero discreto de placeholder de arte no centro do quadro
+    DrawTextEx(f->regular, "TEMPLATE HQ", (Vector2){ centro.x - 52, centro.y - 10 }, 18, 1.0f, ColorAlpha(q->corBorda, 0.22f * alpha));
+}
+
+// Retorna 1 quando terminar todas as 5 paginas ou pular no Modo Dev
 static inline int AtualizarCutscene(EstadoCutscene *cs, Vector2 mouse, float dt, bool devDesbloqueado, Sound sfxClick, bool temSfx) {
     float velFade = 2.6f;
 
@@ -297,7 +307,6 @@ static inline int AtualizarCutscene(EstadoCutscene *cs, Vector2 mouse, float dt,
         cs->fadePagina -= dt * velFade;
         if (cs->fadePagina <= 0.0f) {
             cs->fadePagina = 0.0f;
-            DescarregarCutsceneCaches(cs);
             return 1;
         }
         return 0;
@@ -318,7 +327,6 @@ static inline int AtualizarCutscene(EstadoCutscene *cs, Vector2 mouse, float dt,
     if (avancar) {
         if (temSfx) PlaySound(sfxClick);
         if (cs->estadoTransicao == 0) {
-            // Completa o fade-in do quadro atual imediatamente
             cs->fadeQuadro = 1.0f;
             cs->estadoTransicao = 1;
         } else {
@@ -342,16 +350,8 @@ static inline void DesenharCutscene(EstadoCutscene *cs, GerenciadorAssets *asset
     const PaginaHQ *pag = &cs->paginas[cs->paginaIdx];
     DesenharFundoCyberGrid(tempo, COR_ROXO_NEON);
 
-    // Folha escura da pagina de HQ
-    DrawRectangleRounded((Rectangle){ 55, 62, 1170, 624 }, 0.015f, 4, (Color){ 16, 12, 26, 235 });
-    DrawRectangleLinesEx((Rectangle){ 55, 62, 1170, 624 }, 2.0f, ColorAlpha(COR_ROXO_NEON, 0.55f));
-
-    // Cabecalho da pagina
-    DesenharBadgeCyber(assets->fontes.bold, (Vector2){ 55, 16 }, pag->tituloPagina, 21, COR_CIANO_NEON);
-
-    // Indicador de paginas 1..4
     for (int i = 0; i < NUM_PAGINAS_HQ; i++) {
-        DrawRectangleRec((Rectangle){ 590 + i * 28, 28, 20, 8 }, (i == cs->paginaIdx) ? COR_ROSA_NEON : ColorAlpha(GRAY, 0.4f));
+        DrawRectangleRec((Rectangle){ 640 + i * 28, 28, 20, 8 }, (i == cs->paginaIdx) ? COR_ROSA_NEON : ColorAlpha(GRAY, 0.4f));
     }
 
     if (devDesbloqueado) {
@@ -359,39 +359,21 @@ static inline void DesenharCutscene(EstadoCutscene *cs, GerenciadorAssets *asset
         DesenharBotaoCyber(assets->fontes.bold, btnPular, "PULAR HQ [S]", 19, cs->hoverPular, tempo, COR_AMARELO_AVISO);
     }
 
-    // Desenha cada quadradinho revelado (um por vez com fade-in)
+    // Desenha os quadros poligonais da pagina um por vez com fade-in
     for (int i = 0; i < cs->quadrosVisiveis && i < pag->numQuadros; i++) {
-        const QuadroHQ *q = &pag->quadros[i];
         float alpha = (i == cs->quadrosVisiveis - 1) ? cs->fadeQuadro : 1.0f;
-        unsigned char a255 = (unsigned char)(255.0f * alpha);
+        DesenharQuadroCyberHQ(&pag->quadros[i], &assets->fontes, alpha, tempo);
+    }
 
-        // Moldura branca externa de gibi + fundo escuro do quadro
-        DrawRectangle((int)q->rect.x - 3, (int)q->rect.y - 3, (int)q->rect.width + 6, (int)q->rect.height + 6, (Color){ 238, 235, 245, a255 });
-        DrawRectangleRec(q->rect, (Color){ 12, 8, 22, a255 });
-
-        Texture2D tex = ObterTexturaCache(&cs->caches[i], q->imagem);
-        if (tex.id != 0) {
-            DesenharTexturaCover(tex, q->rect, (Color){ 255, 255, 255, a255 });
-        }
-
-        // Faixa escura inferior dentro do quadradinho para a legenda do gibi
-        float legH = (q->rect.height >= 300) ? 104.0f : 92.0f;
-        Rectangle legRect = { q->rect.x, q->rect.y + q->rect.height - legH, q->rect.width, legH };
-        DrawRectangleRec(legRect, (Color){ 10, 6, 20, (unsigned char)(228 * alpha) });
-        DrawLineEx((Vector2){ legRect.x, legRect.y }, (Vector2){ legRect.x + legRect.width, legRect.y }, 2.0f, ColorAlpha(q->corBorda, alpha));
-
-        // Tag superior do quadradinho
-        Vector2 szTag = MeasureTextEx(assets->fontes.bold, q->tag, 17, 1.0f);
-        Rectangle tagBox = { q->rect.x + 8, q->rect.y + 8, szTag.x + 18, 25 };
-        DrawRectangleRec(tagBox, (Color){ 14, 10, 26, (unsigned char)(230 * alpha) });
-        DrawRectangleLinesEx(tagBox, 1.5f, ColorAlpha(q->corBorda, alpha));
-        DrawTextEx(assets->fontes.bold, q->tag, (Vector2){ tagBox.x + 9, tagBox.y + 4 }, 17, 1.0f, ColorAlpha(q->corBorda, alpha));
-
-        // Texto da legenda do quadradinho
-        DesenharTextoQuebrado(assets->fontes.regular, q->texto,
-            (Rectangle){ legRect.x + 12, legRect.y + 8, legRect.width - 24, legH - 12 }, 19, 1.0f, (Color){ 255, 255, 255, a255 });
-
-        DrawRectangleLinesEx(q->rect, 2.5f, ColorAlpha(q->corBorda, alpha));
+    // Legenda narrativa limpa na parte inferior (para o quadro atual revelado)
+    int atualIdx = cs->quadrosVisiveis - 1;
+    if (atualIdx >= 0 && atualIdx < pag->numQuadros) {
+        const QuadroHQ *qAtual = &pag->quadros[atualIdx];
+        Rectangle legBox = { 95, 560, 1090, 118 };
+        DesenharPainelCyber(legBox, qAtual->corBorda);
+        DesenharBadgeCyber(assets->fontes.bold, (Vector2){ legBox.x + 22, legBox.y + 14 }, qAtual->tag, 18, qAtual->corBorda);
+        DesenharTextoQuebrado(assets->fontes.regular, qAtual->texto,
+            (Rectangle){ legBox.x + 22, legBox.y + 52, legBox.width - 44, 58 }, 22, 1.0f, WHITE);
     }
 
     float pulso = 0.55f + 0.45f * sinf((float)tempo * 4.5f);
@@ -400,9 +382,8 @@ static inline void DesenharCutscene(EstadoCutscene *cs, GerenciadorAssets *asset
         : (cs->paginaIdx + 1 < NUM_PAGINAS_HQ)
             ? "CLIQUE OU ESPAÇO PARA A PRÓXIMA PÁGINA >>"
             : "CLIQUE OU ESPAÇO PARA VER O RESULTADO >>";
-    DrawTextEx(assets->fontes.bold, dica, (Vector2){ 740, 694 }, 18, 1.0f, ColorAlpha(COR_CIANO_NEON, pulso));
+    DrawTextEx(assets->fontes.bold, dica, (Vector2){ 740, 692 }, 18, 1.0f, ColorAlpha(COR_CIANO_NEON, pulso));
 
-    // Fade out de pagina
     if (cs->fadePagina < 1.0f) {
         unsigned char af = (unsigned char)((1.0f - cs->fadePagina) * 255.0f);
         DrawRectangle(0, 0, VIRTUAL_W, VIRTUAL_H, (Color){ 6, 4, 14, af });

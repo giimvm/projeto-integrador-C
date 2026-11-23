@@ -49,4 +49,35 @@ static inline void ReiniciarProgresso(PlayerStats *stats) {
     SalvarProgresso(*stats);
 }
 
+typedef struct {
+    float volMusica;
+    float volSfx;
+    bool telaCheia;
+    bool modoTechNight;
+} ConfigSalva;
+
+static inline void SalvarConfig(ConfigSalva cfg) {
+    FILE *arquivo = fopen("config.txt", "w");
+    if (arquivo != NULL) {
+        fprintf(arquivo, "%.3f\n%.3f\n%d\n%d\n", cfg.volMusica, cfg.volSfx, cfg.telaCheia ? 1 : 0, cfg.modoTechNight ? 1 : 0);
+        fclose(arquivo);
+    }
+}
+
+static inline void CarregarConfig(ConfigSalva *cfg) {
+    FILE *arquivo = fopen("config.txt", "r");
+    if (arquivo != NULL) {
+        int tc = 0, tn = 0;
+        if (fscanf(arquivo, "%f\n%f\n%d\n%d\n", &cfg->volMusica, &cfg->volSfx, &tc, &tn) >= 2) {
+            if (cfg->volMusica < 0.0f) cfg->volMusica = 0.0f;
+            if (cfg->volMusica > 1.0f) cfg->volMusica = 1.0f;
+            if (cfg->volSfx < 0.0f) cfg->volSfx = 0.0f;
+            if (cfg->volSfx > 1.0f) cfg->volSfx = 1.0f;
+            cfg->telaCheia = (tc != 0);
+            cfg->modoTechNight = (tn != 0);
+        }
+        fclose(arquivo);
+    }
+}
+
 #endif

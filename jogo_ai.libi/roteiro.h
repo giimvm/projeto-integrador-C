@@ -8,10 +8,14 @@ typedef struct {
     const char *personagem;
 } Fala;
 
-// Cenarios existentes
+// Cenarios
 #define BG_INTERROGATORIO "AssetsRay/Locais/SalaInterrogatorio.png"
 #define BG_EVIDENCIAS     "AssetsRay/Locais/SalaEvidencias.png"
 #define BG_JUIZ           "AssetsRay/Locais/SalaJuiz.png"
+#define BG_ESCRITORIO     "AssetsRay/Locais/escritorioplayer.png"
+#define BG_MURAL          "AssetsRay/Locais/muralevidencia.png"
+#define BG_SUSPEITOS      "AssetsRay/Locais/salasuspeitos.png"
+#define BG_TRIBUNAL       "AssetsRay/Locais/tribunal.png"
 
 // Poses Caio
 #define CAIO_NEUTRO       "AssetsRay/Personagens/Caio/CaioNeutro.png"
@@ -22,6 +26,7 @@ typedef struct {
 #define CAIO_OFENDIDO     "AssetsRay/Personagens/Caio/CaioOfendido.png"
 #define CAIO_CONFIANTE    "AssetsRay/Personagens/Caio/CaioConfiante.png"
 #define CAIO_ASSUSTADOR   "AssetsRay/Personagens/Caio/CaioAssustador.png"
+#define CAIO_CORPO        "AssetsRay/Personagens/Caio/caiofullcorpo.png"
 
 // Poses Delegado Meireles
 #define DEL_NEUTRO        "AssetsRay/Personagens/Delegado/DelegadoNeutro.png"
@@ -34,258 +39,258 @@ typedef struct {
 #define JULIA_NEUTRO      "AssetsRay/Personagens/Julia/JuliaNeutro.png"
 #define JULIA_CONFIANTE   "AssetsRay/Personagens/Julia/JuliaConfiante.png"
 #define JULIA_CINICA      "AssetsRay/Personagens/Julia/JuliaCinica.png"
+#define JULIA_CORPO       "AssetsRay/Personagens/Julia/julia_corpo.png"
 
-// Poses Juiz
+// Poses Juiz e Advogada
 #define JUIZ_NEUTRO       "AssetsRay/Personagens/Juiz/JuizNeutro.png"
 #define JUIZ_ASSERTIVO    "AssetsRay/Personagens/Juiz/JuizAssertivo.png"
+#define JUIZ_TRIBUNAL     "AssetsRay/Personagens/Juiz/juizinteiro.png"
+#define ADVOGADA_SPRITE   "AssetsRay/Personagens/Advogada/AdvogadaNeutro.png"
 
-// TODO: Assets faltando - sprite da protagonista HELENA e do(a) ADVOGADO(A)
-#define HELENA_SPRITE     ""
-#define ADVOGADO_SPRITE   JUIZ_NEUTRO
+// Pensamento interno nao usa sprite de personagem
+#define SEM_SPRITE        ""
 
 // ============================================================================
-// CENA 1 - A ocorrencia (comum as duas rotas)
+// CENA 1 - Abertura do Delegado + Pensamento no Escritorio
 // ============================================================================
+static const Fala falasCena1Abertura[] = {
+    { "DELEGADO MEIRELES", "Acabou de entrar uma denúncia nova no sistema. Um universitário desapareceu depois de uma festa.", BG_EVIDENCIAS, DEL_NEUTRO },
+    { "DELEGADO MEIRELES", "A equipe já está ouvindo quem estava lá. Dê uma olhada nos dados iniciais no seu computador.", BG_EVIDENCIAS, DEL_ASSERTIVO },
+    { "DELEGADO MEIRELES", "E não se engane: hoje qualquer foto, voz ou vídeo pode ser fabricado. Não confie em prova só porque ela parece real.", BG_EVIDENCIAS, DEL_CONFIANTE }
+};
+static const int NUM_FALAS_CENA1_ABERTURA = sizeof(falasCena1Abertura) / sizeof(falasCena1Abertura[0]);
+
 static const Fala falasCena1[] = {
-    { "HELENA", "Recife, 2045. Quem tem tecnologia vive bem. Mas hoje qualquer foto, voz ou vídeo pode ser fabricado em segundos.", BG_EVIDENCIAS, HELENA_SPRITE },
-    { "DELEGADO MEIRELES", "Helena, a equipe já está ouvindo quem estava na festa. Passe um pente fino nos álibis, nas imagens e nas mensagens.", BG_EVIDENCIAS, DEL_NEUTRO },
-    { "DELEGADO MEIRELES", "E não se engane: não é porque uma prova parece real que ela realmente é.", BG_EVIDENCIAS, DEL_ASSERTIVO }
+    { "PENSAMENTO", "(Recife, 2045. Olhando os registros e as manchetes de hoje... quem tem tecnologia vive bem. Mas qualquer foto, voz ou vídeo pode ser inventado em segundos.)", BG_ESCRITORIO, SEM_SPRITE }
 };
 static const int NUM_FALAS_CENA1 = sizeof(falasCena1) / sizeof(falasCena1[0]);
 
 // ============================================================================
-// CENA 2 - Interrogatorio de Caio (comum as duas rotas)
+// CENA 2 - Interrogatorio de Caio
 // ============================================================================
 static const Fala falasCena2[] = {
-    { "HELENA", "Caio, vou direto ao ponto: você sabe onde o Gabriel está?", BG_INTERROGATORIO, CAIO_NEUTRO },
+    { "JOGADOR", "Caio, vou direto ao ponto: você sabe onde o Gabriel está?", BG_INTERROGATORIO, CAIO_NEUTRO },
     { "CAIO", "Não. Não faço a menor ideia.", BG_INTERROGATORIO, CAIO_NERVOSO },
-    { "HELENA", "Uma testemunha viu vocês dois batendo boca do lado de fora da festa. O que rolou?", BG_INTERROGATORIO, CAIO_DESCONFIADO },
+    { "JOGADOR", "Uma testemunha viu vocês dois batendo boca do lado de fora da festa. O que rolou?", BG_INTERROGATORIO, CAIO_DESCONFIADO },
     { "CAIO", "A gente discutiu, sim. Ele tava bêbado... falando que ia contar uma coisa pra Juliana. Do nada começou a jogar na minha cara que eu pagava a faculdade dele pra ele me dever favor, e que a vaga dele na NEXARA só veio por indicação do meu pai. Eu falei que ele tava sendo injusto.", BG_INTERROGATORIO, CAIO_ESTRESSADO },
-    { "HELENA", "E depois da briga?", BG_INTERROGATORIO, CAIO_RELUTANTE },
+    { "JOGADOR", "E depois da briga?", BG_INTERROGATORIO, CAIO_RELUTANTE },
     { "CAIO", "Fui embora. Era umas duas e quarenta. Peguei meu carro e fui direto pra casa, sozinho.", BG_INTERROGATORIO, CAIO_NERVOSO },
-    { "HELENA", "Então o seu álibi é só a sua palavra.", BG_INTERROGATORIO, CAIO_RELUTANTE },
+    { "JOGADOR", "Então o seu álibi é só a sua palavra.", BG_INTERROGATORIO, CAIO_RELUTANTE },
     { "CAIO", "...É. Eu sei como isso soa. Meu relógio até ficou sem bateria na hora, nem registrou o trajeto.", BG_INTERROGATORIO, CAIO_OFENDIDO },
-    { "HELENA", "Tudo bem. Vamos puxar a câmera da saída do estacionamento. Se você saiu mesmo às duas e quarenta, ela vai mostrar.", BG_INTERROGATORIO, CAIO_NEUTRO }
+    { "JOGADOR", "Tudo bem. Vamos puxar a câmera da saída do estacionamento. Se você saiu mesmo às duas e quarenta, ela vai mostrar.", BG_INTERROGATORIO, CAIO_NEUTRO }
 };
 static const int NUM_FALAS_CENA2 = sizeof(falasCena2) / sizeof(falasCena2[0]);
 
 // ============================================================================
-// CENA 3 - O pacote anonimo (comum + pos-analise bifurcada)
+// CENA 3 - O pacote anonimo + reflexao no mural
 // ============================================================================
 static const Fala falasCena3[] = {
     { "DELEGADO MEIRELES", "Acabou de chegar numa entrega anônima. Tem um dispositivo com áudio aí dentro. Mandaram um bilhete dizendo que explica a briga entre o Caio e o Gabriel.", BG_EVIDENCIAS, DEL_EVID1 },
-    { "HELENA", "Quem grava uma briga no meio da festa e manda anonimamente pra polícia?", BG_EVIDENCIAS, DEL_EVID2 },
+    { "JOGADOR", "Quem grava uma briga no meio da festa e manda anonimamente pra polícia?", BG_EVIDENCIAS, DEL_EVID2 },
     { "DELEGADO MEIRELES", "Alguém que quer que a gente ouça. Ou alguém que precisa muito que a gente acredite.", BG_EVIDENCIAS, DEL_ASSERTIVO }
 };
 static const int NUM_FALAS_CENA3 = sizeof(falasCena3) / sizeof(falasCena3[0]);
 
 static const Fala falasCena3PosJuliana[] = {
-    { "HELENA", "Forjaram uma ameaça com a voz do Caio. Quem fez isso queria desviar o meu olhar pra ele... e eu preciso descobrir por quê.", BG_EVIDENCIAS, HELENA_SPRITE }
+    { "PENSAMENTO", "(Forjaram uma ameaça com a voz do Caio. Quem fez isso queria desviar o meu olhar pra ele... e eu preciso descobrir por quê.)", BG_MURAL, SEM_SPRITE }
 };
 static const int NUM_FALAS_CENA3_POS_JULIANA = sizeof(falasCena3PosJuliana) / sizeof(falasCena3PosJuliana[0]);
 
 static const Fala falasCena3PosCaio[] = {
-    { "HELENA", "A gravação é limpa. O Caio mentiu quando disse que foi só uma discussão boba. Ele ameaçou o Gabriel de verdade.", BG_EVIDENCIAS, HELENA_SPRITE }
+    { "PENSAMENTO", "(A gravação é limpa. O Caio mentiu quando disse que foi só uma discussão boba. Ele ameaçou o Gabriel de verdade.)", BG_MURAL, SEM_SPRITE }
 };
 static const int NUM_FALAS_CENA3_POS_CAIO = sizeof(falasCena3PosCaio) / sizeof(falasCena3PosCaio[0]);
 
 // ============================================================================
-// CENA 4 - Interrogatorio de Juliana (comum + pos-analise bifurcada)
+// CENA 4 - Interrogatorio de Juliana + reflexao no mural
 // ============================================================================
 static const Fala falasCena4[] = {
     { "JULIANA", "Desculpa, esse celular trava o tempo todo. Comprei de segunda mão, sem garantia nem nada.", BG_INTERROGATORIO, JULIA_NEUTRO },
-    { "HELENA", "Você era próxima do Gabriel?", BG_INTERROGATORIO, JULIA_NEUTRO },
+    { "JOGADOR", "Você era próxima do Gabriel?", BG_INTERROGATORIO, JULIA_NEUTRO },
     { "JULIANA", "Ele é meu melhor amigo. A gente entrou junto na faculdade.", BG_INTERROGATORIO, JULIA_CONFIANTE },
-    { "HELENA", "Chegou a falar com ele na festa?", BG_INTERROGATORIO, JULIA_NEUTRO },
+    { "JOGADOR", "Chegou a falar com ele na festa?", BG_INTERROGATORIO, JULIA_NEUTRO },
     { "JULIANA", "A gente conversou rapidinho, depois eu voltei pra pista e não vi mais ele.", BG_INTERROGATORIO, JULIA_CINICA },
-    { "HELENA", "O Caio falou que o Gabriel queria te contar alguma coisa naquela noite. Vocês tinham brigado?", BG_INTERROGATORIO, JULIA_NEUTRO },
+    { "JOGADOR", "O Caio falou que o Gabriel queria te contar alguma coisa naquela noite. Vocês tinham brigado?", BG_INTERROGATORIO, JULIA_NEUTRO },
     { "JULIANA", "Brigamos, sim. Eu descobri que o Gabriel conseguiu a vaga na NEXARA porque tava fechado com o professor João Paulo. Eu ralei três anos por aquela vaga e saí de mãos abanando.", BG_INTERROGATORIO, JULIA_CINICA },
-    { "HELENA", "E o que você acha do Caio no meio disso tudo?", BG_INTERROGATORIO, JULIA_NEUTRO },
+    { "JOGADOR", "E o que você acha do Caio no meio disso tudo?", BG_INTERROGATORIO, JULIA_NEUTRO },
     { "JULIANA", "Pra quem sempre teve tudo de mão beijada, é muito fácil pedir pra gente \"ouvir o outro lado\".", BG_INTERROGATORIO, JULIA_CONFIANTE },
-    { "HELENA", "Até que horas você ficou na festa?", BG_INTERROGATORIO, JULIA_NEUTRO },
+    { "JOGADOR", "Até que horas você ficou na festa?", BG_INTERROGATORIO, JULIA_NEUTRO },
     { "JULIANA", "Até umas três da manhã. Pedi um carro de aplicativo e fui embora. Até mandei uma foto pra minha mãe de dentro do carro. Pode olhar. Eu faço questão.", BG_INTERROGATORIO, JULIA_CINICA }
 };
 static const int NUM_FALAS_CENA4 = sizeof(falasCena4) / sizeof(falasCena4[0]);
 
 static const Fala falasCena4PosJuliana[] = {
-    { "HELENA", "Uma prova falsa pra queimar o Caio. Outra falsa pra proteger a Juliana. Alguém tá montando esse tabuleiro peça por peça.", BG_INTERROGATORIO, HELENA_SPRITE }
+    { "PENSAMENTO", "(Uma prova falsa pra queimar o Caio. Outra falsa pra proteger a Juliana. Alguém tá montando esse tabuleiro peça por peça.)", BG_MURAL, SEM_SPRITE }
 };
 static const int NUM_FALAS_CENA4_POS_JULIANA = sizeof(falasCena4PosJuliana) / sizeof(falasCena4PosJuliana[0]);
 
 static const Fala falasCena4PosCaio[] = {
-    { "HELENA", "A foto é autêntica. Mesmo furiosa com o Gabriel, a Juliana realmente entrou no carro às três e cinco.", BG_INTERROGATORIO, HELENA_SPRITE }
+    { "PENSAMENTO", "(A foto é autêntica. Mesmo furiosa com o Gabriel, a Juliana realmente entrou no carro às três e cinco.)", BG_MURAL, SEM_SPRITE }
 };
 static const int NUM_FALAS_CENA4_POS_CAIO = sizeof(falasCena4PosCaio) / sizeof(falasCena4PosCaio[0]);
 
 // ============================================================================
-// CENA 5 - O corpo (comum as duas rotas)
+// CENA 5 - O corpo
 // ============================================================================
 static const Fala falasCena5[] = {
-    { "DELEGADO MEIRELES", "Helena... acharam o Gabriel. Infelizmente, encontraram o corpo dele num barranco, a duzentos metros do galpão.", BG_EVIDENCIAS, DEL_NEUTRO },
-    { "HELENA", "Praticamente do lado da festa?", BG_EVIDENCIAS, DEL_ASSERTIVO },
+    { "DELEGADO MEIRELES", "Acharam o Gabriel. Infelizmente, encontraram o corpo dele num barranco, a duzentos metros do galpão.", BG_EVIDENCIAS, DEL_NEUTRO },
+    { "JOGADOR", "Praticamente do lado da festa?", BG_EVIDENCIAS, DEL_ASSERTIVO },
     { "DELEGADO MEIRELES", "A perícia cravou a morte na própria madrugada, entre 2h50 e 3h05. Ele levou um golpe na têmpora antes de cair. A partir de agora, estamos lidando com homicídio.", BG_EVIDENCIAS, DEL_ASSERTIVO }
 };
 static const int NUM_FALAS_CENA5 = sizeof(falasCena5) / sizeof(falasCena5[0]);
 
 // ============================================================================
-// CENA 6 - A Caixa-Preta / Backup na Nuvem (comum + pos-analise bifurcada)
+// CENA 6 - A Caixa-Preta / Backup na Nuvem + reflexao no mural
 // ============================================================================
 static const Fala falasCena6[] = {
     { "DELEGADO MEIRELES", "A perícia digital conseguiu resgatar o último backup automático da conta do Gabriel, minutos antes de o aparelho perder o sinal.", BG_EVIDENCIAS, DEL_EVID1 },
-    { "HELENA", "Se ele ia abrir o jogo com alguém naquela noite, tem alguma pista guardada aí.", BG_EVIDENCIAS, DEL_NEUTRO }
+    { "JOGADOR", "Se ele ia abrir o jogo com alguém naquela noite, tem alguma pista guardada aí.", BG_EVIDENCIAS, DEL_NEUTRO }
 };
 static const int NUM_FALAS_CENA6 = sizeof(falasCena6) / sizeof(falasCena6[0]);
 
 static const Fala falasCena6PosJuliana[] = {
-    { "HELENA", "Ele entregou três anos de trabalho da Juliana de bandeja. Se ela soube disso na festa, tinha motivo de sobra pra perder a cabeça.", BG_EVIDENCIAS, HELENA_SPRITE }
+    { "PENSAMENTO", "(Ele entregou três anos de trabalho da Juliana de bandeja. Se ela soube disso na festa, tinha motivo de sobra pra perder a cabeça.)", BG_MURAL, SEM_SPRITE }
 };
 static const int NUM_FALAS_CENA6_POS_JULIANA = sizeof(falasCena6PosJuliana) / sizeof(falasCena6PosJuliana[0]);
 
 static const Fala falasCena6PosCaio[] = {
-    { "HELENA", "Não era favor nenhum. O Caio usava o Gabriel de laranja pra lavar dinheiro e comprar a vaga na NEXARA. Se o Gabriel falasse, o Caio ia pra cadeia.", BG_EVIDENCIAS, HELENA_SPRITE }
+    { "PENSAMENTO", "(Não era favor nenhum. O Caio usava o Gabriel de laranja pra lavar dinheiro e comprar a vaga na NEXARA. Se o Gabriel falasse, o Caio ia pra cadeia.)", BG_MURAL, SEM_SPRITE }
 };
 static const int NUM_FALAS_CENA6_POS_CAIO = sizeof(falasCena6PosCaio) / sizeof(falasCena6PosCaio[0]);
 
 // ============================================================================
-// CENA 7 - Confronto Final (Bifurcado: Rota Juliana vs. Rota Caio)
+// CENA 7 - Confronto Final
 // ============================================================================
 static const Fala falasCena7A_Juliana[] = {
-    { "HELENA", "Você garantiu que saiu da festa às três, de carro de aplicativo.", BG_INTERROGATORIO, JULIA_NEUTRO },
+    { "JOGADOR", "Você garantiu que saiu da festa às três, de carro de aplicativo.", BG_INTERROGATORIO, JULIA_NEUTRO },
     { "JULIANA", "Garanti. E já te mostrei a foto.", BG_INTERROGATORIO, JULIA_CONFIANTE }
 };
-static const int NUM_FALAS_CENA7A_JULIANA = sizeof(falasCena7A_Juliana) / sizeof(falasCena7A_Juliana[0]);
+static const int NUM_FALAS_CENA7A_Juliana = sizeof(falasCena7A_Juliana) / sizeof(falasCena7A_Juliana[0]);
 
 static const Fala falasCena7B_Juliana[] = {
-    { "HELENA", "A sua corrida na Mobi só foi pedida às três e quarenta e um. E os carros da frota não têm volante, diferente da foto que você me mostrou.", BG_INTERROGATORIO, JULIA_NEUTRO },
+    { "JOGADOR", "A sua corrida na Mobi só foi pedida às três e quarenta e um. E os carros da frota não têm volante, diferente da foto que você me mostrou.", BG_INTERROGATORIO, JULIA_NEUTRO },
     { "JULIANA", "Tá, eu fiquei mais um pouco... perdi a noção da hora.", BG_INTERROGATORIO, JULIA_CINICA },
-    { "HELENA", "Quarenta minutos perdidos no relógio?", BG_INTERROGATORIO, JULIA_CINICA },
+    { "JOGADOR", "Quarenta minutos perdidos no relógio?", BG_INTERROGATORIO, JULIA_CINICA },
     { "JULIANA", "Eu tava mal, tá? Fiquei sentada lá fora esfriando a cabeça. O Gabriel saiu andando na direção da estrada.", BG_INTERROGATORIO, JULIA_CINICA },
-    { "HELENA", "O celular dele tava parado a duzentos metros do galpão às 3h20. O corpo também. Ele nunca saiu de lá.", BG_INTERROGATORIO, JULIA_NEUTRO },
+    { "JOGADOR", "O celular dele tava parado a duzentos metros do galpão às 3h20. O corpo também. Ele nunca saiu de lá.", BG_INTERROGATORIO, JULIA_NEUTRO },
     { "JULIANA", "...Eu quero um advogado.", BG_INTERROGATORIO, JULIA_NEUTRO },
-    { "HELENA", "Quem fala a verdade para pra pensar. Ela já tava com a resposta pronta antes de eu terminar a pergunta.", BG_INTERROGATORIO, HELENA_SPRITE }
+    { "PENSAMENTO", "(Quem fala a verdade para pra pensar. Ela já tava com a resposta pronta antes de eu terminar a pergunta.)", BG_MURAL, SEM_SPRITE }
 };
-static const int NUM_FALAS_CENA7B_JULIANA = sizeof(falasCena7B_Juliana) / sizeof(falasCena7B_Juliana[0]);
+static const int NUM_FALAS_CENA7B_Juliana = sizeof(falasCena7B_Juliana) / sizeof(falasCena7B_Juliana[0]);
 
 static const Fala falasCena7A_Caio[] = {
-    { "HELENA", "Você disse que saiu do estacionamento às duas e quarenta.", BG_INTERROGATORIO, CAIO_NEUTRO },
+    { "JOGADOR", "Você disse que saiu do estacionamento às duas e quarenta.", BG_INTERROGATORIO, CAIO_NEUTRO },
     { "CAIO", "Falei. Se vocês já puxaram a câmera da saída, já viram meu carro passando lá.", BG_INTERROGATORIO, CAIO_CONFIANTE }
 };
-static const int NUM_FALAS_CENA7A_CAIO = sizeof(falasCena7A_Caio) / sizeof(falasCena7A_Caio[0]);
+static const int NUM_FALAS_CENA7A_Caio = sizeof(falasCena7A_Caio) / sizeof(falasCena7A_Caio[0]);
 
 static const Fala falasCena7B_Caio[] = {
-    { "HELENA", "O horário no vídeo até bate com a sua história. Só tem um problema: a imagem da cancela foi adulterada.", BG_INTERROGATORIO, CAIO_DESCONFIADO },
-    { "CAIO", "Adulterada? Aquela câmera vive quebrada, Helena. Deve ser erro de compressão.", BG_INTERROGATORIO, CAIO_OFENDIDO },
-    { "HELENA", "Pode até ser. Só que os repasses bancários na conta do Gabriel não parecem erro de sistema.", BG_INTERROGATORIO, CAIO_NERVOSO },
+    { "JOGADOR", "O horário no vídeo até bate com a sua história. Só tem um problema: a imagem da cancela foi adulterada.", BG_INTERROGATORIO, CAIO_DESCONFIADO },
+    { "CAIO", "Adulterada? Aquela câmera vive quebrada. Deve ser erro de compressão.", BG_INTERROGATORIO, CAIO_OFENDIDO },
+    { "JOGADOR", "Pode até ser. Só que os repasses bancários na conta do Gabriel não parecem erro de sistema.", BG_INTERROGATORIO, CAIO_NERVOSO },
     { "CAIO", "Eu já falei... era uma ajuda que meu pai organizava pra ele se manter no curso. O Gabriel sempre gostou de fazer drama.", BG_INTERROGATORIO, CAIO_ESTRESSADO },
-    { "HELENA", "O problema é que o celular dele parou de dar sinal às 3h20, no fundo do barranco. Bem depois da briga de vocês.", BG_INTERROGATORIO, CAIO_NERVOSO },
+    { "JOGADOR", "O problema é que o celular dele parou de dar sinal às 3h20, no fundo do barranco. Bem depois da briga de vocês.", BG_INTERROGATORIO, CAIO_NERVOSO },
     { "CAIO", "...Acho melhor eu chamar o advogado da família antes de falar mais alguma coisa.", BG_INTERROGATORIO, CAIO_RELUTANTE },
-    { "HELENA", "Quem fala a verdade para pra pensar. Ele já tava com a defesa engatilhada antes de eu terminar a frase.", BG_INTERROGATORIO, HELENA_SPRITE }
+    { "PENSAMENTO", "(Quem fala a verdade para pra pensar. Ele já tava com a defesa engatilhada antes de eu terminar a frase.)", BG_MURAL, SEM_SPRITE }
 };
-static const int NUM_FALAS_CENA7B_CAIO = sizeof(falasCena7B_Caio) / sizeof(falasCena7B_Caio[0]);
+static const int NUM_FALAS_CENA7B_Caio = sizeof(falasCena7B_Caio) / sizeof(falasCena7B_Caio[0]);
 
 // ============================================================================
-// CENA 8 - Veredito (comum as duas rotas)
+// CENA 8 - Chamado para a Sala de Suspeitos
 // ============================================================================
 static const Fala falasCena8[] = {
-    { "DELEGADO MEIRELES", "Chegamos ao fim, Helena. Suspeita não condena ninguém, e uma boa história nem sempre é verdade. Quem matou Gabriel Moura?", BG_JUIZ, DEL_ASSERTIVO }
+    { "DELEGADO MEIRELES", "Chegamos ao fim da coleta. Os dois suspeitos estão na sala de reconhecimento. Revise seu mural e dê seu veredito.", BG_JUIZ, DEL_ASSERTIVO }
 };
 static const int NUM_FALAS_CENA8 = sizeof(falasCena8) / sizeof(falasCena8[0]);
 
 // ============================================================================
-// FINAL 1 - VERDADE ABSOLUTA (5/5 provas validadas - Caso Perfeito)
+// TRIBUNAL + FINAIS (Advogada defende o reu conforme qtd de provas)
 // ============================================================================
+// FINAL 1 - VERDADE ABSOLUTA (5/5 provas)
 static const Fala falasFinalPerfeitoJuliana[] = {
-    { "HELENA", "O Gabriel te chamou nos fundos do galpão pra admitir que entregou o seu projeto ao professor. Vocês brigaram. Depois você voltou, gerou uma foto falsa no carro e, no dia seguinte, forjou um áudio com a voz do Caio.", BG_INTERROGATORIO, JULIA_NEUTRO },
-    { "JULIANA", "Ele chorou, sabe? Pediu desculpa, disse que ia denunciar o João Paulo... Eu gritei que era tarde demais. Ele segurou meu braço e falou \"me escuta, Ju\". Eu só queria que alguém me escutasse primeiro.", BG_INTERROGATORIO, JULIA_CINICA },
-    { "JULIANA", "Eu bati. Ele caiu no barranco. Fiquei paralisada olhando... e o pânico tomou conta.", BG_INTERROGATORIO, JULIA_NEUTRO },
-    { "HELENA", "Juliana Costa, você está presa pelo homicídio de Gabriel Moura.", BG_INTERROGATORIO, JULIA_NEUTRO },
-    { "DELEGADO MEIRELES", "Trabalho impecável, Helena. Com todas as provas validadas, o Ministério Público também abriu inquérito contra o professor João Paulo e o processo seletivo da NEXARA.", BG_EVIDENCIAS, DEL_CONFIANTE },
-    { "HELENA", "Em 2045, qualquer um pode fabricar uma mentira. Mas quando cada peça fecha sem brecha, nem a maior empresa da cidade consegue esconder a verdade.", BG_EVIDENCIAS, HELENA_SPRITE }
+    { "JUIZ", "Declaro aberta a audiência de instrução contra Juliana Costa. A defesa tem a palavra.", BG_TRIBUNAL, JUIZ_TRIBUNAL },
+    { "ADVOGADA", "Excelência, em 2045 qualquer mídia pode ser manipulada. Pela Lei da Dúvida Digital, peço a anulação das provas eletrônicas contra minha cliente.", BG_TRIBUNAL, ADVOGADA_SPRITE },
+    { "JOGADOR", "Todas as cinco cadeias de custódia estão intactas: a foto do carro e o áudio anônimo foram forjados por IA, o GPS e a nuvem são íntegros e a corrida da Mobi às 03h41 derruba o álibi.", BG_TRIBUNAL, ADVOGADA_SPRITE },
+    { "JULIANA", "Chega! Ele entregou meu projeto de três anos pro João Paulo... eu só queria que alguém me escutasse! Eu bati, ele caiu no barranco... eu fiquei com medo!", BG_TRIBUNAL, JULIA_CORPO },
+    { "JUIZ", "Diante das cinco provas técnicas validadas e da confissão, condeno Juliana Costa e determino inquérito contra o Prof. João Paulo na NEXARA.", BG_TRIBUNAL, JUIZ_TRIBUNAL },
+    { "PENSAMENTO", "(Em 2045, qualquer um pode fabricar uma mentira. Mas quando todas as peças fecham sem brecha, nem a maior empresa da cidade esconde a verdade.)", BG_TRIBUNAL, SEM_SPRITE }
 };
 static const int NUM_FALAS_FINAL_PERF_JULIANA = sizeof(falasFinalPerfeitoJuliana) / sizeof(falasFinalPerfeitoJuliana[0]);
 
 static const Fala falasFinalPerfeitoCaio[] = {
-    { "HELENA", "O Gabriel descobriu que tava sendo usado de laranja no esquema do seu pai e ia entregar tudo naquela noite. Você foi atrás dele até o barranco e depois usou a tecnologia da NEXARA pra forjar sua saída na câmera.", BG_INTERROGATORIO, CAIO_NERVOSO },
-    { "CAIO", "Ele ia acabar com a minha família, Helena! Tudo que o meu pai construiu ia pro lixo por causa de um cara que eu ajudei! Eu só empurrei pra calar a boca dele... eu não sabia que tinha uma pedra lá embaixo!", BG_INTERROGATORIO, CAIO_ESTRESSADO },
-    { "HELENA", "Caio Vasconcelos, você está preso pelo homicídio de Gabriel Moura.", BG_INTERROGATORIO, CAIO_ASSUSTADOR },
-    { "DELEGADO MEIRELES", "Excelente trabalho, Helena. A perícia fechou os cinco laudos sem nenhuma falha. Os extratos da nuvem também derrubaram a empresa de fachada e o esquema do pai dele na NEXARA.", BG_EVIDENCIAS, DEL_CONFIANTE },
-    { "HELENA", "Em 2045, dinheiro e algoritmo compram quase tudo. Menos um álibi que resista a cinco provas fechadas.", BG_EVIDENCIAS, HELENA_SPRITE }
+    { "JUIZ", "Declaro aberta a audiência de instrução contra Caio Vasconcelos. A defesa tem a palavra.", BG_TRIBUNAL, JUIZ_TRIBUNAL },
+    { "ADVOGADA", "Excelência, meu cliente apresentou vídeo de saída às 02h42. O restante é suposição sobre ajuda financeira estudantil.", BG_TRIBUNAL, ADVOGADA_SPRITE },
+    { "JOGADOR", "O vídeo da cancela foi adulterado por IA. Os cinco laudos estão fechados: o áudio da ameaça é real, o GPS crava 03h20 e os extratos da nuvem provam a lavagem de dinheiro.", BG_TRIBUNAL, ADVOGADA_SPRITE },
+    { "CAIO", "Ele ia destruir a minha família! Tudo que meu pai construiu ia pro lixo! Eu só empurrei pra calar a boca dele... não sabia que tinha uma pedra lá embaixo!", BG_TRIBUNAL, CAIO_CORPO },
+    { "JUIZ", "Com os cinco laudos periciais íntegros, condeno Caio Vasconcelos e determino o bloqueio da empresa de fachada ligada à NEXARA.", BG_TRIBUNAL, JUIZ_TRIBUNAL },
+    { "PENSAMENTO", "(Em 2045, dinheiro e algoritmo compram quase tudo. Menos um álibi que resista a cinco provas fechadas.)", BG_TRIBUNAL, SEM_SPRITE }
 };
 static const int NUM_FALAS_FINAL_PERF_CAIO = sizeof(falasFinalPerfeitoCaio) / sizeof(falasFinalPerfeitoCaio[0]);
 
-// ============================================================================
-// FINAL 2 - A VERDADE (4/5 provas validadas)
-// ============================================================================
+// FINAL 2 - A VERDADE (4/5 provas)
 static const Fala falasFinalVerdadeJuliana[] = {
-    { "HELENA", "O Gabriel te chamou nos fundos do galpão pra contar que entregou o seu projeto ao professor. Vocês discutiram. Depois você voltou pra festa, montou uma foto falsa e forjou o áudio com a voz do Caio.", BG_INTERROGATORIO, JULIA_NEUTRO },
-    { "JULIANA", "Ele chorou, sabe? Pediu desculpa, disse que ia acusar o João Paulo. Eu gritei que era tarde demais. Ele me segurou, falou \"me escuta, Ju\"... e eu só queria que alguém me escutasse primeiro.", BG_INTERROGATORIO, JULIA_CINICA },
-    { "JULIANA", "Eu bati. Ele caiu. Fiquei olhando o buraco e me deu um medo absurdo.", BG_INTERROGATORIO, JULIA_NEUTRO },
-    { "HELENA", "Juliana Costa, você está presa pelo homicídio de Gabriel Moura.", BG_INTERROGATORIO, JULIA_NEUTRO },
-    { "HELENA", "Em 2045, qualquer um pode fabricar uma verdade. Mas a gente ainda percebe quando ela não encaixa.", BG_INTERROGATORIO, HELENA_SPRITE }
+    { "JUIZ", "Iniciamos a audiência contra Juliana Costa. Defesa, manifeste-se.", BG_TRIBUNAL, JUIZ_TRIBUNAL },
+    { "ADVOGADA", "Excelência, falta uma peça na perícia completa da acusação. Há margem para questionar a ordem cronológica.", BG_TRIBUNAL, ADVOGADA_SPRITE },
+    { "JOGADOR", "Quatro provas técnicas validadas sustentam a cadeia de custódia. A foto tem volante inexistente, a Mobi registra 03h41 e o GPS confirma que Gabriel nunca saiu do galpão.", BG_TRIBUNAL, ADVOGADA_SPRITE },
+    { "JULIANA", "Ele chorou... pediu desculpa. Eu gritei que era tarde demais. Eu bati e ele caiu... fiquei apavorada.", BG_TRIBUNAL, JULIA_CORPO },
+    { "JUIZ", "As quatro provas convergem sem contradição. Juliana Costa está condenada pelo homicídio de Gabriel Moura.", BG_TRIBUNAL, JUIZ_TRIBUNAL },
+    { "PENSAMENTO", "(Em 2045, qualquer um pode fabricar uma verdade. Mas a gente ainda percebe quando ela não encaixa.)", BG_TRIBUNAL, SEM_SPRITE }
 };
 static const int NUM_FALAS_FINAL_VERD_JULIANA = sizeof(falasFinalVerdadeJuliana) / sizeof(falasFinalVerdadeJuliana[0]);
 
 static const Fala falasFinalVerdadeCaio[] = {
-    { "HELENA", "O Gabriel descobriu que era laranja no esquema do seu pai e ia denunciar tudo naquela noite. Você seguiu ele até o barranco e depois forjou a gravação do estacionamento.", BG_INTERROGATORIO, CAIO_NERVOSO },
-    { "CAIO", "Ele ia destruir a minha família, Helena! Tudo que o meu pai construiu ia virar pó por causa de um moleque que eu ajudei! Eu só empurrei pra calar a boca dele... não sabia que tinha uma pedra ali embaixo.", BG_INTERROGATORIO, CAIO_ESTRESSADO },
-    { "HELENA", "Caio Vasconcelos, você está preso pelo homicídio de Gabriel Moura.", BG_INTERROGATORIO, CAIO_ASSUSTADOR },
-    { "HELENA", "Em 2045, qualquer um pode fabricar uma verdade. Mas a gente ainda percebe quando ela não encaixa.", BG_INTERROGATORIO, HELENA_SPRITE }
+    { "JUIZ", "Iniciamos a audiência contra Caio Vasconcelos. Defesa, manifeste-se.", BG_TRIBUNAL, JUIZ_TRIBUNAL },
+    { "ADVOGADA", "Excelência, a acusação não fechou todos os cinco laudos do inquérito. Peço a rejeição da denúncia.", BG_TRIBUNAL, ADVOGADA_SPRITE },
+    { "JOGADOR", "Quatro provas validadas fecham o cerco. Os extratos, o GPS e a inconsistência na imagem da cancela derrubam o álibi de Caio.", BG_TRIBUNAL, ADVOGADA_SPRITE },
+    { "CAIO", "Ele ia acabar com tudo que meu pai construiu! Eu só empurrei pra calar a boca dele!", BG_TRIBUNAL, CAIO_CORPO },
+    { "JUIZ", "Com quatro laudos periciais consistentes e a confissão em audiência, Caio Vasconcelos está condenado.", BG_TRIBUNAL, JUIZ_TRIBUNAL },
+    { "PENSAMENTO", "(Em 2045, qualquer um pode fabricar uma verdade. Mas a gente ainda percebe quando ela não encaixa.)", BG_TRIBUNAL, SEM_SPRITE }
 };
 static const int NUM_FALAS_FINAL_VERD_CAIO = sizeof(falasFinalVerdadeCaio) / sizeof(falasFinalVerdadeCaio[0]);
 
-// ============================================================================
-// FINAL 3 - A DUVIDA (2 ou 3 provas validadas - absolvicao no tribunal)
-// ============================================================================
+// FINAL 3 - A DUVIDA (2 ou 3 provas)
 static const Fala falasFinalDuvida[] = {
-    { "JUIZ", "A acusação possui alguma prova técnica que uma máquina não pudesse ter fabricado?", BG_JUIZ, JUIZ_NEUTRO },
-    { "ADVOGADO", "Excelência, pela Lei da Dúvida Digital, qualquer indício sem cadeia de custódia completa deve ser anulado. A acusação trouxe uma suspeita e uma narrativa. Nada além disso.", BG_JUIZ, ADVOGADO_SPRITE },
-    { "HELENA", "...Não, Excelência. Ainda não.", BG_JUIZ, JUIZ_NEUTRO },
-    { "JUIZ", "Sendo assim, em nome da dúvida razoável, declaro a absolvição.", BG_JUIZ, JUIZ_ASSERTIVO },
-    { "HELENA", "Quatro meses depois, a NEXARA anunciou sua nova liderança de Engenharia de IA. Em 2045, a verdade sozinha não basta. Ela precisa chegar com a prova certa, na hora certa.", BG_EVIDENCIAS, HELENA_SPRITE }
+    { "JUIZ", "A acusação possui provas técnicas suficientes que uma máquina não pudesse ter fabricado?", BG_TRIBUNAL, JUIZ_TRIBUNAL },
+    { "ADVOGADA", "Excelência, pela Lei da Dúvida Digital, qualquer indício sem cadeia de custódia completa deve ser anulado. Faltam laudos essenciais no mural da acusação. Há apenas uma narrativa.", BG_TRIBUNAL, ADVOGADA_SPRITE },
+    { "JOGADOR", "...Os laudos restantes ficaram pelo caminho, Excelência.", BG_TRIBUNAL, ADVOGADA_SPRITE },
+    { "JUIZ", "Sendo assim, em nome da dúvida razoável, declaro o réu absolvido.", BG_TRIBUNAL, JUIZ_TRIBUNAL },
+    { "PENSAMENTO", "(Quatro meses depois, a NEXARA anunciou sua nova liderança de Engenharia de IA. Em 2045, a verdade sozinha não basta. Ela precisa chegar com a prova certa.)", BG_MURAL, SEM_SPRITE }
 };
 static const int NUM_FALAS_FINAL_DUVIDA = sizeof(falasFinalDuvida) / sizeof(falasFinalDuvida[0]);
 
-// ============================================================================
-// FINAL 4 - COLAPSO FORENSE (0 ou 1 prova validada - arquivamento antes do juri)
-// ============================================================================
+// FINAL 4 - COLAPSO FORENSE (0 ou 1 prova)
 static const Fala falasFinalColapso[] = {
-    { "DELEGADO MEIRELES", "Helena, eu olhei o seu dossiê inteiro. Praticamente não temos provas validadas pela perícia.", BG_EVIDENCIAS, DEL_ASSERTIVO },
-    { "HELENA", "Mas eu sei quem foi, Delegado. A história bate.", BG_EVIDENCIAS, DEL_NEUTRO },
-    { "DELEGADO MEIRELES", "Se eu mandar esse inquérito pro Ministério Público nesse estado, eles devolvem em dez minutos. Sem laudo válido, não existe processo.", BG_EVIDENCIAS, DEL_ASSERTIVO },
-    { "HELENA", "O inquérito foi arquivado por falta de lastro técnico. A pista tava na minha frente, e eu deixei escapar pelos dedos.", BG_EVIDENCIAS, HELENA_SPRITE }
+    { "JUIZ", "Olhando os autos enviados ao tribunal... onde estão as provas periciais validadas?", BG_TRIBUNAL, JUIZ_TRIBUNAL },
+    { "ADVOGADA", "Não há nenhuma sustentação técnica aqui, Excelência! A acusação trouxe um mural praticamente vazio. Peço o arquivamento sumário por falta de justa causa.", BG_TRIBUNAL, ADVOGADA_SPRITE },
+    { "JOGADOR", "Mas eu sei o que aconteceu naquela noite...", BG_TRIBUNAL, ADVOGADA_SPRITE },
+    { "JUIZ", "Sem lastro pericial, este tribunal não pode sequer abrir instrução. Caso arquivado.", BG_TRIBUNAL, JUIZ_TRIBUNAL },
+    { "PENSAMENTO", "(O inquérito morreu no tribunal antes mesmo de começar. As pistas tavam na minha frente, e eu deixei escapar.)", BG_MURAL, SEM_SPRITE }
 };
 static const int NUM_FALAS_FINAL_COLAPSO = sizeof(falasFinalColapso) / sizeof(falasFinalColapso[0]);
 
-// ============================================================================
-// FINAL 5 - A PRECIPITACAO (acusacao precoce nas Cenas 5 ou 6)
-// ============================================================================
+// FINAL 5 - A PRECIPITACAO
 static const Fala falasFinalPrecipitado[] = {
-    { "HELENA", "Delegado, não preciso de mais nada. Quero formalizar a acusação agora.", BG_EVIDENCIAS, DEL_NEUTRO },
-    { "DELEGADO MEIRELES", "Agora? A gente acabou de achar o corpo, Helena! Você nem puxou todos os registros nem confrontou o suspeito!", BG_EVIDENCIAS, DEL_ASSERTIVO },
-    { "HELENA", "Se a gente esperar mais, vão sumir com o resto das provas.", BG_EVIDENCIAS, DEL_ASSERTIVO },
-    { "DELEGADO MEIRELES", "Uma acusação precipitada destrói a cadeia de custódia e abre brecha pra anulação imediata. Vou te afastar do caso antes que você coloque tudo a perder.", BG_EVIDENCIAS, DEL_CONFIANTE },
-    { "HELENA", "A pressa falou mais alto que o método. Saí do caso antes mesmo de descobrir a verdade inteira.", BG_EVIDENCIAS, HELENA_SPRITE }
+    { "JOGADOR", "Delegado, não preciso de mais nada. Quero levar a acusação pro tribunal agora.", BG_EVIDENCIAS, DEL_NEUTRO },
+    { "DELEGADO MEIRELES", "Agora? A gente acabou de achar o corpo! Você nem puxou todos os registros nem confrontou o suspeito!", BG_EVIDENCIAS, DEL_ASSERTIVO },
+    { "DELEGADO MEIRELES", "Se você entrar no tribunal assim, a defesa anula tudo em cinco minutos. Vou te afastar do caso antes que você coloque tudo a perder.", BG_EVIDENCIAS, DEL_CONFIANTE },
+    { "PENSAMENTO", "(A pressa falou mais alto que o método. Saí do caso antes mesmo de descobrir a verdade inteira.)", BG_MURAL, SEM_SPRITE }
 };
 static const int NUM_FALAS_FINAL_PRECIPITADO = sizeof(falasFinalPrecipitado) / sizeof(falasFinalPrecipitado[0]);
 
-// ============================================================================
-// FINAL 6 - A INJUSTICA (acusou o inocente no Veredito)
-// ============================================================================
+// FINAL 6 - A INJUSTICA (acusou o inocente no Tribunal)
 static const Fala falasFinalInjusticaCaio[] = {
-    { "HELENA", "Confirmo minha acusação contra Caio Vasconcelos.", BG_JUIZ, DEL_NEUTRO },
-    { "DELEGADO MEIRELES", "O álibi dele parava de pé, o áudio tinha sinais de manipulação... o que a gente tinha de concreto contra ele?", BG_JUIZ, DEL_ASSERTIVO },
-    { "HELENA", "Motivo. A dívida, o pai, a briga na festa.", BG_JUIZ, DEL_ASSERTIVO },
-    { "DELEGADO MEIRELES", "Motivo a cidade inteira tem, Helena. Prova, não.", BG_JUIZ, DEL_CONFIANTE },
-    { "HELENA", "Semanas depois, Caio ouviu a sentença com o olhar vazio. Na delegacia, olhei a foto da Juliana na parede e percebi o tamanho do meu erro.", BG_EVIDENCIAS, HELENA_SPRITE }
+    { "JUIZ", "A acusação sustenta a denúncia contra Caio Vasconcelos. A defesa tem a palavra.", BG_TRIBUNAL, JUIZ_TRIBUNAL },
+    { "ADVOGADA", "Excelência, o álibi do meu cliente tem base sólida, e a acusação ignorou sinais claros de fabricação digital nas provas contra ele. Há apenas motivo aparente.", BG_TRIBUNAL, ADVOGADA_SPRITE },
+    { "DELEGADO MEIRELES", "Motivo a cidade inteira tem. Você trouxe alguém ao tribunal sem fechar as provas técnicas.", BG_TRIBUNAL, DEL_ASSERTIVO },
+    { "PENSAMENTO", "(Semanas depois, Caio ouviu a sentença injusta com o olhar vazio. No mural da delegacia, encarei a foto da Juliana e percebi o tamanho do meu erro.)", BG_MURAL, SEM_SPRITE }
 };
 static const int NUM_FALAS_FINAL_INJ_CAIO = sizeof(falasFinalInjusticaCaio) / sizeof(falasFinalInjusticaCaio[0]);
 
 static const Fala falasFinalInjusticaJuliana[] = {
-    { "HELENA", "Confirmo minha acusação contra Juliana Costa.", BG_JUIZ, DEL_NEUTRO },
-    { "DELEGADO MEIRELES", "A foto dela no carro era autêntica, o álibi fechava... o que a gente tinha de concreto contra ela?", BG_JUIZ, DEL_ASSERTIVO },
-    { "HELENA", "Motivo. A vaga na NEXARA, o ressentimento.", BG_JUIZ, DEL_ASSERTIVO },
-    { "DELEGADO MEIRELES", "Motivo a cidade inteira tem, Helena. Prova, não.", BG_JUIZ, DEL_CONFIANTE },
-    { "HELENA", "Semanas depois, Juliana ouviu a sentença com o olhar vazio. Na delegacia, encarei a foto do Caio na parede e percebi tarde demais quem realmente me enganou.", BG_EVIDENCIAS, HELENA_SPRITE }
+    { "JUIZ", "A acusação sustenta a denúncia contra Juliana Costa. A defesa tem a palavra.", BG_TRIBUNAL, JUIZ_TRIBUNAL },
+    { "ADVOGADA", "Excelência, a foto da minha cliente no carro é autêntica e o horário bate. A acusação trouxe ressentimento, não prova.", BG_TRIBUNAL, ADVOGADA_SPRITE },
+    { "DELEGADO MEIRELES", "Motivo a cidade inteira tem. Você trouxe alguém ao tribunal sem fechar as provas técnicas.", BG_TRIBUNAL, DEL_ASSERTIVO },
+    { "PENSAMENTO", "(Semanas depois, Juliana ouviu a sentença injusta com o olhar vazio. No mural da delegacia, encarei a foto do Caio e percebi tarde demais quem realmente me enganou.)", BG_MURAL, SEM_SPRITE }
 };
 static const int NUM_FALAS_FINAL_INJ_JULIANA = sizeof(falasFinalInjusticaJuliana) / sizeof(falasFinalInjusticaJuliana[0]);
 

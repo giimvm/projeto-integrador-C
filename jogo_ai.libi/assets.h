@@ -48,11 +48,17 @@ typedef struct {
     Music musicaMenu;
     Music musicaJogo;
     Sound sfxClick;
+    Sound sfxClicks[5];
     Sound sfxBrilho;
+    Sound sfxEscritorio;
+    Sound sfxLinkOk;
     bool temMusicaMenu;
     bool temMusicaJogo;
     bool temSfxClick;
+    bool temSfxClicks[5];
     bool temSfxBrilho;
+    bool temSfxEscritorio;
+    bool temSfxLinkOk;
 } GerenciadorAssets;
 
 static inline const char *ResolverCaminho(const char *relativo, char *buffer, int tam) {
@@ -150,15 +156,123 @@ static inline void IniciarGerenciadorAssets(GerenciadorAssets *g) {
     if (!FileExists(m2)) m2 = ResolverCaminho("jogo_ai.libi/src/audio/ai.libi_2.wav", buf, sizeof(buf));
     if (FileExists(m2)) { g->musicaJogo = LoadMusicStream(m2); g->musicaJogo.looping = true; g->temMusicaJogo = true; }
 
-    // Novo som de click suave em WAV (fallback para mp3 se nao existir)
-    const char *s1 = ResolverCaminho("src/audio/ai.libi_3_click.wav", buf, sizeof(buf));
-    if (!FileExists(s1)) s1 = ResolverCaminho("jogo_ai.libi/src/audio/ai.libi_3_click.wav", buf, sizeof(buf));
-    if (!FileExists(s1)) s1 = ResolverCaminho("src/audio/ai.libi_3_click.mp3", buf, sizeof(buf));
-    if (FileExists(s1)) { g->sfxClick = LoadSound(s1); g->temSfxClick = true; }
+    // 5 presets procedurais de click suave e tecnologico
+    {
+        const int sr = 22050;
+        for (int p = 0; p < 5; p++) {
+            float dur = (p == 0) ? 0.022f : (p == 1) ? 0.028f : (p == 2) ? 0.018f : (p == 3) ? 0.032f : 0.024f;
+            int frames = (int)(sr * dur);
+            short *samples = (short *)MemAlloc((unsigned int)frames * sizeof(short));
+            if (samples) {
+                unsigned int rng = 7331u + (unsigned int)p * 1307u;
+                float lp = 0.0f;
+                for (int i = 0; i < frames; i++) {
+                    float t = (float)i / (float)sr;
+                    float u = t / dur;
+                    float env = expf(-u * 6.5f) * (u < 0.08f ? (u / 0.08f) : 1.0f);
+                    rng = rng * 1664525u + 1013904223u;
+                    float noise = ((float)(rng & 0xFFFF) / 32768.0f) - 1.0f;
+                    lp = lp * 0.72f + noise * 0.28f;
+                    float val = 0.0f;
+                    if (p == 0) {
+                        // Soft Tactile Click: suave e seco
+                        val = (lp * 0.65f + sinf(2.0f * 3.14159f * 420.0f * t) * 0.35f) * env * 0.35f;
+                    } else if (p == 1) {
+                        // Wood/Glass Tap: grave suave
+                        val = (sinf(2.0f * 3.14159f * (520.0f - 220.0f * u) * t) * 0.75f + lp * 0.25f) * env * 0.34f;
+                    } else if (p == 2) {
+                        // Micro Switch: clique mecanico curtinho
+                        val = (noise * 0.45f * expf(-u * 10.0f) + sinf(2.0f * 3.14159f * 680.0f * t) * 0.35f) * env * 0.32f;
+                    } else if (p == 3) {
+                        // Soft UI Pop: bolha digital grave
+                        val = sinf(2.0f * 3.14159f * (340.0f + 260.0f * u) * t) * env * 0.34f;
+                    } else {
+                        // Clean Tick: tick neutro discreto
+                        val = (lp * 0.4f + sinf(2.0f * 3.14159f * 840.0f * t) * 0.45f) * env * 0.28f;
+                    }
+                    if (val > 0.9f) val = 0.9f;
+                    if (val < -0.9f) val = -0.9f;
+                    samples[i] = (short)(val * 32767.0f);
+                }
+                Wave w = { (unsigned int)frames, (unsigned int)sr, 16, 1, samples };
+                g->sfxClicks[p] = LoadSoundFromWave(w);
+                g->temSfxClicks[p] = true;
+                MemFree(samples);
+            }
+        }
+        if (g->temSfxClicks[0]) {
+            g->sfxClick = g->sfxClicks[0];
+            g->temSfxClick = true;
+        }
+    }
 
     const char *s2 = ResolverCaminho("src/audio/ai.libi_4_brilho.mp3", buf, sizeof(buf));
     if (!FileExists(s2)) s2 = ResolverCaminho("jogo_ai.libi/src/audio/ai.libi_4_brilho.mp3", buf, sizeof(buf));
     if (FileExists(s2)) { g->sfxBrilho = LoadSound(s2); g->temSfxBrilho = true; }
+
+    // Som procedural de cadeira sendo puxada + cliques de teclado (0.75s, 22050Hz)
+    {
+        const int sr = 22050;
+        const int frames = (int)(sr * 0.75f);
+        short *samples = (short *)MemAlloc((unsigned int)frames * sizeof(short));
+        if (samples) {
+            unsigned int rng = 1337u;
+            for (int i = 0; i < frames; i++) {
+                float t = (float)i / (float)sr;
+                rng = rng * 1664525u + 1013904223u;
+                float noise = ((float)(rng & 0xFFFF) / 32768.0f) - 1.0f;
+                float val = 0.0f;
+                // 0.00 - 0.28s: rangido grave suave de cadeira sendo puxada
+                if (t < 0.28f) {
+                    float env = sinf((t / 0.28f) * 3.14159f);
+                    val += (sinf(t * 2.0f * 3.14159f * 115.0f) * 0.45f + noise * 0.35f) * env * 0.30f;
+                }
+                // 0.32 - 0.72s: rajada rapida de teclas mecanicas + click
+                for (int k = 0; k < 5; k++) {
+                    float tk = 0.32f + k * 0.075f;
+                    if (t >= tk && t < tk + 0.025f) {
+                        float env = 1.0f - (t - tk) / 0.025f;
+                        val += (noise * 0.7f + sinf((t - tk) * 1800.0f) * 0.3f) * env * 0.38f;
+                    }
+                }
+                if (val > 0.9f) val = 0.9f;
+                if (val < -0.9f) val = -0.9f;
+                samples[i] = (short)(val * 32767.0f);
+            }
+            Wave w = { (unsigned int)frames, (unsigned int)sr, 16, 1, samples };
+            g->sfxEscritorio = LoadSoundFromWave(w);
+            g->temSfxEscritorio = true;
+            MemFree(samples);
+        }
+    }
+
+    // Som positivo curto de ligacao correta no Mural (0.16s, chime ascendente)
+    {
+        const int sr = 22050;
+        const int frames = (int)(sr * 0.16f);
+        short *samples = (short *)MemAlloc((unsigned int)frames * sizeof(short));
+        if (samples) {
+            for (int i = 0; i < frames; i++) {
+                float t = (float)i / (float)sr;
+                float u = (float)i / (float)frames;
+                float f = (u < 0.45f) ? 523.25f : 783.99f;
+                float env = expf(-u * 4.5f) * (u < 0.05f ? (u / 0.05f) : 1.0f);
+                float val = (sinf(2.0f * 3.14159f * f * t) * 0.7f + sinf(2.0f * 3.14159f * f * 2.0f * t) * 0.2f) * env * 0.30f;
+                if (val > 0.9f) val = 0.9f;
+                if (val < -0.9f) val = -0.9f;
+                samples[i] = (short)(val * 32767.0f);
+            }
+            Wave w = { (unsigned int)frames, (unsigned int)sr, 16, 1, samples };
+            g->sfxLinkOk = LoadSoundFromWave(w);
+            g->temSfxLinkOk = true;
+            MemFree(samples);
+        }
+    }
+}
+
+static inline Sound ObterSfxClick(const GerenciadorAssets *g, int preset) {
+    if (preset >= 0 && preset < 5 && g->temSfxClicks[preset]) return g->sfxClicks[preset];
+    return g->sfxClick;
 }
 
 static inline void DescarregarGerenciadorAssets(GerenciadorAssets *g) {
@@ -177,8 +291,13 @@ static inline void DescarregarGerenciadorAssets(GerenciadorAssets *g) {
     }
     if (g->temMusicaMenu) UnloadMusicStream(g->musicaMenu);
     if (g->temMusicaJogo) UnloadMusicStream(g->musicaJogo);
-    if (g->temSfxClick) UnloadSound(g->sfxClick);
+    if (g->temSfxClick && !g->temSfxClicks[0]) UnloadSound(g->sfxClick);
+    for (int i = 0; i < 5; i++) {
+        if (g->temSfxClicks[i]) UnloadSound(g->sfxClicks[i]);
+    }
     if (g->temSfxBrilho) UnloadSound(g->sfxBrilho);
+    if (g->temSfxEscritorio) UnloadSound(g->sfxEscritorio);
+    if (g->temSfxLinkOk) UnloadSound(g->sfxLinkOk);
 }
 
 static inline Vector2 ObterMouseVirtual(Rectangle destTela) {
@@ -294,15 +413,8 @@ static inline void DesenharHoverCyberRosa(Rectangle r, float t, double tempo) {
     DrawLineEx((Vector2){ ax - 5.0f * t, cy + 6.0f * t }, (Vector2){ ax + 1.0f * t, cy }, 2.0f, rosaClaro);
 }
 
-// Botao solto com seta rosa animada, brilho e sublinhado neon no hover
+// Botao solto apenas com seta rosa animada e texto rosa no hover (sem retangulo)
 static inline void DesenharBotaoSolto(Font f, Rectangle r, const char *texto, float fontSize, float hoverT, double tempo, Color corBase) {
-    if (hoverT > 0.02f) {
-        DrawRectangleGradientH((int)r.x, (int)r.y + 4, (int)(r.width * (0.45f + 0.55f * hoverT)), (int)r.height - 8,
-            ColorAlpha(COR_ROSA_NEON, 0.14f * hoverT), ColorAlpha(COR_ROSA_NEON, 0.0f));
-        DrawLineEx((Vector2){ r.x + 12.0f, r.y + r.height - 4.0f },
-                   (Vector2){ r.x + 12.0f + (r.width - 24.0f) * hoverT, r.y + r.height - 4.0f },
-                   2.0f, ColorAlpha(COR_ROSA_NEON, 0.75f * hoverT));
-    }
     DesenharHoverCyberRosa(r, hoverT, tempo);
     float textX = r.x + 16.0f + 18.0f * hoverT;
     float textY = r.y + (r.height - fontSize) * 0.5f;
@@ -489,16 +601,26 @@ static inline void DesenharBarraCyberInclinada(Rectangle area, float valor) {
     }
 }
 
-// Icone de menu (3 barrinhas vetoriais sem Unicode)
+// Icone de menu tecnologico discreto (barras assimetricas + nos de dados + [M])
 static inline void DesenharIconeMenu(Rectangle r, Vector2 mouse) {
     bool hover = CheckCollisionPointRec(mouse, r);
-    Color c = hover ? COR_ROSA_NEON : WHITE;
-    float w = 26.0f;
-    float x = r.x + (r.width - w) * 0.5f;
-    float y = r.y + 10.0f;
+    Color c = hover ? COR_CIANO_NEON : ColorAlpha(COR_ROXO_NEON, 0.9f);
+    Color cTxt = hover ? WHITE : ColorAlpha(LIGHTGRAY, 0.85f);
+    // Cantoneiras tecnologicas sutis
+    float cs = 6.0f;
+    DrawLineEx((Vector2){ r.x, r.y + cs }, (Vector2){ r.x, r.y }, 1.5f, c);
+    DrawLineEx((Vector2){ r.x, r.y }, (Vector2){ r.x + cs, r.y }, 1.5f, c);
+    DrawLineEx((Vector2){ r.x + r.width - cs, r.y + r.height }, (Vector2){ r.x + r.width, r.y + r.height }, 1.5f, c);
+    DrawLineEx((Vector2){ r.x + r.width, r.y + r.height - cs }, (Vector2){ r.x + r.width, r.y + r.height }, 1.5f, c);
+
+    float x = r.x + 11.0f;
+    float y = r.y + 11.0f;
+    float largs[3] = { 20.0f, 14.0f, 18.0f };
     for (int i = 0; i < 3; i++) {
-        DrawRectangleRounded((Rectangle){ x, y + i * 7.0f, w, 3.0f }, 0.5f, 4, c);
+        DrawCircle((int)x, (int)(y + i * 7.0f + 1.0f), 1.8f, c);
+        DrawRectangleRounded((Rectangle){ x + 5.0f, y + i * 7.0f, largs[i], 2.2f }, 0.5f, 4, cTxt);
     }
+    DrawText("[M]", (int)(r.x + r.width - 20), (int)(r.y + r.height - 13), 10, ColorAlpha(c, 0.9f));
 }
 
 static inline void DesenharTextoQuebrado(Font font, const char *texto, Rectangle area, float fontSize, float spacing, Color cor) {

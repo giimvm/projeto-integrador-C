@@ -8,9 +8,9 @@
 #include <math.h>
 
 #define MURAL_NUM_PESSOAS 3 // 0=Caio, 1=Juliana, 2=Gabriel
-#define MURAL_NUM_EV_OFIC 5 // 0..4 -> Cenas 3..7 (provas oficiais)
-#define MURAL_NUM_AMB     3 // 5..7 -> Pistas ambiguas complementares
-#define MURAL_NUM_TOTAL   8 // 0..4 oficiais + 5..7 ambiguas
+#define MURAL_NUM_EV_OFIC 5 // 0..4 -> Cenas 3..7 (provas de logica proposicional)
+#define MURAL_NUM_AMB     4 // 5..8 -> Pistas ambiguas extras (A1..A4)
+#define MURAL_NUM_TOTAL   9 // 0..4 oficiais + 5..8 ambiguas
 
 typedef struct {
     int abaEsquerda;        // 0=Caso, 1=Pessoas, 2=Provas & Pistas
@@ -37,7 +37,14 @@ typedef struct {
     int arrastandoTipo;     // 0=nenhum, 1=pessoa, 2=evidencia no mural, 3=evidencia do inventario
     int arrastandoIdx;
     Vector2 dragOffset;
+    Vector2 dragInicioMouse;
+    bool clicouPessoaSemArrastar;
     int pessoaSelecionada;  // -1 = nenhuma, 0..2 = aguardando clique em uma evidencia para ligar
+
+    // Ferramenta limitada de "IA" Falsa (2 usos por run)
+    int iaUsosRestantes;
+    char iaAviso[96];
+    float iaAvisoTimer;
 
     // Audio player rapido na aba Provas
     bool audioTocando;
@@ -46,7 +53,8 @@ typedef struct {
     // Caches para os mugshots no mural
     CacheTextura cachePessoas[MURAL_NUM_PESSOAS];
     CacheTextura cacheEvImg;
-    float hoverAbas[4];     // 3 abas + Fechar
+    float hoverAbas[6];     // 3 abas + Fechar + IA + Auto-Organizar
+    bool muralAbertoUmaVez;
 } EstadoMural;
 
 static inline void DescarregarMuralCaches(EstadoMural *m) {
@@ -72,21 +80,23 @@ static inline void IniciarMural(EstadoMural *m) {
     m->arrastandoTipo = 0;
     m->arrastandoIdx = -1;
     m->pessoaSelecionada = -1;
+    m->iaUsosRestantes = 2;
 
-    // Posicoes iniciais equilibradas das 3 fotos (Mugshots) no Mural
-    m->posPessoa[0] = (Vector2){ 125.0f, 92.0f };  // Caio
-    m->posPessoa[1] = (Vector2){ 438.0f, 92.0f };  // Juliana
-    m->posPessoa[2] = (Vector2){ 745.0f, 92.0f };  // Gabriel
+    // Fotos em formato de COLUNA a esquerda do Mural (sem sobrepor evidencias)
+    m->posPessoa[0] = (Vector2){ 120.0f, 95.0f };   // Caio
+    m->posPessoa[1] = (Vector2){ 120.0f, 258.0f };  // Juliana
+    m->posPessoa[2] = (Vector2){ 120.0f, 421.0f };  // Gabriel
 
     // Posicoes padrao
-    m->posEv[0] = (Vector2){ 255.0f, 340.0f };
-    m->posEv[1] = (Vector2){ 438.0f, 305.0f };
-    m->posEv[2] = (Vector2){ 745.0f, 305.0f };
-    m->posEv[3] = (Vector2){ 585.0f, 340.0f };
-    m->posEv[4] = (Vector2){ 220.0f, 305.0f };
-    m->posEv[5] = (Vector2){ 585.0f, 215.0f }; // Mensagens apagadas de Gabriel (auto-ligada a Gabriel)
-    m->posEv[6] = (Vector2){ 280.0f, 410.0f }; // Ligacao 02:47
-    m->posEv[7] = (Vector2){ 600.0f, 410.0f }; // Barro e fibra no barranco
+    m->posEv[0] = (Vector2){ 425.0f, 95.0f };   // P1 Audio
+    m->posEv[1] = (Vector2){ 425.0f, 258.0f };  // P2 Foto
+    m->posEv[2] = (Vector2){ 425.0f, 421.0f };  // P3 GPS
+    m->posEv[3] = (Vector2){ 695.0f, 115.0f };  // P4 Nuvem
+    m->posEv[4] = (Vector2){ 695.0f, 235.0f };  // P5 Mobi / Video
+    m->posEv[5] = (Vector2){ 695.0f, 395.0f };  // A1 Msgs apagadas
+    m->posEv[6] = (Vector2){ 425.0f, 176.0f };  // A2 Chamada 02:47
+    m->posEv[7] = (Vector2){ 695.0f, 315.0f };  // A3 Fibra e barro
+    m->posEv[8] = (Vector2){ 695.0f, 465.0f };  // A4 Arquivo de empresa (Projeto de IA)
 
     for (int i = 0; i < MURAL_NUM_TOTAL; i++) {
         m->evLigadaA[i] = -1;
@@ -95,14 +105,14 @@ static inline void IniciarMural(EstadoMural *m) {
     m->evExigeDupla[5] = true; // Mensagens de Gabriel: ligada a Gabriel, falta conectar outra pessoa
 }
 
-// Sincroniza provas oficiais (3..7) e evidencias ambiguas automaticas por cena atual
+// Sincroniza provas de logica (mesmo se erradas -> aparecem como Nao Validadas) e evidencias ambiguas
 static inline void SincronizarMuralComProvas(EstadoMural *m, int culpado, int cenaAtual, const int statusProva[8]) {
     bool ehJu = (culpado == 0);
 
-    // 1. Provas Oficiais (0..4 -> Cenas 3..7)
+    // 1. Provas de Logica Proposicional (0..4 -> Cenas 3..7)
     for (int i = 0; i < MURAL_NUM_EV_OFIC; i++) {
         int cena = i + 3;
-        if (statusProva[cena] == 1 && !m->evProcessada[i]) {
+        if ((statusProva[cena] == 1 || statusProva[cena] == -1) && !m->evProcessada[i]) {
             m->evProcessada[i] = true;
             m->evDesbloqueada[i] = true;
             if (i == 1) {
@@ -110,40 +120,45 @@ static inline void SincronizarMuralComProvas(EstadoMural *m, int culpado, int ce
                 m->evPosicionada[i] = true;
                 m->evLigadaA[i] = 1;
                 m->evAutoLigadaA[i] = true;
-                m->posEv[i] = (Vector2){ m->posPessoa[1].x, m->posPessoa[1].y + 210.0f };
+                m->posEv[i] = (Vector2){ 425.0f, 258.0f };
             } else if (i == 2) {
                 // Prova 3: Celular de Gabriel -> ligado a Gabriel (2)
                 m->evPosicionada[i] = true;
                 m->evLigadaA[i] = 2;
                 m->evAutoLigadaA[i] = true;
-                m->posEv[i] = (Vector2){ m->posPessoa[2].x, m->posPessoa[2].y + 210.0f };
+                m->posEv[i] = (Vector2){ 425.0f, 421.0f };
             } else if (i == 4) {
                 // Prova 5: Corrida Mobi (Juliana=1) ou Camera Estacionamento (Caio=0)
                 int alvo = ehJu ? 1 : 0;
                 m->evPosicionada[i] = true;
                 m->evLigadaA[i] = alvo;
                 m->evAutoLigadaA[i] = true;
-                m->posEv[i] = (Vector2){ m->posPessoa[alvo].x + (ehJu ? 145.0f : 0.0f), m->posPessoa[alvo].y + 210.0f };
+                m->posEv[i] = (Vector2){ 695.0f, ehJu ? 235.0f : 95.0f };
             }
         }
     }
 
-    // 2. Evidencias Ambiguas Complementares (automaticas ao atingir a cena)
-    // Index 5: Mensagens apagadas de Gabriel (Cena >= 3) -> ligada a Gabriel (2), falta conectar outra pessoa!
+    // 2. Evidencias Ambiguas (automaticas por cena)
+    // Index 5 (A1): Mensagens apagadas de Gabriel (Cena >= 3) -> ligada a Gabriel (2), falta conectar outra pessoa
     if (cenaAtual >= 3 && !m->evProcessada[5]) {
         m->evProcessada[5] = true;
         m->evDesbloqueada[5] = true;
         m->evPosicionada[5] = true;
-        m->evLigadaA[5] = 2; // Gabriel
+        m->evLigadaA[5] = 2;
         m->evAutoLigadaA[5] = true;
-        m->posEv[5] = (Vector2){ 585.0f, 215.0f };
+        m->posEv[5] = (Vector2){ 695.0f, 395.0f };
     }
-    // Index 6: Chamada curta 02:47 (Cena >= 5) -> vai para o inventario
+    // Index 8 (A4): Arquivo de empresa - Projeto de IA (Cena >= 4) -> vai para o inventario
+    if (cenaAtual >= 4 && !m->evProcessada[8]) {
+        m->evProcessada[8] = true;
+        m->evDesbloqueada[8] = true;
+    }
+    // Index 6 (A2): Chamada curta 02:47 (Cena >= 5) -> vai para o inventario
     if (cenaAtual >= 5 && !m->evProcessada[6]) {
         m->evProcessada[6] = true;
         m->evDesbloqueada[6] = true;
     }
-    // Index 7: Barro e fibra de tecido no barranco (Cena >= 6) -> vai para o inventario
+    // Index 7 (A3): Barro e fibra de tecido no barranco (Cena >= 6) -> vai para o inventario
     if (cenaAtual >= 6 && !m->evProcessada[7]) {
         m->evProcessada[7] = true;
         m->evDesbloqueada[7] = true;
@@ -177,6 +192,7 @@ static inline const char *NomeCurtoEvidenciaMural(int idx, int culpado) {
         case 5: return "A1: Msgs Apagadas";
         case 6: return "A2: Chamada 02:47";
         case 7: return "A3: Fibra e Barro";
+        case 8: return "A4: Projeto IA";
     }
     return "Evidência";
 }
@@ -192,6 +208,7 @@ static inline const char *SlotCurtoMural(int idx, int culpado) {
         case 5: return "A1: Msgs";
         case 6: return "A2: 02:47";
         case 7: return "A3: Fibra";
+        case 8: return "A4: Proj IA";
     }
     return "Pista";
 }
@@ -208,6 +225,7 @@ static inline const char *OndeAchadaEvidenciaMural(int idx, int culpado) {
         case 5: return "Logs temporários recuperados do aparelho de Gabriel (02:15)";
         case 6: return "Antena da região do galpão — chamada de 14s às 02:47";
         case 7: return "Perícia de campo na borda do barranco (Cena 5)";
+        case 8: return "Servidor acadêmico / NEXARA — autoria corrompida (Cena 4)";
     }
     return "";
 }
@@ -225,25 +243,30 @@ static inline const char *ConteudoAmbiguoMural(int idx, int culpado) {
     if (idx == 7) {
         return "Fibras sintéticas escuras e barro úmido na borda do barranco. Compatível com jaqueta universitária padrão.";
     }
+    if (idx == 8) {
+        return "Arquivo de empresa: rascunho de arquitetura de IA ligado à NEXARA, mas os metadados de autoria foram apagados. Não está claro se foi Juliana ou Caio quem escreveu. De quem é o projeto?";
+    }
     return "";
 }
 
-static inline int AtualizarMural(EstadoMural *m, int culpado, const int statusProva[8], Vector2 mouse, float dt, Sound sfxClick, bool temSfx) {
-    (void)culpado;
+static inline int AtualizarMural(EstadoMural *m, int culpado, int cenaAtual, const int statusProva[8], Vector2 mouse, float dt, Sound sfxClick, bool temSfx, Sound sfxLinkOk, bool temSfxLinkOk) {
     if (m->audioTocando) m->audioTempo += dt;
+    if (m->iaAvisoTimer > 0.0f) m->iaAvisoTimer -= dt;
 
     Rectangle painelEsq = { 24, 66, 340, 630 };
     Rectangle areaMural = { 378, 66, 878, 516 };
     Rectangle areaInv   = { 378, 592, 878, 104 };
 
+    Rectangle btnOrg    = { 620, 16, 200, 38 };
+    Rectangle btnIA     = { 835, 16, 245, 38 };
     Rectangle btnFechar = { 1095, 16, 161, 38 };
     Rectangle abas[3] = {
         { painelEsq.x + 12, painelEsq.y + 12, 100, 34 },
         { painelEsq.x + 120, painelEsq.y + 12, 100, 34 },
         { painelEsq.x + 228, painelEsq.y + 12, 100, 34 }
     };
-    Rectangle btnsHover[4] = { abas[0], abas[1], abas[2], btnFechar };
-    AtualizarHover(btnsHover, m->hoverAbas, 4, mouse, dt);
+    Rectangle btnsHover[6] = { abas[0], abas[1], abas[2], btnFechar, btnIA, btnOrg };
+    AtualizarHover(btnsHover, m->hoverAbas, 6, mouse, dt);
 
     if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_D)) {
         m->audioTocando = false;
@@ -262,6 +285,96 @@ static inline int AtualizarMural(EstadoMural *m, int culpado, const int statusPr
     }
 
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+        if (CheckCollisionPointRec(mouse, btnOrg)) {
+            if (temSfx) PlaySound(sfxClick);
+            // Reposiciona as 3 fotos em colunas no topo (Gabriel no centro, pois liga aos dois)
+            m->posPessoa[0] = (Vector2){ 115.0f, 92.0f };  // Caio (Esquerda)
+            m->posPessoa[2] = (Vector2){ 440.0f, 92.0f };  // Gabriel (Centro)
+            m->posPessoa[1] = (Vector2){ 765.0f, 92.0f };  // Juliana (Direita)
+            int cntP[3] = { 0, 0, 0 }; // 0=Caio, 1=Juliana, 2=Gabriel
+            int cntCG = 0, cntGJ = 0, cntCJ = 0, cntSolto = 0;
+            for (int i = 0; i < MURAL_NUM_TOTAL; i++) {
+                if (!m->evPosicionada[i]) continue;
+                int a = m->evLigadaA[i];
+                int b = m->evLigadaB[i];
+                if (a >= 0 && b >= 0) {
+                    if ((a == 0 && b == 2) || (a == 2 && b == 0)) {
+                        m->posEv[i] = (Vector2){ 277.0f, 198.0f + cntCG * 88.0f };
+                        cntCG++;
+                    } else if ((a == 2 && b == 1) || (a == 1 && b == 2)) {
+                        m->posEv[i] = (Vector2){ 602.0f, 198.0f + cntGJ * 88.0f };
+                        cntGJ++;
+                    } else {
+                        m->posEv[i] = (Vector2){ 440.0f, 462.0f - cntCJ * 82.0f };
+                        cntCJ++;
+                    }
+                } else if (a == 0) {
+                    m->posEv[i] = (Vector2){ 115.0f, 222.0f + cntP[0] * 84.0f };
+                    cntP[0]++;
+                } else if (a == 1) {
+                    m->posEv[i] = (Vector2){ 765.0f, 222.0f + cntP[1] * 84.0f };
+                    cntP[1]++;
+                } else if (a == 2) {
+                    m->posEv[i] = (Vector2){ 440.0f, 222.0f + cntP[2] * 84.0f };
+                    cntP[2]++;
+                } else {
+                    m->posEv[i] = (Vector2){ 277.0f + (cntSolto % 2) * 325.0f, 360.0f + (cntSolto / 2) * 84.0f };
+                    cntSolto++;
+                }
+            }
+            m->zoom = 1.0f;
+            m->pan = (Vector2){ 0.0f, 0.0f };
+            snprintf(m->iaAviso, sizeof(m->iaAviso), "Mural organizado automaticamente!");
+            m->iaAvisoTimer = 2.0f;
+            return 0;
+        }
+        if (CheckCollisionPointRec(mouse, btnIA) && m->iaUsosRestantes > 0) {
+            int totalDesb = 0;
+            for (int i = 0; i < MURAL_NUM_TOTAL; i++) {
+                if (m->evDesbloqueada[i]) totalDesb++;
+            }
+            if (totalDesb == 0) {
+                snprintf(m->iaAviso, sizeof(m->iaAviso), "Eu não tenho artefatos suficientes para ajudar!");
+                m->iaAvisoTimer = 3.0f;
+                return 0;
+            }
+            if (cenaAtual < 5) {
+                snprintf(m->iaAviso, sizeof(m->iaAviso), "Não tenho contexto suficiente do caso para ajudar!");
+                m->iaAvisoTimer = 3.5f;
+                return 0;
+            }
+            int candidatos[MURAL_NUM_AMB];
+            int nCand = 0;
+            // IA trabalha apenas sobre evidencias extras (A1..A4) ja desbloqueadas
+            for (int i = MURAL_NUM_EV_OFIC; i < MURAL_NUM_TOTAL; i++) {
+                if (!m->evDesbloqueada[i]) continue;
+                if (i == 5) {
+                    if (!m->evPosicionada[i] || m->evLigadaB[i] < 0) candidatos[nCand++] = i;
+                } else {
+                    if (!m->evPosicionada[i] || m->evLigadaA[i] < 0) candidatos[nCand++] = i;
+                }
+            }
+            if (nCand > 0) {
+                if (temSfx) PlaySound(sfxClick);
+                int esc = candidatos[GetRandomValue(0, nCand - 1)];
+                // Randomiza entre Caio (0) e Juliana (1) para nao entregar o culpado
+                int alvoHip = GetRandomValue(0, 1);
+                m->evPosicionada[esc] = true;
+                if (esc == 5) {
+                    m->evLigadaA[esc] = 2; // Gabriel
+                    m->evLigadaB[esc] = alvoHip;
+                } else {
+                    m->evLigadaA[esc] = alvoHip;
+                }
+                m->iaUsosRestantes--;
+                snprintf(m->iaAviso, sizeof(m->iaAviso), "IA: Hipótese aplicada em uma evidência extra!");
+                m->iaAvisoTimer = 3.0f;
+            } else {
+                snprintf(m->iaAviso, sizeof(m->iaAviso), "Não tenho contexto suficiente do caso para ajudar!");
+                m->iaAvisoTimer = 3.5f;
+            }
+            return 0;
+        }
         if (CheckCollisionPointRec(mouse, btnFechar)) {
             if (temSfx) PlaySound(sfxClick);
             m->audioTocando = false;
@@ -295,9 +408,9 @@ static inline int AtualizarMural(EstadoMural *m, int culpado, const int statusPr
 
         if (CheckCollisionPointRec(mouse, painelEsq)) {
             int maxI = (m->abaEsquerda == 1) ? 3 : (m->abaEsquerda == 2) ? MURAL_NUM_TOTAL : 0;
-            float rowH = (m->abaEsquerda == 2) ? 31.0f : 42.0f;
+            float rowH = (m->abaEsquerda == 2) ? 28.0f : 42.0f;
             for (int i = 0; i < maxI; i++) {
-                Rectangle rItem = { painelEsq.x + 14, painelEsq.y + 60 + i * rowH, painelEsq.width - 28, rowH - 4 };
+                Rectangle rItem = { painelEsq.x + 14, painelEsq.y + 60 + i * rowH, painelEsq.width - 28, rowH - 3 };
                 if (CheckCollisionPointRec(mouse, rItem)) {
                     if (temSfx) PlaySound(sfxClick);
                     m->itemEsquerda = i;
@@ -317,7 +430,7 @@ static inline int AtualizarMural(EstadoMural *m, int culpado, const int statusPr
         if (CheckCollisionPointRec(mouse, areaInv)) {
             for (int i = 0; i < MURAL_NUM_TOTAL; i++) {
                 if (!m->evDesbloqueada[i] || m->evPosicionada[i]) continue;
-                Rectangle slot = { areaInv.x + 12 + i * 107, areaInv.y + 32, 101, 60 };
+                Rectangle slot = { areaInv.x + 10 + i * 96, areaInv.y + 32, 91, 60 };
                 if (CheckCollisionPointRec(mouse, slot)) {
                     if (temSfx) PlaySound(sfxClick);
                     m->arrastandoTipo = 3;
@@ -337,7 +450,6 @@ static inline int AtualizarMural(EstadoMural *m, int culpado, const int statusPr
                 Rectangle rEv = { m->posEv[i].x - 82, m->posEv[i].y - 36, 164, 72 };
                 if (CheckCollisionPointRec(mw, rEv)) {
                     acertouAlgo = true;
-                    if (temSfx) PlaySound(sfxClick);
                     if (m->pessoaSelecionada >= 0) {
                         if (m->evExigeDupla[i] && m->evLigadaA[i] >= 0) {
                             if (m->pessoaSelecionada != m->evLigadaA[i]) {
@@ -347,8 +459,23 @@ static inline int AtualizarMural(EstadoMural *m, int culpado, const int statusPr
                             m->evLigadaA[i] = m->pessoaSelecionada;
                             m->evAutoLigadaA[i] = false;
                         }
+                        int alvoCulp = (culpado == 0) ? 1 : 0; // 0=Caio, 1=Juliana
+                        bool ligouCerto = false;
+                        if (i < MURAL_NUM_EV_OFIC) {
+                            int alvoCerto = (i == 1) ? 1 : (i == 2) ? 2 : alvoCulp;
+                            ligouCerto = (m->evLigadaA[i] == alvoCerto);
+                        } else if (i == 5) {
+                            ligouCerto = (m->evLigadaB[5] == alvoCulp);
+                        } else if (i == 8) {
+                            ligouCerto = (m->evLigadaA[8] == 1); // Projeto sempre da Juliana
+                        } else {
+                            ligouCerto = (m->evLigadaA[i] == alvoCulp);
+                        }
+                        if (ligouCerto && temSfxLinkOk) PlaySound(sfxLinkOk);
+                        else if (temSfx) PlaySound(sfxClick);
                         m->pessoaSelecionada = -1;
                     } else {
+                        if (temSfx) PlaySound(sfxClick);
                         m->arrastandoTipo = 2;
                         m->arrastandoIdx = i;
                         m->dragOffset = (Vector2){ mw.x - m->posEv[i].x, mw.y - m->posEv[i].y };
@@ -361,13 +488,14 @@ static inline int AtualizarMural(EstadoMural *m, int culpado, const int statusPr
 
             if (!acertouAlgo) {
                 for (int p = MURAL_NUM_PESSOAS - 1; p >= 0; p--) {
-                    Rectangle rPes = { m->posPessoa[p].x - 62, m->posPessoa[p].y - 78, 124, 156 };
+                    Rectangle rPes = { m->posPessoa[p].x - 58, m->posPessoa[p].y - 68, 116, 136 };
                     if (CheckCollisionPointRec(mw, rPes)) {
                         acertouAlgo = true;
                         if (temSfx) PlaySound(sfxClick);
-                        m->pessoaSelecionada = (m->pessoaSelecionada == p) ? -1 : p;
                         m->arrastandoTipo = 1;
                         m->arrastandoIdx = p;
+                        m->dragInicioMouse = mouse;
+                        m->clicouPessoaSemArrastar = true;
                         m->dragOffset = (Vector2){ mw.x - m->posPessoa[p].x, mw.y - m->posPessoa[p].y };
                         m->abaEsquerda = 1;
                         m->itemEsquerda = p;
@@ -412,6 +540,11 @@ static inline int AtualizarMural(EstadoMural *m, int culpado, const int statusPr
             m->pan.y += delta.y;
             m->panMouseInicio = mouse;
         } else if (m->arrastandoTipo == 1 && m->arrastandoIdx >= 0) {
+            float dx = mouse.x - m->dragInicioMouse.x;
+            float dy = mouse.y - m->dragInicioMouse.y;
+            if (dx * dx + dy * dy > 36.0f) {
+                m->clicouPessoaSemArrastar = false;
+            }
             Vector2 mw = TelaParaMural(mouse, areaMural, m->zoom, m->pan);
             m->posPessoa[m->arrastandoIdx] = (Vector2){ mw.x - m->dragOffset.x, mw.y - m->dragOffset.y };
         } else if (m->arrastandoTipo == 2 && m->arrastandoIdx >= 0) {
@@ -421,7 +554,10 @@ static inline int AtualizarMural(EstadoMural *m, int culpado, const int statusPr
     }
 
     if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
-        if (m->arrastandoTipo == 3 && m->arrastandoIdx >= 0 && CheckCollisionPointRec(mouse, areaMural)) {
+        if (m->arrastandoTipo == 1 && m->arrastandoIdx >= 0 && m->clicouPessoaSemArrastar) {
+            int p = m->arrastandoIdx;
+            m->pessoaSelecionada = (m->pessoaSelecionada == p) ? -1 : p;
+        } else if (m->arrastandoTipo == 3 && m->arrastandoIdx >= 0 && CheckCollisionPointRec(mouse, areaMural)) {
             Vector2 mw = TelaParaMural(mouse, areaMural, m->zoom, m->pan);
             m->evPosicionada[m->arrastandoIdx] = true;
             m->posEv[m->arrastandoIdx] = mw;
@@ -429,6 +565,7 @@ static inline int AtualizarMural(EstadoMural *m, int culpado, const int statusPr
         }
         m->arrastandoTipo = 0;
         m->arrastandoIdx = -1;
+        m->clicouPessoaSemArrastar = false;
         m->arrastandoPan = false;
     }
 
@@ -453,10 +590,17 @@ static inline void DesenharMural(EstadoMural *m, GerenciadorAssets *assets, int 
                                   int provasValidadas, Vector2 mouse, double tempo, float camZoom) {
     DesenharFundoCyberGrid(tempo, COR_CIANO_NEON);
 
-    DesenharBadgeCyber(assets->fontes.titulo, (Vector2){ 24, 16 }, "AI.LIBI // MURAL TÁTICO 2.5D", 22, COR_CIANO_NEON);
-    DesenharBadgeCyber(assets->fontes.bold, (Vector2){ 435, 18 },
-        TextFormat("PROVAS NO MURAL: %d/5 VALIDADAS", provasValidadas), 19,
+    DesenharBadgeCyber(assets->fontes.titulo, (Vector2){ 24, 16 }, "MURAL TÁTICO.IA", 23, COR_CIANO_NEON);
+    DesenharBadgeCyber(assets->fontes.bold, (Vector2){ 310, 18 },
+        TextFormat("PROVAS: %d/5 VALIDADAS", provasValidadas), 18,
         (provasValidadas >= 4) ? COR_VERDE_OK : COR_AMARELO_AVISO);
+    Rectangle btnOrg = { 620, 16, 200, 38 };
+    DesenharBotaoCyber(assets->fontes.bold, btnOrg, "AUTO-ORGANIZAR", 17, m->hoverAbas[5], tempo, COR_CIANO_NEON);
+    Rectangle btnIA = { 835, 16, 245, 38 };
+    DesenharBotaoCyber(assets->fontes.bold, btnIA,
+        TextFormat("ASSISTENTE IA (%d/2)", m->iaUsosRestantes), 18,
+        (m->iaUsosRestantes > 0) ? m->hoverAbas[4] : 0.0f, tempo,
+        (m->iaUsosRestantes > 0) ? COR_ROXO_NEON : GRAY);
     Rectangle btnFechar = { 1095, 16, 161, 38 };
     DesenharBotaoCyber(assets->fontes.bold, btnFechar, "FECHAR [D]", 20, m->hoverAbas[3], tempo, COR_ROSA_NEON);
 
@@ -475,15 +619,23 @@ static inline void DesenharMural(EstadoMural *m, GerenciadorAssets *assets, int 
     DrawRectangle((int)painelEsq.x + 12, (int)painelEsq.y + 52, (int)painelEsq.width - 24, 2, ColorAlpha(COR_ROXO_NEON, 0.45f));
 
     if (m->abaEsquerda == 0) {
-        const char *infoCaso =
-            "OCORRÊNCIA: Homicídio de Gabriel Moura (22 anos).\n"
-            "LOCAL: Festa universitária / barranco a 200m do galpão (Recife, 2045).\n"
-            "JANELA DA MORTE: 02:50 - 03:05 (golpe na têmpora).\n\n"
-            "COMO USAR O MURAL:\n"
-            "- Arraste evidências do inventário inferior para o mural.\n"
-            "- Clique em uma FOTO e depois em uma EVIDÊNCIA para ligá-las.\n"
-            "- Evidências ambíguas ligadas a Gabriel precisam que você conecte a outra ponta!\n"
-            "- Clique direito desfaz a ligação.";
+        const char *infoCaso = notaGab
+            ? "OCORRÊNCIA: Homicídio de Gabriel Moura (22 anos).\n"
+              "LOCAL: Festa universitária / barranco a 200m do galpão (Recife, 2045).\n"
+              "JANELA DA MORTE: 02:50 - 03:05 (golpe na têmpora).\n\n"
+              "COMO USAR O MURAL:\n"
+              "- Arraste evidências do inventário inferior para o mural.\n"
+              "- Clique em uma FOTO e depois em uma EVIDÊNCIA para ligá-las.\n"
+              "- Evidências ambíguas ligadas a Gabriel precisam que você conecte a outra ponta!\n"
+              "- Clique direito desfaz a ligação."
+            : "OCORRÊNCIA: Desaparecimento de Gabriel Moura (22 anos).\n"
+              "LOCAL: Festa universitária / Campus Recife (2045).\n"
+              "STATUS: Buscas em andamento. Última vez visto por volta das 03:00.\n\n"
+              "COMO USAR O MURAL:\n"
+              "- Arraste evidências do inventário inferior para o mural.\n"
+              "- Clique em uma FOTO e depois em uma EVIDÊNCIA para ligá-las.\n"
+              "- Evidências ambíguas ligadas a Gabriel precisam que você conecte a outra ponta!\n"
+              "- Clique direito desfaz a ligação.";
         DesenharTextoQuebrado(assets->fontes.regular, infoCaso,
             (Rectangle){ painelEsq.x + 16, painelEsq.y + 66, painelEsq.width - 32, 540 }, 19, 1.0f, WHITE);
     } else if (m->abaEsquerda == 1) {
@@ -495,63 +647,98 @@ static inline void DesenharMural(EstadoMural *m, GerenciadorAssets *assets, int 
             DrawRectangleLinesEx(r, 1.5f, sel ? COR_ROSA_NEON : ColorAlpha(COR_ROXO_NEON, 0.5f));
             DrawTextEx(assets->fontes.bold, nomesP[i], (Vector2){ r.x + 10, r.y + 8 }, 19, 1.0f, sel ? COR_ROSA_NEON : WHITE);
         }
+        const char *fotosMug[3] = {
+            "AssetsRay/Personagens/Caio/CaioMugshot.png",
+            "AssetsRay/Personagens/Julia/juliana retrato.png",
+            "AssetsRay/Personagens/Gabriel/GabrielMugshot.png"
+        };
+        Color coresMug[3] = { COR_ROXO_NEON, COR_ROSA_NEON, COR_CIANO_NEON };
+        Rectangle rMug = { painelEsq.x + 16, painelEsq.y + 196, 98, 118 };
+        DrawRectangleRounded(rMug, 0.06f, 4, (Color){ 16, 10, 28, 230 });
+        DesenharTexturaContain(ObterTexturaCache(&m->cachePessoas[m->itemEsquerda], fotosMug[m->itemEsquerda]), rMug, WHITE);
+        DrawRectangleRoundedLinesEx(rMug, 0.06f, 4, 1.5f, coresMug[m->itemEsquerda]);
+
+        const char *cabecalhoP[3] = {
+            "CAIO VASCONCELOS\n22 anos\nCiência da Comp.\nPai influente na NEXARA",
+            "JULIANA COSTA\n21 anos\nCiência da Comp.\nDisputava vaga na NEXARA",
+            "GABRIEL MOURA\n22 anos (Vítima)\nCiência da Comp.\nVisto na festa (~03:00)"
+        };
+        DesenharTextoQuebrado(assets->fontes.regular, cabecalhoP[m->itemEsquerda],
+            (Rectangle){ painelEsq.x + 124, painelEsq.y + 198, painelEsq.width - 140, 118 }, 18, 1.0f, WHITE);
+
         char ficha[512] = "";
         if (m->itemEsquerda == 0) {
             snprintf(ficha, sizeof(ficha),
-                "CAIO VASCONCELOS | 22 anos\nEstudante de Computação. Pai influente na NEXARA.\n\nNOTAS:\n%s%s",
+                "NOTAS DO CASO:\n%s%s",
                 notaCaio ? "- Discutiu com Gabriel na festa. Diz ter saído às 02:40 (relógio sem bateria).\n" : "- Ainda não interrogado.\n",
                 (notaConfronto && culpado == 1) ? "- Confrontado sobre vídeo adulterado e repasses; chamou advogado." : "");
         } else if (m->itemEsquerda == 1) {
             snprintf(ficha, sizeof(ficha),
-                "JULIANA COSTA | 21 anos\nEstudante dedicada, disputava vaga na NEXARA.\n\nNOTAS:\n%s%s",
+                "NOTAS DO CASO:\n%s%s",
                 notaJu ? "- Brigou com Gabriel pela vaga na NEXARA. Diz ter saído às 03:00 de app.\n" : "- Ainda não interrogada.\n",
                 (notaConfronto && culpado == 0) ? "- Confrontada sobre corrida Mobi às 03:41; pediu advogado." : "");
         } else {
             snprintf(ficha, sizeof(ficha),
-                "GABRIEL MOURA | 22 anos (Vítima)\nCiência da Computação.\n\nREGISTROS:\n- Visto na festa (~03:00).\n%s%s",
-                notaGab ? "- Corpo encontrado no barranco (golpe na têmpora entre 02:50 e 03:05).\n" : "",
+                "REGISTROS DA VÍTIMA:\n%s%s",
+                notaGab ? "- Corpo encontrado no barranco (golpe na têmpora entre 02:50 e 03:05).\n" : "- Buscas em andamento.\n",
                 notaNuvem ? "- Backup na nuvem recuperado pela perícia." : "");
         }
-        DesenharTextoQuebrado(assets->fontes.regular, ficha, (Rectangle){ painelEsq.x + 16, painelEsq.y + 204, painelEsq.width - 32, 405 }, 20, 1.0f, LIGHTGRAY);
+        DesenharTextoQuebrado(assets->fontes.regular, ficha, (Rectangle){ painelEsq.x + 16, painelEsq.y + 324, painelEsq.width - 32, 285 }, 19, 1.0f, LIGHTGRAY);
     } else {
         for (int i = 0; i < MURAL_NUM_TOTAL; i++) {
             bool ehAmb = (i >= MURAL_NUM_EV_OFIC);
             bool desb = m->evDesbloqueada[i];
             int st = ehAmb ? (desb ? 1 : 0) : statusProva[i + 3];
-            Rectangle r = { painelEsq.x + 14, painelEsq.y + 60 + i * 31.0f, painelEsq.width - 28, 27 };
+            Rectangle r = { painelEsq.x + 14, painelEsq.y + 60 + i * 28.0f, painelEsq.width - 28, 25 };
             bool sel = (m->itemEsquerda == i);
             Color cSt = (st == 1) ? (ehAmb ? COR_AMARELO_AVISO : COR_VERDE_OK) : (st == -1) ? COR_VERMELHO_ERR : GRAY;
             DrawRectangleRec(r, sel ? ColorAlpha(COR_CIANO_NEON, 0.22f) : (Color){ 24, 14, 44, 200 });
             DrawRectangleLinesEx(r, 1.2f, sel ? COR_CIANO_NEON : ColorAlpha(cSt, 0.65f));
-            DrawTextEx(assets->fontes.bold, NomeCurtoEvidenciaMural(i, culpado), (Vector2){ r.x + 10, r.y + 5 }, 17, 1.0f, sel ? COR_CIANO_NEON : (desb ? WHITE : GRAY));
+            const char *nomeLista = (!desb && st == 0) ? "??????" : NomeCurtoEvidenciaMural(i, culpado);
+            DrawTextEx(assets->fontes.bold, nomeLista, (Vector2){ r.x + 10, r.y + 4 }, 16, 1.0f, sel ? COR_CIANO_NEON : (st == -1 ? COR_VERMELHO_ERR : (desb ? WHITE : GRAY)));
         }
 
         int idx = m->itemEsquerda;
         char det[640] = "";
         if (idx < MURAL_NUM_EV_OFIC) {
             int cena = idx + 3;
-            if (statusProva[cena] != 1) {
-                snprintf(det, sizeof(det), "PROVA OFICIAL\nSTATUS: %s\n\nONDE FOI ACHADA:\n%s",
-                    (statusProva[cena] == -1) ? "PERDIDA NO DESAFIO" : "AINDA NÃO DESBLOQUEADA",
+            if (statusProva[cena] == 0) {
+                snprintf(det, sizeof(det), "PROVA DE LÓGICA (??????)\nSTATUS: BLOQUEADA\n\nContinue investigando para descobrir e desbloquear esta evidência.");
+            } else if (statusProva[cena] == -1) {
+                snprintf(det, sizeof(det), "PROVA DE LÓGICA (NÃO VALIDADA)\nVocê errou o desafio lógico. A pista aparece no Mural em vermelho e pode ser conectada, mas não valida a lógica.\n\nONDE FOI ACHADA:\n%s",
                     OndeAchadaEvidenciaMural(idx, culpado));
             } else {
                 const char *classif = (respostaProva[cena] == 1) ? "Marcada: REAL" : (respostaProva[cena] == 2) ? "Marcada: GERADA POR IA" : "Não classificada";
                 const char *muralSt = m->evPosicionada[idx]
                     ? (m->evLigadaA[idx] >= 0 ? "No Mural (Ligada)" : "No Mural (Sem linha)")
                     : "No Inventário inferior";
-                snprintf(det, sizeof(det), "PROVA OFICIAL\nONDE FOI ACHADA:\n%s\n\nANÁLISE: %s\nMURAL: %s",
+                snprintf(det, sizeof(det), "PROVA DE LÓGICA\nONDE FOI ACHADA:\n%s\n\nANÁLISE: %s\nMURAL: %s",
                     OndeAchadaEvidenciaMural(idx, culpado), classif, muralSt);
             }
         } else {
             if (!m->evDesbloqueada[idx]) {
-                snprintf(det, sizeof(det), "PISTA AMBÍGUA (PERÍCIA)\nSTATUS: Ainda não encontrada.\n\nONDE SURGE:\n%s",
-                    OndeAchadaEvidenciaMural(idx, culpado));
+                snprintf(det, sizeof(det), "PISTA EXTRA (??????)\nSTATUS: BLOQUEADA\n\nContinue a investigação para descobrir esta pista.");
             } else {
-                snprintf(det, sizeof(det), "PISTA AMBÍGUA (COMPLEMENTAR)\nONDE FOI ACHADA:\n%s\n\nCONTEÚDO:\n%s",
+                snprintf(det, sizeof(det), "PISTA AMBÍGUA (EXTRA)\nONDE FOI ACHADA:\n%s\n\nCONTEÚDO:\n%s",
                     OndeAchadaEvidenciaMural(idx, culpado), ConteudoAmbiguoMural(idx, culpado));
             }
         }
-        DesenharTextoQuebrado(assets->fontes.regular, det, (Rectangle){ painelEsq.x + 16, painelEsq.y + 318, painelEsq.width - 32, 260 }, 18, 1.0f, WHITE);
+        // Preview de imagem da evidencia quando disponivel e desbloqueada
+        const char *imgEv = NULL;
+        bool evVisivel = (idx < MURAL_NUM_EV_OFIC) ? (statusProva[idx + 3] != 0) : m->evDesbloqueada[idx];
+        if (evVisivel) {
+            if (idx == 1) imgEv = (culpado == 0) ? "AssetsRay/Personagens/Julia/novodeepfake.png" : "AssetsRay/Personagens/Julia/juliafotoreal.png";
+            else if (idx == 4 && culpado == 1) imgEv = "AssetsRay/Evidências/caiodeepfake.png";
+        }
+        float yDet = painelEsq.y + 322;
+        if (imgEv != NULL) {
+            Rectangle rPrev = { painelEsq.x + 16, painelEsq.y + 318, painelEsq.width - 32, 126 };
+            DrawRectangleRounded(rPrev, 0.05f, 4, (Color){ 12, 8, 24, 230 });
+            DesenharTexturaContain(ObterTexturaCache(&m->cacheEvImg, imgEv), rPrev, WHITE);
+            DrawRectangleRoundedLinesEx(rPrev, 0.05f, 4, 1.4f, COR_CIANO_NEON);
+            yDet = painelEsq.y + 452;
+        }
+        DesenharTextoQuebrado(assets->fontes.regular, det, (Rectangle){ painelEsq.x + 16, yDet, painelEsq.width - 32, (painelEsq.y + 615) - yDet }, 17, 1.0f, WHITE);
 
         if (idx == 0 && statusProva[3] == 1) {
             Rectangle btnPlay = { painelEsq.x + 18, painelEsq.y + 620 - 46, 130, 34 };
@@ -583,31 +770,34 @@ static inline void DesenharMural(EstadoMural *m, GerenciadorAssets *assets, int 
 
     if (m->pessoaSelecionada >= 0) {
         Vector2 pOrig = MuralParaTela(m->posPessoa[m->pessoaSelecionada], areaMural, m->zoom, m->pan);
-        pOrig.x -= parX * 0.3f;
-        pOrig.y -= parY * 0.3f;
+        pOrig.x -= parX * 0.35f - 58.0f * m->zoom;
+        pOrig.y -= parY * 0.35f;
         DesenharLinhaTecnologicaMural(pOrig, mouse, COR_ROSA_NEON, tempo, false);
     }
 
-    // Linhas tecnologicas (ponta A e ponta B para ligacoes duplas)
+    // Linhas tecnologicas (conectam da borda direita da Foto ate a borda esquerda da Evidencia)
     for (int i = 0; i < MURAL_NUM_TOTAL; i++) {
         if (!m->evPosicionada[i]) continue;
         Vector2 pEv = MuralParaTela(m->posEv[i], areaMural, m->zoom, m->pan);
-        pEv.x -= parX * 0.50f; pEv.y -= parY * 0.50f;
+        pEv.x -= parX * 0.50f + 82.0f * m->zoom;
+        pEv.y -= parY * 0.50f;
 
         if (m->evLigadaA[i] >= 0) {
             Vector2 p1 = MuralParaTela(m->posPessoa[m->evLigadaA[i]], areaMural, m->zoom, m->pan);
-            p1.x -= parX * 0.35f; p1.y -= parY * 0.35f;
+            p1.x -= parX * 0.35f - 58.0f * m->zoom;
+            p1.y -= parY * 0.35f;
             Color cLinha = m->evAutoLigadaA[i] ? COR_CIANO_NEON : COR_ROSA_NEON;
             DesenharLinhaTecnologicaMural(p1, pEv, cLinha, tempo, m->evAutoLigadaA[i]);
         }
         if (m->evLigadaB[i] >= 0) {
             Vector2 p2 = MuralParaTela(m->posPessoa[m->evLigadaB[i]], areaMural, m->zoom, m->pan);
-            p2.x -= parX * 0.35f; p2.y -= parY * 0.35f;
+            p2.x -= parX * 0.35f - 58.0f * m->zoom;
+            p2.y -= parY * 0.35f;
             DesenharLinhaTecnologicaMural(p2, pEv, COR_AMARELO_AVISO, tempo, false);
         }
     }
 
-    // 3 Mugshots
+    // 3 Mugshots em formato de COLUNA
     const char *fotosP[3] = {
         "AssetsRay/Personagens/Caio/CaioMugshot.png",
         "AssetsRay/Personagens/Julia/juliana retrato.png",
@@ -619,7 +809,7 @@ static inline void DesenharMural(EstadoMural *m, GerenciadorAssets *assets, int 
     for (int p = 0; p < MURAL_NUM_PESSOAS; p++) {
         Vector2 sc = MuralParaTela(m->posPessoa[p], areaMural, m->zoom, m->pan);
         sc.x -= parX * 0.35f; sc.y -= parY * 0.35f;
-        float w = 124.0f * m->zoom, h = 156.0f * m->zoom;
+        float w = 116.0f * m->zoom, h = 136.0f * m->zoom;
         Rectangle rCard = { sc.x - w * 0.5f, sc.y - h * 0.5f, w, h };
 
         DrawRectangleRounded((Rectangle){ rCard.x + 8 * m->zoom, rCard.y + 10 * m->zoom, w, h }, 0.08f, 6, (Color){ 0, 0, 0, 155 });
@@ -635,7 +825,7 @@ static inline void DesenharMural(EstadoMural *m, GerenciadorAssets *assets, int 
         DrawTextEx(assets->fontes.bold, titP[p], (Vector2){ rCard.x + 10 * m->zoom, rCard.y + h - 26 * m->zoom }, fmaxf(12.0f, 19.0f * m->zoom), 1.0f, corP[p]);
     }
 
-    // Cards das Evidencias (Oficiais e Ambiguas)
+    // Cards das Evidencias (Logicas + Ambiguas)
     for (int i = 0; i < MURAL_NUM_TOTAL; i++) {
         if (!m->evPosicionada[i]) continue;
         Vector2 sc = MuralParaTela(m->posEv[i], areaMural, m->zoom, m->pan);
@@ -643,20 +833,29 @@ static inline void DesenharMural(EstadoMural *m, GerenciadorAssets *assets, int 
         float w = 164.0f * m->zoom, h = 72.0f * m->zoom;
         Rectangle rEv = { sc.x - w * 0.5f, sc.y - h * 0.5f, w, h };
 
+        bool ehAmb = (i >= MURAL_NUM_EV_OFIC);
+        bool naoValidada = (!ehAmb && statusProva[i + 3] == -1);
+
         DrawRectangleRounded((Rectangle){ rEv.x + 7 * m->zoom, rEv.y + 9 * m->zoom, w, h }, 0.12f, 6, (Color){ 0, 0, 0, 155 });
-        DrawRectangleRounded(rEv, 0.12f, 6, (i >= MURAL_NUM_EV_OFIC) ? (Color){ 36, 22, 42, 245 } : (Color){ 18, 24, 46, 245 });
+        DrawRectangleRounded(rEv, 0.12f, 6, naoValidada ? (Color){ 46, 14, 24, 245 } : (ehAmb ? (Color){ 36, 22, 42, 245 } : (Color){ 18, 24, 46, 245 }));
 
         bool faltaSegunda = (m->evExigeDupla[i] && m->evLigadaB[i] < 0);
-        Color cB = faltaSegunda ? COR_AMARELO_AVISO : (m->evLigadaA[i] >= 0 ? COR_VERDE_OK : COR_AMARELO_AVISO);
+        Color cB = naoValidada ? COR_VERMELHO_ERR
+                 : faltaSegunda ? COR_AMARELO_AVISO
+                 : (m->evLigadaA[i] >= 0 ? COR_VERDE_OK : COR_AMARELO_AVISO);
         float pulseB = faltaSegunda ? (0.55f + 0.45f * sinf((float)tempo * 5.0f)) : 1.0f;
 
         DrawRectangleRoundedLinesEx(rEv, 0.12f, 6, 2.0f, ColorAlpha(cB, pulseB));
         DrawTextEx(assets->fontes.bold, NomeCurtoEvidenciaMural(i, culpado),
-            (Vector2){ rEv.x + 10 * m->zoom, rEv.y + 10 * m->zoom }, fmaxf(11.0f, 16.0f * m->zoom), 1.0f, WHITE);
+            (Vector2){ rEv.x + 10 * m->zoom, rEv.y + 10 * m->zoom }, fmaxf(11.0f, 16.0f * m->zoom), 1.0f, naoValidada ? COR_VERMELHO_ERR : WHITE);
 
         const char *nomesS[3] = { "Caio", "Juliana", "Gabriel" };
         char sub[64] = "Sem ligação";
-        if (faltaSegunda && m->evLigadaA[i] >= 0) {
+        if (naoValidada && m->evLigadaA[i] < 0) {
+            snprintf(sub, sizeof(sub), "NÃO VALIDADA");
+        } else if (naoValidada && m->evLigadaA[i] >= 0) {
+            snprintf(sub, sizeof(sub), "N/VAL -> %s", nomesS[m->evLigadaA[i]]);
+        } else if (faltaSegunda && m->evLigadaA[i] >= 0) {
             snprintf(sub, sizeof(sub), "LIGAR +1 PESSOA!");
         } else if (m->evLigadaA[i] >= 0 && m->evLigadaB[i] >= 0) {
             snprintf(sub, sizeof(sub), "%s <-> %s", nomesS[m->evLigadaA[i]], nomesS[m->evLigadaB[i]]);
@@ -682,37 +881,41 @@ static inline void DesenharMural(EstadoMural *m, GerenciadorAssets *assets, int 
     if (m->pessoaSelecionada >= 0) {
         DrawTextEx(assets->fontes.bold, "CLIQUE EM UMA EVIDÊNCIA PARA CONECTAR A LINHA >>",
             (Vector2){ areaMural.x + 150, areaMural.y + 14 }, 18, 1.0f, COR_AMARELO_AVISO);
+    } else {
+        DrawTextEx(assets->fontes.regular, "Clique na foto p/ ligar | Arraste p/ mover | Clique direito desfaz",
+            (Vector2){ areaMural.x + 145, areaMural.y + 14 }, 17, 1.0f, ColorAlpha(LIGHTGRAY, 0.78f));
     }
 
     // =========================================================================
-    // 3. INVENTARIO INFERIOR (8 SLOTS: 5 OFICIAIS + 3 AMBIGUAS)
+    // 3. INVENTARIO INFERIOR (9 SLOTS: P1..P5 LOGICA + A1..A4 AMBIGUAS)
     // =========================================================================
     Rectangle areaInv = { 378, 592, 878, 104 };
     DesenharPainelCyber(areaInv, COR_ROXO_NEON);
-    DrawTextEx(assets->fontes.bold, "INVENTÁRIO (ARRASTE P/ MURAL | P1..P5 OFICIAIS, A1..A3 PISTAS AMBÍGUAS):",
+    DrawTextEx(assets->fontes.bold, "INVENTÁRIO (ARRASTE P/ MURAL | P1..P5 LÓGICA, A1..A4 EXTRAS):",
         (Vector2){ areaInv.x + 12, areaInv.y + 8 }, 16, 1.0f, COR_CIANO_NEON);
 
     for (int i = 0; i < MURAL_NUM_TOTAL; i++) {
-        Rectangle slot = { areaInv.x + 12 + i * 107, areaInv.y + 32, 101, 60 };
+        Rectangle slot = { areaInv.x + 10 + i * 96, areaInv.y + 32, 91, 60 };
         bool ehAmb = (i >= MURAL_NUM_EV_OFIC);
         bool desb = m->evDesbloqueada[i];
         int st = ehAmb ? (desb ? 1 : 0) : statusProva[i + 3];
+        bool naoVal = (!ehAmb && st == -1);
 
-        if (st != 1) {
+        if (!desb && st == 0) {
             DrawRectangleRounded(slot, 0.14f, 4, (Color){ 16, 10, 28, 180 });
             DrawRectangleRoundedLinesEx(slot, 0.14f, 4, 1.2f, ColorAlpha(GRAY, 0.4f));
-            DrawTextEx(assets->fontes.regular, (st == -1) ? "PERDIDA" : "BLOQ.", (Vector2){ slot.x + 12, slot.y + 21 }, 15, 1.0f, GRAY);
+            DrawTextEx(assets->fontes.regular, "??????", (Vector2){ slot.x + 16, slot.y + 21 }, 15, 1.0f, GRAY);
         } else if (m->evPosicionada[i]) {
-            DrawRectangleRounded(slot, 0.14f, 4, (Color){ 14, 34, 32, 180 });
-            DrawRectangleRoundedLinesEx(slot, 0.14f, 4, 1.2f, ColorAlpha(COR_VERDE_OK, 0.55f));
-            DrawTextEx(assets->fontes.bold, SlotCurtoMural(i, culpado), (Vector2){ slot.x + 8, slot.y + 10 }, 15, 1.0f, LIGHTGRAY);
-            DrawTextEx(assets->fontes.bold, "NO MURAL", (Vector2){ slot.x + 8, slot.y + 34 }, 14, 1.0f, COR_VERDE_OK);
+            DrawRectangleRounded(slot, 0.14f, 4, naoVal ? (Color){ 42, 12, 20, 180 } : (Color){ 14, 34, 32, 180 });
+            DrawRectangleRoundedLinesEx(slot, 0.14f, 4, 1.2f, ColorAlpha(naoVal ? COR_VERMELHO_ERR : COR_VERDE_OK, 0.6f));
+            DrawTextEx(assets->fontes.bold, SlotCurtoMural(i, culpado), (Vector2){ slot.x + 6, slot.y + 10 }, 14, 1.0f, LIGHTGRAY);
+            DrawTextEx(assets->fontes.bold, naoVal ? "N/ VALID." : "NO MURAL", (Vector2){ slot.x + 6, slot.y + 34 }, 13, 1.0f, naoVal ? COR_VERMELHO_ERR : COR_VERDE_OK);
         } else {
             bool hov = CheckCollisionPointRec(mouse, slot);
-            DrawRectangleRounded(slot, 0.14f, 4, hov ? (Color){ 46, 22, 74, 240 } : (Color){ 28, 16, 52, 235 });
-            DrawRectangleRoundedLinesEx(slot, 0.14f, 4, 1.8f, hov ? COR_ROSA_NEON : (ehAmb ? COR_AMARELO_AVISO : COR_CIANO_NEON));
-            DrawTextEx(assets->fontes.bold, SlotCurtoMural(i, culpado), (Vector2){ slot.x + 8, slot.y + 10 }, 15, 1.0f, WHITE);
-            DrawTextEx(assets->fontes.regular, "Arrastar", (Vector2){ slot.x + 8, slot.y + 34 }, 14, 1.0f, ehAmb ? COR_AMARELO_AVISO : COR_CIANO_NEON);
+            DrawRectangleRounded(slot, 0.14f, 4, hov ? (Color){ 46, 22, 74, 240 } : (naoVal ? (Color){ 46, 14, 24, 235 } : (Color){ 28, 16, 52, 235 }));
+            DrawRectangleRoundedLinesEx(slot, 0.14f, 4, 1.8f, hov ? COR_ROSA_NEON : (naoVal ? COR_VERMELHO_ERR : (ehAmb ? COR_AMARELO_AVISO : COR_CIANO_NEON)));
+            DrawTextEx(assets->fontes.bold, SlotCurtoMural(i, culpado), (Vector2){ slot.x + 6, slot.y + 10 }, 14, 1.0f, naoVal ? COR_VERMELHO_ERR : WHITE);
+            DrawTextEx(assets->fontes.regular, naoVal ? "N/ Valid." : "Arrastar", (Vector2){ slot.x + 6, slot.y + 34 }, 13, 1.0f, naoVal ? COR_VERMELHO_ERR : (ehAmb ? COR_AMARELO_AVISO : COR_CIANO_NEON));
         }
     }
 
@@ -722,6 +925,17 @@ static inline void DesenharMural(EstadoMural *m, GerenciadorAssets *assets, int 
         DrawRectangleRoundedLinesEx(ghost, 0.12f, 6, 2.0f, COR_ROSA_NEON);
         DrawTextEx(assets->fontes.bold, NomeCurtoEvidenciaMural(m->arrastandoIdx, culpado),
             (Vector2){ ghost.x + 10, ghost.y + 24 }, 16, 1.0f, WHITE);
+    }
+
+    if (m->iaAvisoTimer > 0.0f) {
+        float alphaAv = fminf(1.0f, m->iaAvisoTimer);
+        Rectangle rAv = { 430, 78, 774, 48 };
+        DrawRectangleRounded(rAv, 0.18f, 6, (Color){ 12, 8, 24, (unsigned char)(245 * alphaAv) });
+        DrawRectangleRoundedLinesEx(rAv, 0.18f, 6, 2.0f, ColorAlpha(COR_AMARELO_AVISO, alphaAv));
+        Vector2 szAv = MeasureTextEx(assets->fontes.bold, m->iaAviso, 21, 1.0f);
+        DrawTextEx(assets->fontes.bold, m->iaAviso,
+            (Vector2){ rAv.x + (rAv.width - szAv.x) * 0.5f, rAv.y + (rAv.height - szAv.y) * 0.5f },
+            21, 1.0f, ColorAlpha(COR_AMARELO_AVISO, alphaAv));
     }
 
     DesenharScanlinesHUD(tempo);
