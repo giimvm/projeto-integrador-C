@@ -104,6 +104,7 @@ typedef struct {
     bool notaNuvemCena6;
     bool notaConfrontoCena7;
     bool podeAcusar;
+    bool setaMuralTutorial;
 
     // Audio da Cena 3
     bool audioTocando;
@@ -207,6 +208,10 @@ static int ContarAmbiguasCorretas(const EstadoJogo *e, const EstadoMural *m) {
         if (!m->evPosicionada[i]) continue;
         if (i == 5) {
             if (m->evLigadaA[i] == 2 && m->evLigadaB[i] == alvoCulp) count++;
+        } else if (i == 8) {
+            if (m->evLigadaA[i] == 1 || m->evLigadaA[i] == alvoCulp) count++;
+        } else if (i == 9) {
+            if (m->evLigadaA[i] == 2 || m->evLigadaB[i] == 2) count++;
         } else {
             if (m->evLigadaA[i] == alvoCulp) count++;
         }
@@ -303,8 +308,13 @@ static void NovoJogo(EstadoJogo *e, EstadoCelular *cel, EstadoMural *mural, Play
     e->devDesbloqueado = dev;
     e->janelaW = jw;
     e->janelaH = jh;
+    // Re-semeia com entropia do instante do clique para garantir runs realmente randomizadas
+    unsigned int seed = (unsigned int)time(NULL) ^ (unsigned int)(GetTime() * 1000000.0) ^ (unsigned int)clock();
+    SetRandomSeed(seed);
+    for (int r = 0; r < 8; r++) GetRandomValue(0, 100);
+
     if (ultCulp < 0) {
-        e->culpado = (GetRandomValue(0, 1) == 0) ? CULPADO_JULIANA : CULPADO_CAIO;
+        e->culpado = (GetRandomValue(0, 99) < 50) ? CULPADO_JULIANA : CULPADO_CAIO;
     } else {
         e->culpado = (ultCulp == (int)CULPADO_JULIANA) ? CULPADO_CAIO : CULPADO_JULIANA;
     }
@@ -373,13 +383,13 @@ static const char *NomeFalanteExibido(const char *falante, const EstadoJogo *e, 
     return falante;
 }
 
-static void DesenharBarraTopo(FontesUI *f, Vector2 mouse, double tempo, float hoverDos, bool podeAcusar, float toastTimer, const char *toastTxt) {
+static void DesenharBarraTopo(FontesUI *f, Vector2 mouse, double tempo, float hoverDos, bool podeAcusar, bool setaMuralTutorial, float toastTimer, const char *toastTxt) {
     if (toastTimer > 0.0f && toastTxt && toastTxt[0] != '\0') {
         float alpha = fminf(1.0f, toastTimer);
-        Rectangle rT = { 22, 14, 420, 38 };
+        Rectangle rT = { 22, 14, 495, 38 };
         DrawRectangleRounded(rT, 0.2f, 6, (Color){ 16, 36, 48, (unsigned char)(230 * alpha) });
         DrawRectangleRoundedLinesEx(rT, 0.2f, 6, 1.5f, ColorAlpha(COR_VERDE_OK, alpha));
-        DrawTextEx(f->bold, toastTxt, (Vector2){ rT.x + 14, rT.y + 9 }, 19, 1.0f, ColorAlpha(COR_VERDE_OK, alpha));
+        DrawTextEx(f->bold, toastTxt, (Vector2){ rT.x + 14, rT.y + 9 }, 18, 1.0f, ColorAlpha(COR_VERDE_OK, alpha));
     }
     if (podeAcusar) {
         Rectangle btnAcusar = { 804, 14, 186, 40 };
@@ -388,7 +398,11 @@ static void DesenharBarraTopo(FontesUI *f, Vector2 mouse, double tempo, float ho
     }
     Rectangle btnDos  = { 1000, 14, 186, 40 };
     Rectangle btnMenu = { 1196, 14, 62, 40 };
-    DesenharBotaoCyber(f->bold, btnDos, "MURAL [D]", 22, hoverDos, tempo, COR_CIANO_NEON);
+    DesenharBotaoCyber(f->bold, btnDos, "MURAL [D]", 22, hoverDos, tempo, setaMuralTutorial ? COR_AMARELO_AVISO : COR_CIANO_NEON);
+    if (setaMuralTutorial) {
+        DesenharSetaTutorialMural((Vector2){ 1093, 122 }, (Vector2){ 1093, 60 }, COR_AMARELO_AVISO, tempo);
+        DrawTextEx(f->bold, "ABRA O MURAL!", (Vector2){ 1028, 128 }, 17, 1.0f, COR_AMARELO_AVISO);
+    }
     bool hovMenu = CheckCollisionPointRec(mouse, btnMenu);
     DrawRectangleRounded(btnMenu, 0.16f, 6, hovMenu ? (Color){ 28, 22, 54, 220 } : (Color){ 14, 10, 28, 175 });
     DrawRectangleRoundedLinesEx(btnMenu, 0.16f, 6, 1.3f, hovMenu ? COR_CIANO_NEON : ColorAlpha(COR_ROXO_NEON, 0.55f));
@@ -831,6 +845,7 @@ int main(void) {
         if (assets.temSfxBrilho) SetSoundVolume(assets.sfxBrilho, e.volSfx);
         if (assets.temSfxEscritorio) SetSoundVolume(assets.sfxEscritorio, e.volSfx);
         if (assets.temSfxLinkOk) SetSoundVolume(assets.sfxLinkOk, e.volSfx);
+        if (assets.temSfxLinkErr) SetSoundVolume(assets.sfxLinkErr, e.volSfx);
         if (e.toastMuralTimer > 0.0f) e.toastMuralTimer -= dt;
 
         if (IsKeyPressed(KEY_F11)) AlternarTelaCheia(&e);
@@ -864,6 +879,7 @@ int main(void) {
                     mural.abaEsquerda = 0;
                     mural.muralAbertoUmaVez = true;
                 }
+                e.setaMuralTutorial = false;
                 e.telaAnterior = e.tela;
                 e.tela = TELA_DOSSIE;
                 abriuMuralNesteFrame = true;
@@ -936,6 +952,7 @@ int main(void) {
                     TocarClick(&assets);
                     SincronizarMuralComProvas(&mural, (int)e.culpado, e.cenaAtual, e.statusProva);
                     mural.abaEsquerda = 0;
+                    e.setaMuralTutorial = false;
                     e.telaAnterior = e.tela;
                     e.tela = TELA_DOSSIE;
                     clicouBarra = true;
@@ -1173,6 +1190,14 @@ int main(void) {
                     }
 
                     // Atualiza notas dinamicas do mural + toast discreto de atualizacao
+                    if (e.seq == SEQ_CENA1_ABERTURA && e.falaIdx >= 1 && !mural.evProcessada[9]) {
+                        mural.evProcessada[9] = true;
+                        mural.evDesbloqueada[9] = true;
+                        SincronizarMuralComProvas(&mural, (int)e.culpado, e.cenaAtual, e.statusProva);
+                        e.setaMuralTutorial = true;
+                        e.toastMuralTimer = 4.5f;
+                        snprintf(e.toastMuralTxt, sizeof(e.toastMuralTxt), "[!] NOVA PISTA: Testemunho dos pais de Gabriel [D]");
+                    }
                     if (e.seq == SEQ_CENA2 && e.falaIdx >= 5 && !e.notaCaioCena2) {
                         e.notaCaioCena2 = true;
                         e.toastMuralTimer = 3.5f;
@@ -1503,7 +1528,7 @@ int main(void) {
 
                 case TELA_DOSSIE: {
                     if (!abriuMuralNesteFrame &&
-                        AtualizarMural(&mural, (int)e.culpado, e.cenaAtual, e.statusProva, mouse, dt, assets.sfxClick, assets.temSfxClick, assets.sfxLinkOk, assets.temSfxLinkOk) == 1) {
+                        AtualizarMural(&mural, (int)e.culpado, e.cenaAtual, e.statusProva, mouse, dt, assets.sfxClick, assets.temSfxClick, assets.sfxLinkOk, assets.temSfxLinkOk, assets.sfxLinkErr, assets.temSfxLinkErr) == 1) {
                         e.tela = e.telaAnterior;
                     }
                 } break;
@@ -2146,7 +2171,7 @@ int main(void) {
         }
 
         if (emGameplay && e.tela != TELA_CUTSCENE) {
-            DesenharBarraTopo(&assets.fontes, mouse, tempo, e.hoverDossieTop[0], e.podeAcusar, e.toastMuralTimer, e.toastMuralTxt);
+            DesenharBarraTopo(&assets.fontes, mouse, tempo, e.hoverDossieTop[0], e.podeAcusar, e.setaMuralTutorial, e.toastMuralTimer, e.toastMuralTxt);
             if (e.tela != TELA_DIALOGO && e.tela != TELA_MINIGAME) {
                 DesenharScanlinesHUD(tempo);
             }

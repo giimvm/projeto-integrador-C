@@ -52,6 +52,7 @@ typedef struct {
     Sound sfxBrilho;
     Sound sfxEscritorio;
     Sound sfxLinkOk;
+    Sound sfxLinkErr;
     bool temMusicaMenu;
     bool temMusicaJogo;
     bool temSfxClick;
@@ -59,6 +60,7 @@ typedef struct {
     bool temSfxBrilho;
     bool temSfxEscritorio;
     bool temSfxLinkOk;
+    bool temSfxLinkErr;
 } GerenciadorAssets;
 
 static inline const char *ResolverCaminho(const char *relativo, char *buffer, int tam) {
@@ -268,6 +270,29 @@ static inline void IniciarGerenciadorAssets(GerenciadorAssets *g) {
             MemFree(samples);
         }
     }
+
+    // Som negativo curto de ligacao errada no Mural (0.20s, tom descendente)
+    {
+        const int sr = 22050;
+        const int frames = (int)(sr * 0.20f);
+        short *samples = (short *)MemAlloc((unsigned int)frames * sizeof(short));
+        if (samples) {
+            for (int i = 0; i < frames; i++) {
+                float t = (float)i / (float)sr;
+                float u = (float)i / (float)frames;
+                float f = (u < 0.50f) ? 240.0f : 165.0f;
+                float env = expf(-u * 4.0f) * (u < 0.04f ? (u / 0.04f) : 1.0f);
+                float val = (sinf(2.0f * 3.14159f * f * t) * 0.65f + sinf(2.0f * 3.14159f * f * 1.5f * t) * 0.25f) * env * 0.34f;
+                if (val > 0.9f) val = 0.9f;
+                if (val < -0.9f) val = -0.9f;
+                samples[i] = (short)(val * 32767.0f);
+            }
+            Wave w = { (unsigned int)frames, (unsigned int)sr, 16, 1, samples };
+            g->sfxLinkErr = LoadSoundFromWave(w);
+            g->temSfxLinkErr = true;
+            MemFree(samples);
+        }
+    }
 }
 
 static inline Sound ObterSfxClick(const GerenciadorAssets *g, int preset) {
@@ -298,6 +323,7 @@ static inline void DescarregarGerenciadorAssets(GerenciadorAssets *g) {
     if (g->temSfxBrilho) UnloadSound(g->sfxBrilho);
     if (g->temSfxEscritorio) UnloadSound(g->sfxEscritorio);
     if (g->temSfxLinkOk) UnloadSound(g->sfxLinkOk);
+    if (g->temSfxLinkErr) UnloadSound(g->sfxLinkErr);
 }
 
 static inline Vector2 ObterMouseVirtual(Rectangle destTela) {

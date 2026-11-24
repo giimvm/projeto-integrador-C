@@ -9,8 +9,8 @@
 
 #define MURAL_NUM_PESSOAS 3 // 0=Caio, 1=Juliana, 2=Gabriel
 #define MURAL_NUM_EV_OFIC 5 // 0..4 -> Cenas 3..7 (provas de logica proposicional)
-#define MURAL_NUM_AMB     4 // 5..8 -> Pistas ambiguas extras (A1..A4)
-#define MURAL_NUM_TOTAL   9 // 0..4 oficiais + 5..8 ambiguas
+#define MURAL_NUM_AMB     5 // 5..9 -> Pistas ambiguas extras (A1..A4 + Pais de Gabriel)
+#define MURAL_NUM_TOTAL   10 // 0..4 oficiais + 5..9 ambiguas
 
 typedef struct {
     int abaEsquerda;        // 0=Caso, 1=Pessoas, 2=Provas & Pistas
@@ -53,8 +53,15 @@ typedef struct {
     // Caches para os mugshots no mural
     CacheTextura cachePessoas[MURAL_NUM_PESSOAS];
     CacheTextura cacheEvImg;
-    float hoverAbas[6];     // 3 abas + Fechar + IA + Auto-Organizar
+    float hoverAbas[7];     // 3 abas + Fechar + IA + Auto-Organizar + Tutorial
     bool muralAbertoUmaVez;
+
+    // Tutorial do Mural
+    bool mostrandoTutorial;
+    bool tutorialVisto;
+    int tutorialPasso;      // 0..2
+    float hoverTutorial[3]; // Anterior, Pular, Proximo/Entendi
+    bool clicouInvSemArrastar;
 } EstadoMural;
 
 static inline void DescarregarMuralCaches(EstadoMural *m) {
@@ -80,23 +87,24 @@ static inline void IniciarMural(EstadoMural *m) {
     m->arrastandoTipo = 0;
     m->arrastandoIdx = -1;
     m->pessoaSelecionada = -1;
-    m->iaUsosRestantes = 2;
+    m->iaUsosRestantes = 5;
 
-    // Fotos em formato de COLUNA a esquerda do Mural (sem sobrepor evidencias)
-    m->posPessoa[0] = (Vector2){ 120.0f, 95.0f };   // Caio
-    m->posPessoa[1] = (Vector2){ 120.0f, 258.0f };  // Juliana
-    m->posPessoa[2] = (Vector2){ 120.0f, 421.0f };  // Gabriel
+    // Mural comeca propositalmente baguncado para incentivar o botao AUTO-ORGANIZAR
+    m->posPessoa[0] = (Vector2){ 245.0f, 155.0f };  // Caio
+    m->posPessoa[1] = (Vector2){ 620.0f, 365.0f };  // Juliana
+    m->posPessoa[2] = (Vector2){ 170.0f, 395.0f };  // Gabriel
 
-    // Posicoes padrao
-    m->posEv[0] = (Vector2){ 425.0f, 95.0f };   // P1 Audio
-    m->posEv[1] = (Vector2){ 425.0f, 258.0f };  // P2 Foto
-    m->posEv[2] = (Vector2){ 425.0f, 421.0f };  // P3 GPS
-    m->posEv[3] = (Vector2){ 695.0f, 115.0f };  // P4 Nuvem
-    m->posEv[4] = (Vector2){ 695.0f, 235.0f };  // P5 Mobi / Video
-    m->posEv[5] = (Vector2){ 695.0f, 395.0f };  // A1 Msgs apagadas
-    m->posEv[6] = (Vector2){ 425.0f, 176.0f };  // A2 Chamada 02:47
-    m->posEv[7] = (Vector2){ 695.0f, 315.0f };  // A3 Fibra e barro
-    m->posEv[8] = (Vector2){ 695.0f, 465.0f };  // A4 Arquivo de empresa (Projeto de IA)
+    // Posicoes iniciais espalhadas
+    m->posEv[0] = (Vector2){ 510.0f, 125.0f };  // P1 Audio
+    m->posEv[1] = (Vector2){ 390.0f, 320.0f };  // P2 Foto
+    m->posEv[2] = (Vector2){ 720.0f, 150.0f };  // P3 GPS
+    m->posEv[3] = (Vector2){ 560.0f, 235.0f };  // P4 Nuvem
+    m->posEv[4] = (Vector2){ 740.0f, 260.0f };  // P5 Mobi / Video
+    m->posEv[5] = (Vector2){ 465.0f, 430.0f };  // A1 Msgs apagadas
+    m->posEv[6] = (Vector2){ 355.0f, 195.0f };  // A2 Chamada 02:47
+    m->posEv[7] = (Vector2){ 730.0f, 435.0f };  // A3 Fibra e barro
+    m->posEv[8] = (Vector2){ 625.0f, 115.0f };  // A4 Arquivo de empresa (Projeto de IA)
+    m->posEv[9] = (Vector2){ 470.0f, 265.0f };  // A5 Testemunho dos pais do Gabriel
 
     for (int i = 0; i < MURAL_NUM_TOTAL; i++) {
         m->evLigadaA[i] = -1;
@@ -163,6 +171,20 @@ static inline void SincronizarMuralComProvas(EstadoMural *m, int culpado, int ce
         m->evProcessada[7] = true;
         m->evDesbloqueada[7] = true;
     }
+
+    // 3. Gatilho do Tutorial do Mural: ao receber o testemunho inicial do Delegado, resolver a 1a logica ou descobrir 4+ pistas
+    if (!m->tutorialVisto) {
+        bool resolveuPrimeiraLogica = (statusProva[3] != 0);
+        int ambDesb = 0;
+        for (int i = MURAL_NUM_EV_OFIC; i < MURAL_NUM_TOTAL; i++) {
+            if (m->evDesbloqueada[i]) ambDesb++;
+        }
+        if (m->evDesbloqueada[9] || resolveuPrimeiraLogica || ambDesb >= 4) {
+            m->mostrandoTutorial = true;
+            m->tutorialPasso = 0;
+            m->tutorialVisto = true;
+        }
+    }
 }
 
 static inline Vector2 MuralParaTela(Vector2 world, Rectangle area, float zoom, Vector2 pan) {
@@ -193,6 +215,7 @@ static inline const char *NomeCurtoEvidenciaMural(int idx, int culpado) {
         case 6: return "A2: Chamada 02:47";
         case 7: return "A3: Fibra e Barro";
         case 8: return "A4: Projeto IA";
+        case 9: return "A5: Pais Gabriel";
     }
     return "Evidência";
 }
@@ -209,6 +232,7 @@ static inline const char *SlotCurtoMural(int idx, int culpado) {
         case 6: return "A2: 02:47";
         case 7: return "A3: Fibra";
         case 8: return "A4: Proj IA";
+        case 9: return "Pais Gab.";
     }
     return "Pista";
 }
@@ -226,6 +250,7 @@ static inline const char *OndeAchadaEvidenciaMural(int idx, int culpado) {
         case 6: return "Antena da região do galpão — chamada de 14s às 02:47";
         case 7: return "Perícia de campo na borda do barranco (Cena 5)";
         case 8: return "Servidor acadêmico / NEXARA — autoria corrompida (Cena 4)";
+        case 9: return "Relato inicial do Delegado Meireles (Cena 1)";
     }
     return "";
 }
@@ -246,10 +271,24 @@ static inline const char *ConteudoAmbiguoMural(int idx, int culpado) {
     if (idx == 8) {
         return "Arquivo de empresa: rascunho de arquitetura de IA ligado à NEXARA, mas os metadados de autoria foram apagados. Não está claro se foi Juliana ou Caio quem escreveu. De quem é o projeto?";
     }
+    if (idx == 9) {
+        return "Testemunho dos pais do Gabriel: falando com quem ele falava na faculdade (Caio e Juliana).";
+    }
     return "";
 }
 
-static inline int AtualizarMural(EstadoMural *m, int culpado, int cenaAtual, const int statusProva[8], Vector2 mouse, float dt, Sound sfxClick, bool temSfx, Sound sfxLinkOk, bool temSfxLinkOk) {
+static inline Rectangle ObterCalloutTutorialMural(int passo) {
+    switch (passo) {
+        case 0: return (Rectangle){ 660, 395, 520, 152 }; // Acima do slot 9 no inventario
+        case 1: return (Rectangle){ 615, 315, 520, 152 }; // Ao lado da foto do Gabriel
+        case 2: return (Rectangle){ 620, 365, 520, 152 }; // Abaixo da ligacao Gabriel -> Evidencia
+        case 3: return (Rectangle){ 470, 180, 520, 152 }; // Abaixo do botao Auto-Organizar
+        case 4: return (Rectangle){ 645, 180, 560, 172 }; // Abaixo do botao Hipotese de IA
+        default: return (Rectangle){ 445, 225, 520, 152 }; // Perto do painel esquerdo
+    }
+}
+
+static inline int AtualizarMural(EstadoMural *m, int culpado, int cenaAtual, const int statusProva[8], Vector2 mouse, float dt, Sound sfxClick, bool temSfx, Sound sfxLinkOk, bool temSfxLinkOk, Sound sfxLinkErr, bool temSfxLinkErr) {
     if (m->audioTocando) m->audioTempo += dt;
     if (m->iaAvisoTimer > 0.0f) m->iaAvisoTimer -= dt;
 
@@ -257,9 +296,91 @@ static inline int AtualizarMural(EstadoMural *m, int culpado, int cenaAtual, con
     Rectangle areaMural = { 378, 66, 878, 516 };
     Rectangle areaInv   = { 378, 592, 878, 104 };
 
-    Rectangle btnOrg    = { 620, 16, 200, 38 };
-    Rectangle btnIA     = { 835, 16, 245, 38 };
-    Rectangle btnFechar = { 1095, 16, 161, 38 };
+    if (m->mostrandoTutorial) {
+        Rectangle card = ObterCalloutTutorialMural(m->tutorialPasso);
+        Rectangle btnAnt  = { card.x + 16, card.y + card.height - 46, 115, 34 };
+        Rectangle btnPul  = { card.x + 141, card.y + card.height - 46, 105, 34 };
+        Rectangle btnProx = { card.x + card.width - 216, card.y + card.height - 46, 200, 34 };
+        Rectangle btnsTut[3] = { btnAnt, btnPul, btnProx };
+        AtualizarHover(btnsTut, m->hoverTutorial, 3, mouse, dt);
+
+        if (IsKeyPressed(KEY_D)) {
+            m->mostrandoTutorial = false;
+            m->audioTocando = false;
+            return 1;
+        }
+        if (IsKeyPressed(KEY_ESCAPE)) {
+            if (temSfx) PlaySound(sfxClick);
+            m->mostrandoTutorial = false;
+            return 0;
+        }
+        if (IsKeyPressed(KEY_LEFT) && m->tutorialPasso > 0) {
+            if (temSfx) PlaySound(sfxClick);
+            m->tutorialPasso--;
+            return 0;
+        }
+        if (m->tutorialPasso != 0 && (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE))) {
+            if (temSfx) PlaySound(sfxClick);
+            if (m->tutorialPasso < 5) m->tutorialPasso++;
+            else m->mostrandoTutorial = false;
+            return 0;
+        }
+        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+            if (m->tutorialPasso == 0) {
+                Rectangle slot9 = { areaInv.x + 10 + 9 * 86, areaInv.y + 32, 81, 60 };
+                if (m->evDesbloqueada[9] && CheckCollisionPointRec(mouse, slot9)) {
+                    if (temSfx) PlaySound(sfxClick);
+                    m->evPosicionada[9] = true;
+                    m->abaEsquerda = 2;
+                    m->itemEsquerda = 9;
+                    m->tutorialPasso = 1;
+                    return 0;
+                }
+            } else if (m->tutorialPasso == 1) {
+                Vector2 mw = TelaParaMural(mouse, areaMural, m->zoom, m->pan);
+                Rectangle rGab = { m->posPessoa[2].x - 58, m->posPessoa[2].y - 68, 116, 136 };
+                if (CheckCollisionPointRec(mw, rGab)) {
+                    if (temSfx) PlaySound(sfxClick);
+                    m->pessoaSelecionada = 2;
+                    m->abaEsquerda = 1;
+                    m->itemEsquerda = 2;
+                    m->tutorialPasso = 2;
+                    return 0;
+                }
+            } else if (m->tutorialPasso == 2 && m->evPosicionada[9]) {
+                Vector2 mw = TelaParaMural(mouse, areaMural, m->zoom, m->pan);
+                Rectangle rEv9 = { m->posEv[9].x - 82, m->posEv[9].y - 36, 164, 72 };
+                if (CheckCollisionPointRec(mw, rEv9)) {
+                    m->evLigadaA[9] = 2;
+                    m->evAutoLigadaA[9] = false;
+                    m->pessoaSelecionada = -1;
+                    m->abaEsquerda = 2;
+                    m->itemEsquerda = 9;
+                    if (temSfxLinkOk) PlaySound(sfxLinkOk);
+                    else if (temSfx) PlaySound(sfxClick);
+                    m->tutorialPasso = 3;
+                    return 0;
+                }
+            }
+
+            if (m->tutorialPasso > 0 && CheckCollisionPointRec(mouse, btnAnt)) {
+                if (temSfx) PlaySound(sfxClick);
+                m->tutorialPasso--;
+            } else if (CheckCollisionPointRec(mouse, btnPul)) {
+                if (temSfx) PlaySound(sfxClick);
+                m->mostrandoTutorial = false;
+            } else if (m->tutorialPasso != 0 && CheckCollisionPointRec(mouse, btnProx)) {
+                if (temSfx) PlaySound(sfxClick);
+                if (m->tutorialPasso < 5) m->tutorialPasso++;
+                else m->mostrandoTutorial = false;
+            }
+        }
+        return 0;
+    }
+
+    Rectangle btnOrg    = { 580, 16, 200, 38 };
+    Rectangle btnIA     = { 795, 16, 260, 38 };
+    Rectangle btnFechar = { 1070, 16, 186, 38 };
     Rectangle abas[3] = {
         { painelEsq.x + 12, painelEsq.y + 12, 100, 34 },
         { painelEsq.x + 120, painelEsq.y + 12, 100, 34 },
@@ -333,20 +454,14 @@ static inline int AtualizarMural(EstadoMural *m, int culpado, int cenaAtual, con
             for (int i = 0; i < MURAL_NUM_TOTAL; i++) {
                 if (m->evDesbloqueada[i]) totalDesb++;
             }
-            if (totalDesb == 0) {
-                snprintf(m->iaAviso, sizeof(m->iaAviso), "Eu não tenho artefatos suficientes para ajudar!");
-                m->iaAvisoTimer = 3.0f;
-                return 0;
-            }
-            if (cenaAtual < 5) {
-                snprintf(m->iaAviso, sizeof(m->iaAviso), "Não tenho contexto suficiente do caso para ajudar!");
+            if (totalDesb < 5) {
+                snprintf(m->iaAviso, sizeof(m->iaAviso), "Contexto insuficiente! Precisa de pelo menos 5 evidências (%d/5).", totalDesb);
                 m->iaAvisoTimer = 3.5f;
                 return 0;
             }
-            int candidatos[MURAL_NUM_AMB];
+            int candidatos[MURAL_NUM_TOTAL];
             int nCand = 0;
-            // IA trabalha apenas sobre evidencias extras (A1..A4) ja desbloqueadas
-            for (int i = MURAL_NUM_EV_OFIC; i < MURAL_NUM_TOTAL; i++) {
+            for (int i = 0; i < MURAL_NUM_TOTAL; i++) {
                 if (!m->evDesbloqueada[i]) continue;
                 if (i == 5) {
                     if (!m->evPosicionada[i] || m->evLigadaB[i] < 0) candidatos[nCand++] = i;
@@ -357,21 +472,28 @@ static inline int AtualizarMural(EstadoMural *m, int culpado, int cenaAtual, con
             if (nCand > 0) {
                 if (temSfx) PlaySound(sfxClick);
                 int esc = candidatos[GetRandomValue(0, nCand - 1)];
-                // Randomiza entre Caio (0) e Juliana (1) para nao entregar o culpado
-                int alvoHip = GetRandomValue(0, 1);
+                int alvoCulp = (culpado == 0) ? 1 : 0;
                 m->evPosicionada[esc] = true;
                 if (esc == 5) {
                     m->evLigadaA[esc] = 2; // Gabriel
-                    m->evLigadaB[esc] = alvoHip;
+                    m->evLigadaB[esc] = GetRandomValue(0, 1);
+                } else if (esc == 9) {
+                    m->evLigadaA[esc] = 2; // Testemunho dos pais -> Gabriel
+                } else if (esc == 8 || esc == 1) {
+                    m->evLigadaA[esc] = 1; // Juliana
+                } else if (esc == 2) {
+                    m->evLigadaA[esc] = 2; // Gabriel
+                } else if (esc < MURAL_NUM_EV_OFIC) {
+                    m->evLigadaA[esc] = alvoCulp;
                 } else {
-                    m->evLigadaA[esc] = alvoHip;
+                    m->evLigadaA[esc] = GetRandomValue(0, 1);
                 }
                 m->iaUsosRestantes--;
-                snprintf(m->iaAviso, sizeof(m->iaAviso), "IA: Hipótese aplicada em uma evidência extra!");
+                snprintf(m->iaAviso, sizeof(m->iaAviso), "Hipótese de IA aplicada: %s conectada!", SlotCurtoMural(esc, culpado));
                 m->iaAvisoTimer = 3.0f;
             } else {
-                snprintf(m->iaAviso, sizeof(m->iaAviso), "Não tenho contexto suficiente do caso para ajudar!");
-                m->iaAvisoTimer = 3.5f;
+                snprintf(m->iaAviso, sizeof(m->iaAviso), "Todas as evidências desbloqueadas já estão conectadas!");
+                m->iaAvisoTimer = 3.0f;
             }
             return 0;
         }
@@ -430,11 +552,13 @@ static inline int AtualizarMural(EstadoMural *m, int culpado, int cenaAtual, con
         if (CheckCollisionPointRec(mouse, areaInv)) {
             for (int i = 0; i < MURAL_NUM_TOTAL; i++) {
                 if (!m->evDesbloqueada[i] || m->evPosicionada[i]) continue;
-                Rectangle slot = { areaInv.x + 10 + i * 96, areaInv.y + 32, 91, 60 };
+                Rectangle slot = { areaInv.x + 10 + i * 86, areaInv.y + 32, 81, 60 };
                 if (CheckCollisionPointRec(mouse, slot)) {
                     if (temSfx) PlaySound(sfxClick);
                     m->arrastandoTipo = 3;
                     m->arrastandoIdx = i;
+                    m->dragInicioMouse = mouse;
+                    m->clicouInvSemArrastar = true;
                     m->pessoaSelecionada = -1;
                     return 0;
                 }
@@ -468,11 +592,18 @@ static inline int AtualizarMural(EstadoMural *m, int culpado, int cenaAtual, con
                             ligouCerto = (m->evLigadaB[5] == alvoCulp);
                         } else if (i == 8) {
                             ligouCerto = (m->evLigadaA[8] == 1); // Projeto sempre da Juliana
+                        } else if (i == 9) {
+                            ligouCerto = (m->evLigadaA[9] == 2); // Testemunho dos pais -> Gabriel
                         } else {
                             ligouCerto = (m->evLigadaA[i] == alvoCulp);
                         }
                         if (ligouCerto && temSfxLinkOk) PlaySound(sfxLinkOk);
+                        else if (!ligouCerto && temSfxLinkErr) PlaySound(sfxLinkErr);
                         else if (temSfx) PlaySound(sfxClick);
+                        const char *nomesP[3] = { "Caio", "Juliana", "Gabriel" };
+                        snprintf(m->iaAviso, sizeof(m->iaAviso), "Ligado: %s <-> %s",
+                            nomesP[m->pessoaSelecionada], SlotCurtoMural(i, culpado));
+                        m->iaAvisoTimer = 1.8f;
                         m->pessoaSelecionada = -1;
                     } else {
                         if (temSfx) PlaySound(sfxClick);
@@ -550,6 +681,12 @@ static inline int AtualizarMural(EstadoMural *m, int culpado, int cenaAtual, con
         } else if (m->arrastandoTipo == 2 && m->arrastandoIdx >= 0) {
             Vector2 mw = TelaParaMural(mouse, areaMural, m->zoom, m->pan);
             m->posEv[m->arrastandoIdx] = (Vector2){ mw.x - m->dragOffset.x, mw.y - m->dragOffset.y };
+        } else if (m->arrastandoTipo == 3 && m->arrastandoIdx >= 0) {
+            float dx = mouse.x - m->dragInicioMouse.x;
+            float dy = mouse.y - m->dragInicioMouse.y;
+            if (dx * dx + dy * dy > 36.0f) {
+                m->clicouInvSemArrastar = false;
+            }
         }
     }
 
@@ -557,15 +694,27 @@ static inline int AtualizarMural(EstadoMural *m, int culpado, int cenaAtual, con
         if (m->arrastandoTipo == 1 && m->arrastandoIdx >= 0 && m->clicouPessoaSemArrastar) {
             int p = m->arrastandoIdx;
             m->pessoaSelecionada = (m->pessoaSelecionada == p) ? -1 : p;
-        } else if (m->arrastandoTipo == 3 && m->arrastandoIdx >= 0 && CheckCollisionPointRec(mouse, areaMural)) {
-            Vector2 mw = TelaParaMural(mouse, areaMural, m->zoom, m->pan);
-            m->evPosicionada[m->arrastandoIdx] = true;
-            m->posEv[m->arrastandoIdx] = mw;
-            if (temSfx) PlaySound(sfxClick);
+        } else if (m->arrastandoTipo == 3 && m->arrastandoIdx >= 0) {
+            if (m->clicouInvSemArrastar) {
+                m->evPosicionada[m->arrastandoIdx] = true;
+                m->abaEsquerda = 2;
+                m->itemEsquerda = m->arrastandoIdx;
+                snprintf(m->iaAviso, sizeof(m->iaAviso), "Pista enviada ao Mural! Clique em uma foto e depois nela p/ ligar.");
+                m->iaAvisoTimer = 2.4f;
+                if (temSfx) PlaySound(sfxClick);
+            } else if (CheckCollisionPointRec(mouse, areaMural)) {
+                Vector2 mw = TelaParaMural(mouse, areaMural, m->zoom, m->pan);
+                m->evPosicionada[m->arrastandoIdx] = true;
+                m->posEv[m->arrastandoIdx] = mw;
+                m->abaEsquerda = 2;
+                m->itemEsquerda = m->arrastandoIdx;
+                if (temSfx) PlaySound(sfxClick);
+            }
         }
         m->arrastandoTipo = 0;
         m->arrastandoIdx = -1;
         m->clicouPessoaSemArrastar = false;
+        m->clicouInvSemArrastar = false;
         m->arrastandoPan = false;
     }
 
@@ -585,23 +734,49 @@ static inline void DesenharLinhaTecnologicaMural(Vector2 p1, Vector2 p2, Color c
     DrawCircleV(p2, 5.0f, cor);
 }
 
+static inline void DesenharSetaTutorialMural(Vector2 de, Vector2 para, Color cor, double tempo) {
+    Vector2 dir = { para.x - de.x, para.y - de.y };
+    float len = sqrtf(dir.x * dir.x + dir.y * dir.y);
+    if (len < 1.0f) return;
+    Vector2 u = { dir.x / len, dir.y / len };
+    Vector2 perp = { -u.y, u.x };
+
+    float bob = sinf((float)tempo * 5.0f) * 5.0f;
+    Vector2 pIni = { de.x + u.x * bob, de.y + u.y * bob };
+    Vector2 pFim = { para.x + u.x * bob, para.y + u.y * bob };
+    Vector2 basePonta = { pFim.x - u.x * 18.0f, pFim.y - u.y * 18.0f };
+
+    DrawLineEx((Vector2){ pIni.x + 2, pIni.y + 3 }, (Vector2){ basePonta.x + 2, basePonta.y + 3 }, 6.0f, (Color){ 0, 0, 0, 150 });
+    DrawLineEx(pIni, basePonta, 9.0f, ColorAlpha(cor, 0.25f));
+    DrawLineEx(pIni, basePonta, 4.5f, cor);
+
+    Vector2 v1 = pFim;
+    Vector2 v2 = { basePonta.x + perp.x * 11.0f, basePonta.y + perp.y * 11.0f };
+    Vector2 v3 = { basePonta.x - perp.x * 11.0f, basePonta.y - perp.y * 11.0f };
+    DrawTriangle(v1, v3, v2, cor);
+    DrawTriangle(v1, v2, v3, cor);
+}
+
+static inline void DesenharSpotlightMural(Rectangle r, Color cor, double tempo) {
+    float p = 0.65f + 0.35f * sinf((float)tempo * 5.5f);
+    DrawRectangleRoundedLinesEx((Rectangle){ r.x - 4, r.y - 4, r.width + 8, r.height + 8 }, 0.08f, 6, 4.5f, ColorAlpha(cor, 0.35f * p));
+    DrawRectangleRoundedLinesEx(r, 0.08f, 6, 2.5f, ColorAlpha(cor, p));
+}
+
 static inline void DesenharMural(EstadoMural *m, GerenciadorAssets *assets, int culpado, const int statusProva[8], const int respostaProva[8],
                                   bool notaCaio, bool notaJu, bool notaGab, bool notaNuvem, bool notaConfronto,
                                   int provasValidadas, Vector2 mouse, double tempo, float camZoom) {
     DesenharFundoCyberGrid(tempo, COR_CIANO_NEON);
 
     DesenharBadgeCyber(assets->fontes.titulo, (Vector2){ 24, 16 }, "MURAL TÁTICO.IA", 23, COR_CIANO_NEON);
-    DesenharBadgeCyber(assets->fontes.bold, (Vector2){ 310, 18 },
-        TextFormat("PROVAS: %d/5 VALIDADAS", provasValidadas), 18,
-        (provasValidadas >= 4) ? COR_VERDE_OK : COR_AMARELO_AVISO);
-    Rectangle btnOrg = { 620, 16, 200, 38 };
+    Rectangle btnOrg = { 580, 16, 200, 38 };
     DesenharBotaoCyber(assets->fontes.bold, btnOrg, "AUTO-ORGANIZAR", 17, m->hoverAbas[5], tempo, COR_CIANO_NEON);
-    Rectangle btnIA = { 835, 16, 245, 38 };
+    Rectangle btnIA = { 795, 16, 260, 38 };
     DesenharBotaoCyber(assets->fontes.bold, btnIA,
-        TextFormat("ASSISTENTE IA (%d/2)", m->iaUsosRestantes), 18,
+        TextFormat("HIPÓTESE DE IA (%d/5)", m->iaUsosRestantes), 17,
         (m->iaUsosRestantes > 0) ? m->hoverAbas[4] : 0.0f, tempo,
         (m->iaUsosRestantes > 0) ? COR_ROXO_NEON : GRAY);
-    Rectangle btnFechar = { 1095, 16, 161, 38 };
+    Rectangle btnFechar = { 1070, 16, 186, 38 };
     DesenharBotaoCyber(assets->fontes.bold, btnFechar, "FECHAR [D]", 20, m->hoverAbas[3], tempo, COR_ROSA_NEON);
 
     // =========================================================================
@@ -703,7 +878,7 @@ static inline void DesenharMural(EstadoMural *m, GerenciadorAssets *assets, int 
         if (idx < MURAL_NUM_EV_OFIC) {
             int cena = idx + 3;
             if (statusProva[cena] == 0) {
-                snprintf(det, sizeof(det), "PROVA DE LÓGICA (??????)\nSTATUS: BLOQUEADA\n\nContinue investigando para descobrir e desbloquear esta evidência.");
+                snprintf(det, sizeof(det), "PROVA DE LÓGICA (BLOQUEADA)\nSTATUS: BLOQUEADA\n\nContinue investigando para descobrir e desbloquear esta evidência.");
             } else if (statusProva[cena] == -1) {
                 snprintf(det, sizeof(det), "PROVA DE LÓGICA (NÃO VALIDADA)\nVocê errou o desafio lógico. A pista aparece no Mural em vermelho e pode ser conectada, mas não valida a lógica.\n\nONDE FOI ACHADA:\n%s",
                     OndeAchadaEvidenciaMural(idx, culpado));
@@ -717,7 +892,7 @@ static inline void DesenharMural(EstadoMural *m, GerenciadorAssets *assets, int 
             }
         } else {
             if (!m->evDesbloqueada[idx]) {
-                snprintf(det, sizeof(det), "PISTA EXTRA (??????)\nSTATUS: BLOQUEADA\n\nContinue a investigação para descobrir esta pista.");
+                snprintf(det, sizeof(det), "PISTA EXTRA (BLOQUEADA)\nSTATUS: BLOQUEADA\n\nContinue a investigação para descobrir esta pista.");
             } else {
                 snprintf(det, sizeof(det), "PISTA AMBÍGUA (EXTRA)\nONDE FOI ACHADA:\n%s\n\nCONTEÚDO:\n%s",
                     OndeAchadaEvidenciaMural(idx, culpado), ConteudoAmbiguoMural(idx, culpado));
@@ -820,12 +995,22 @@ static inline void DesenharMural(EstadoMural *m, GerenciadorAssets *assets, int 
         DesenharTexturaContain(tex, rImg, WHITE);
 
         bool sel = (m->pessoaSelecionada == p);
-        float pulso = sel ? (0.7f + 0.3f * sinf((float)tempo * 6.0f)) : 0.85f;
-        DrawRectangleRoundedLinesEx(rCard, 0.08f, 6, sel ? 3.0f : 1.8f, ColorAlpha(sel ? COR_AMARELO_AVISO : corP[p], pulso));
+        bool hovP = CheckCollisionPointRec(mouse, rCard);
+        float pulso = sel ? (0.7f + 0.3f * sinf((float)tempo * 6.0f)) : (hovP ? 1.0f : 0.85f);
+        DrawRectangleRoundedLinesEx(rCard, 0.08f, 6, (sel || hovP) ? 3.0f : 1.8f, ColorAlpha(sel ? COR_AMARELO_AVISO : corP[p], pulso));
         DrawTextEx(assets->fontes.bold, titP[p], (Vector2){ rCard.x + 10 * m->zoom, rCard.y + h - 26 * m->zoom }, fmaxf(12.0f, 19.0f * m->zoom), 1.0f, corP[p]);
+
+        // Porta de conexao visual na borda direita da foto
+        Vector2 portP = { rCard.x + w, rCard.y + h * 0.5f };
+        DrawCircleV(portP, 6.0f * m->zoom, (Color){ 12, 8, 24, 240 });
+        DrawCircleV(portP, 4.0f * m->zoom, sel ? COR_AMARELO_AVISO : corP[p]);
+        if (hovP && m->pessoaSelecionada < 0) {
+            DrawTextEx(assets->fontes.bold, "CLIQUE P/ LIGAR", (Vector2){ rCard.x + 6 * m->zoom, rCard.y - 18 * m->zoom }, fmaxf(10.0f, 13.0f * m->zoom), 1.0f, COR_AMARELO_AVISO);
+        }
     }
 
     // Cards das Evidencias (Logicas + Ambiguas)
+    const char *dicaHoverMural = NULL;
     for (int i = 0; i < MURAL_NUM_TOTAL; i++) {
         if (!m->evPosicionada[i]) continue;
         Vector2 sc = MuralParaTela(m->posEv[i], areaMural, m->zoom, m->pan);
@@ -835,22 +1020,42 @@ static inline void DesenharMural(EstadoMural *m, GerenciadorAssets *assets, int 
 
         bool ehAmb = (i >= MURAL_NUM_EV_OFIC);
         bool naoValidada = (!ehAmb && statusProva[i + 3] == -1);
+        bool hovEv = CheckCollisionPointRec(mouse, rEv);
 
         DrawRectangleRounded((Rectangle){ rEv.x + 7 * m->zoom, rEv.y + 9 * m->zoom, w, h }, 0.12f, 6, (Color){ 0, 0, 0, 155 });
         DrawRectangleRounded(rEv, 0.12f, 6, naoValidada ? (Color){ 46, 14, 24, 245 } : (ehAmb ? (Color){ 36, 22, 42, 245 } : (Color){ 18, 24, 46, 245 }));
 
         bool faltaSegunda = (m->evExigeDupla[i] && m->evLigadaB[i] < 0);
+        bool alvoConexao = (m->pessoaSelecionada >= 0) && (!m->evExigeDupla[i] || m->evLigadaA[i] != m->pessoaSelecionada);
         Color cB = naoValidada ? COR_VERMELHO_ERR
                  : faltaSegunda ? COR_AMARELO_AVISO
                  : (m->evLigadaA[i] >= 0 ? COR_VERDE_OK : COR_AMARELO_AVISO);
-        float pulseB = faltaSegunda ? (0.55f + 0.45f * sinf((float)tempo * 5.0f)) : 1.0f;
+        float pulseB = (faltaSegunda || alvoConexao) ? (0.55f + 0.45f * sinf((float)tempo * 5.0f)) : 1.0f;
 
-        DrawRectangleRoundedLinesEx(rEv, 0.12f, 6, 2.0f, ColorAlpha(cB, pulseB));
+        if (alvoConexao) {
+            DrawRectangleRoundedLinesEx((Rectangle){ rEv.x - 3, rEv.y - 3, w + 6, h + 6 }, 0.14f, 6, 2.0f, ColorAlpha(COR_CIANO_NEON, hovEv ? 0.95f : pulseB * 0.65f));
+            if (hovEv) {
+                DrawTextEx(assets->fontes.bold, "+ LIGAR AQUI", (Vector2){ rEv.x + 10 * m->zoom, rEv.y - 18 * m->zoom }, fmaxf(10.0f, 13.0f * m->zoom), 1.0f, COR_CIANO_NEON);
+            }
+        }
+        if (hovEv) {
+            if (alvoConexao) dicaHoverMural = "Clique para conectar esta pista!";
+            else if (faltaSegunda) dicaHoverMural = "Falta conectar +1 pessoa! Clique em Caio ou Juliana e depois aqui.";
+            else if (m->evLigadaA[i] < 0) dicaHoverMural = "Clique em uma FOTO à esquerda e depois aqui para ligar.";
+            else dicaHoverMural = "Arraste p/ mover | Botão direito: desfazer ligação";
+        }
+        DrawRectangleRoundedLinesEx(rEv, 0.12f, 6, hovEv ? 2.5f : 2.0f, ColorAlpha(cB, pulseB));
+
+        // Porta de conexao visual na borda esquerda da evidencia
+        Vector2 portEv = { rEv.x, rEv.y + h * 0.5f };
+        DrawCircleV(portEv, 5.5f * m->zoom, (Color){ 12, 8, 24, 240 });
+        DrawCircleV(portEv, 3.5f * m->zoom, alvoConexao ? COR_CIANO_NEON : cB);
+
         DrawTextEx(assets->fontes.bold, NomeCurtoEvidenciaMural(i, culpado),
             (Vector2){ rEv.x + 10 * m->zoom, rEv.y + 10 * m->zoom }, fmaxf(11.0f, 16.0f * m->zoom), 1.0f, naoValidada ? COR_VERMELHO_ERR : WHITE);
 
         const char *nomesS[3] = { "Caio", "Juliana", "Gabriel" };
-        char sub[64] = "Sem ligação";
+        char sub[64] = "Ligue a uma foto";
         if (naoValidada && m->evLigadaA[i] < 0) {
             snprintf(sub, sizeof(sub), "NÃO VALIDADA");
         } else if (naoValidada && m->evLigadaA[i] >= 0) {
@@ -868,6 +1073,10 @@ static inline void DesenharMural(EstadoMural *m, GerenciadorAssets *assets, int 
 
     EndScissorMode();
     DrawRectangleLinesEx(areaMural, 2.0f, ColorAlpha(COR_CIANO_NEON, 0.7f));
+    if (dicaHoverMural != NULL) {
+        DrawRectangle((int)areaMural.x + 12, (int)(areaMural.y + areaMural.height - 34), 560, 26, (Color){ 12, 8, 24, 215 });
+        DrawTextEx(assets->fontes.bold, dicaHoverMural, (Vector2){ areaMural.x + 20, areaMural.y + areaMural.height - 30 }, 16, 1.0f, COR_AMARELO_AVISO);
+    }
 
     DrawTextEx(assets->fontes.bold, TextFormat("ZOOM: %d%%", (int)(m->zoom * 100.0f + 0.5f)),
         (Vector2){ areaMural.x + 14, areaMural.y + 14 }, 18, 1.0f, ColorAlpha(COR_CIANO_NEON, 0.85f));
@@ -891,11 +1100,20 @@ static inline void DesenharMural(EstadoMural *m, GerenciadorAssets *assets, int 
     // =========================================================================
     Rectangle areaInv = { 378, 592, 878, 104 };
     DesenharPainelCyber(areaInv, COR_ROXO_NEON);
-    DrawTextEx(assets->fontes.bold, "INVENTÁRIO (ARRASTE P/ MURAL | P1..P5 LÓGICA, A1..A4 EXTRAS):",
-        (Vector2){ areaInv.x + 12, areaInv.y + 8 }, 16, 1.0f, COR_CIANO_NEON);
+    int naoPos = 0;
+    for (int i = 0; i < MURAL_NUM_TOTAL; i++) {
+        if (m->evDesbloqueada[i] && !m->evPosicionada[i]) naoPos++;
+    }
+    DrawTextEx(assets->fontes.bold, "INVENTÁRIO (CLIQUE OU ARRASTE P/ MURAL | P1..P5 LÓGICA, A1..A4 EXTRAS):",
+        (Vector2){ areaInv.x + 12, areaInv.y + 8 }, 15, 1.0f, COR_CIANO_NEON);
+    if (naoPos > 0) {
+        float pulseInv = 0.65f + 0.35f * sinf((float)tempo * 5.0f);
+        DrawTextEx(assets->fontes.bold, TextFormat("%d PISTA(S) NOVA(S)!", naoPos),
+            (Vector2){ areaInv.x + areaInv.width - 175, areaInv.y + 8 }, 15, 1.0f, ColorAlpha(COR_AMARELO_AVISO, pulseInv));
+    }
 
     for (int i = 0; i < MURAL_NUM_TOTAL; i++) {
-        Rectangle slot = { areaInv.x + 10 + i * 96, areaInv.y + 32, 91, 60 };
+        Rectangle slot = { areaInv.x + 10 + i * 86, areaInv.y + 32, 81, 60 };
         bool ehAmb = (i >= MURAL_NUM_EV_OFIC);
         bool desb = m->evDesbloqueada[i];
         int st = ehAmb ? (desb ? 1 : 0) : statusProva[i + 3];
@@ -915,7 +1133,7 @@ static inline void DesenharMural(EstadoMural *m, GerenciadorAssets *assets, int 
             DrawRectangleRounded(slot, 0.14f, 4, hov ? (Color){ 46, 22, 74, 240 } : (naoVal ? (Color){ 46, 14, 24, 235 } : (Color){ 28, 16, 52, 235 }));
             DrawRectangleRoundedLinesEx(slot, 0.14f, 4, 1.8f, hov ? COR_ROSA_NEON : (naoVal ? COR_VERMELHO_ERR : (ehAmb ? COR_AMARELO_AVISO : COR_CIANO_NEON)));
             DrawTextEx(assets->fontes.bold, SlotCurtoMural(i, culpado), (Vector2){ slot.x + 6, slot.y + 10 }, 14, 1.0f, naoVal ? COR_VERMELHO_ERR : WHITE);
-            DrawTextEx(assets->fontes.regular, naoVal ? "N/ Valid." : "Arrastar", (Vector2){ slot.x + 6, slot.y + 34 }, 13, 1.0f, naoVal ? COR_VERMELHO_ERR : (ehAmb ? COR_AMARELO_AVISO : COR_CIANO_NEON));
+            DrawTextEx(assets->fontes.bold, naoVal ? "N/ Valid." : "+ MURAL", (Vector2){ slot.x + 6, slot.y + 34 }, 13, 1.0f, naoVal ? COR_VERMELHO_ERR : (ehAmb ? COR_AMARELO_AVISO : COR_CIANO_NEON));
         }
     }
 
@@ -936,6 +1154,77 @@ static inline void DesenharMural(EstadoMural *m, GerenciadorAssets *assets, int 
         DrawTextEx(assets->fontes.bold, m->iaAviso,
             (Vector2){ rAv.x + (rAv.width - szAv.x) * 0.5f, rAv.y + (rAv.height - szAv.y) * 0.5f },
             21, 1.0f, ColorAlpha(COR_AMARELO_AVISO, alphaAv));
+    }
+
+    if (m->mostrandoTutorial) {
+        DrawRectangle(0, 0, VIRTUAL_W, VIRTUAL_H, (Color){ 4, 2, 12, 145 });
+
+        const char *titTut = "";
+        const char *subTut = "";
+
+        if (m->tutorialPasso == 0) {
+            Rectangle slot9 = { areaInv.x + 10 + 9 * 86, areaInv.y + 32, 81, 60 };
+            DesenharSpotlightMural(slot9, COR_AMARELO_AVISO, tempo);
+            DesenharSetaTutorialMural((Vector2){ slot9.x + 40, 545 }, (Vector2){ slot9.x + 40, slot9.y - 6 }, COR_AMARELO_AVISO, tempo);
+            titTut = "1. CLIQUE NA EVIDÊNCIA";
+            subTut = "Clique na evidência extra 'Pais Gab.' no inventário para enviá-la ao Mural.";
+        } else if (m->tutorialPasso == 1) {
+            Vector2 pGab = MuralParaTela(m->posPessoa[2], areaMural, m->zoom, m->pan);
+            Rectangle rGab = { pGab.x - 62, pGab.y - 72, 124, 144 };
+            DesenharSpotlightMural(rGab, COR_CIANO_NEON, tempo);
+            DesenharSetaTutorialMural((Vector2){ pGab.x + 145, pGab.y - 45 }, (Vector2){ pGab.x + 68, pGab.y - 10 }, COR_CIANO_NEON, tempo);
+            titTut = "2. APERTE NA FOTO DO GABRIEL";
+            subTut = "Clique na foto do Gabriel para iniciar uma linha de conexão.";
+        } else if (m->tutorialPasso == 2) {
+            Vector2 pGab = MuralParaTela(m->posPessoa[2], areaMural, m->zoom, m->pan);
+            Vector2 pEv9 = MuralParaTela(m->posEv[9], areaMural, m->zoom, m->pan);
+            Rectangle rGab = { pGab.x - 62, pGab.y - 72, 124, 144 };
+            Rectangle rEv9 = { pEv9.x - 86, pEv9.y - 40, 172, 80 };
+            DesenharSpotlightMural(rGab, COR_CIANO_NEON, tempo);
+            DesenharSpotlightMural(rEv9, COR_ROSA_NEON, tempo);
+            DesenharSetaTutorialMural((Vector2){ pGab.x + 66, pGab.y - 25 }, (Vector2){ pEv9.x - 90, pEv9.y + 5 }, COR_ROSA_NEON, tempo);
+            titTut = "3. LIGUE GABRIEL À EVIDÊNCIA";
+            subTut = "Com Gabriel selecionado, clique na evidência para ligá-los!\n(Botão direito desfaz ligações)";
+        } else if (m->tutorialPasso == 3) {
+            Rectangle rOrg = { 575, 12, 210, 46 };
+            DesenharSpotlightMural(rOrg, COR_CIANO_NEON, tempo);
+            DesenharSetaTutorialMural((Vector2){ 680, 165 }, (Vector2){ 680, 62 }, COR_CIANO_NEON, tempo);
+            titTut = "4. AUTO-ORGANIZAR";
+            subTut = "Auto-organize seus pensamentos com seu assistente de IA!";
+        } else if (m->tutorialPasso == 4) {
+            Rectangle rIA = { 790, 12, 270, 46 };
+            DesenharSpotlightMural(rIA, COR_ROXO_NEON, tempo);
+            DesenharSetaTutorialMural((Vector2){ 925, 165 }, (Vector2){ 925, 62 }, COR_ROXO_NEON, tempo);
+            titTut = "5. HIPÓTESE DE IA (5/5)";
+            subTut = "Precisa de pelo menos 5 evidências (ambíguas/extras ou lógicas) de contexto para auto-ligar!\n(Recomendado se achar o mural confuso)";
+        } else {
+            Rectangle rAbas = { painelEsq.x + 6, painelEsq.y + 6, painelEsq.width - 12, 46 };
+            DesenharSpotlightMural(rAbas, COR_AMARELO_AVISO, tempo);
+            DesenharSetaTutorialMural((Vector2){ 435, 140 }, (Vector2){ 372, 92 }, COR_AMARELO_AVISO, tempo);
+            titTut = "6. DETALHES DO CASO";
+            subTut = "Leia fichas, descrições das pistas e ouça áudios aqui à esquerda.";
+        }
+
+        Rectangle card = ObterCalloutTutorialMural(m->tutorialPasso);
+        DesenharPainelCyber(card, COR_CIANO_NEON);
+        DrawTextEx(assets->fontes.bold, titTut, (Vector2){ card.x + 16, card.y + 14 }, 20, 1.0f, COR_AMARELO_AVISO);
+        DrawTextEx(assets->fontes.bold, TextFormat("%d/6", m->tutorialPasso + 1), (Vector2){ card.x + card.width - 48, card.y + 15 }, 18, 1.0f, COR_CIANO_NEON);
+        DesenharTextoQuebrado(assets->fontes.regular, subTut, (Rectangle){ card.x + 16, card.y + 44, card.width - 32, 70 }, 17, 1.0f, WHITE);
+
+        Rectangle btnAnt  = { card.x + 16, card.y + card.height - 46, 115, 34 };
+        Rectangle btnPul  = { card.x + 141, card.y + card.height - 46, 105, 34 };
+        Rectangle btnProx = { card.x + card.width - 216, card.y + card.height - 46, 200, 34 };
+        if (m->tutorialPasso > 0) {
+            DesenharBotaoCyber(assets->fontes.bold, btnAnt, "< VOLTAR", 15, m->hoverTutorial[0], tempo, COR_ROXO_NEON);
+        }
+        DesenharBotaoCyber(assets->fontes.bold, btnPul, "PULAR", 15, m->hoverTutorial[1], tempo, GRAY);
+        if (m->tutorialPasso != 0) {
+            DesenharBotaoCyber(assets->fontes.bold, btnProx,
+                (m->tutorialPasso < 5) ? "PRÓXIMO >>" : "ENTENDI!",
+                16, m->hoverTutorial[2], tempo, COR_VERDE_OK);
+        } else {
+            DrawTextEx(assets->fontes.bold, "Clique na pista abaixo!", (Vector2){ btnProx.x + 12, btnProx.y + 8 }, 15, 1.0f, COR_AMARELO_AVISO);
+        }
     }
 
     DesenharScanlinesHUD(tempo);

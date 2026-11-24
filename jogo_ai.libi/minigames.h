@@ -207,7 +207,7 @@ static inline void DesenharMiniGame(const EstadoMiniGame *mg, const FontesUI *f,
             "• OU (Disjunção): É verdade se pelo menos UMA parte for verdadeira.\n"
             "   Se for FALSA, AS DUAS falharam -> negue e troque 'OU' por 'E'.\n\n"
             "• SE... ENTÃO: Se o resultado final NÃO aconteceu, a condição inicial também NÃO aconteceu.\n\n"
-            "Você terá 2 tentativas por desafio. Boa investigação!";
+            "Você terá 20 segundos e 2 tentativas por desafio. Boa investigação!";
         DesenharTextoQuebrado(f->regular, tut, (Rectangle){ 145, 178, 990, 330 }, 24, 1.0f, WHITE);
 
         DesenharBotaoCyber(f->bold, (Rectangle){ 440, 536, 400, 52 }, "ENTENDI, COMEÇAR >>", 23, mg->hoverCont, tempo, COR_VERDE_OK);
