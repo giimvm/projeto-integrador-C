@@ -653,14 +653,13 @@ Product Owner
 
 - Letícia Minucelli
   * 👔 **LinkedIn:** [Acesse o perfil de Letícia Minucelli](https://www.linkedin.com/in/letícia-minucelli-46106430b)
+  
 
-🎮 Game Designers
-
-- Victor Pina
-  * 👔 **LinkedIn:** [Acesse o perfil de Victor Pina](https://www.linkedin.com/in/victor-s-pina-b78777303)
+🎮 Game e Visual Designer
 
 - Raysha Neide
   * 👔 **LinkedIn:** [Acesse o perfil de Raysha Neide](https://www.linkedin.com/in/rayshaneide?utm_source=share_via&utm_content=profile&utm_medium=member_ios)
+    
 
 ✍️ Roteiristas
 
@@ -669,25 +668,15 @@ Product Owner
 
 - Letícia Minucelli
   * 👔 **LinkedIn:** [Acesse o perfil de Letícia Minucelli](https://www.linkedin.com/in/letícia-minucelli-46106430b)
+  
 
 🔬 Research / UX
 
 - Júlia Aquino
   * 👔 **LinkedIn:** [Acesse o perfil de Júlia Aquino](https://www.linkedin.com/in/júlia-aquino-0764273b3)
 
-- Victor Pina
-  * 👔 **LinkedIn:** [Acesse o perfil de Victor Pina](https://www.linkedin.com/in/victor-s-pina-b78777303)
-
 - Vitória Thayná
   * 👔 **LinkedIn:** [Acesse o perfil de Vitória Thayná](https://www.linkedin.com/in/vitoriatayna)
-
-🎨 Visual Designers
-
-- Luma Frazão
-  * 👔 **LinkedIn:** [Acesse o perfil de Luma Frazão](https://www.linkedin.com/in/luma-frazão-5b91a239b)
-
-- Raysha Neide
-  * 👔 **LinkedIn:** [Acesse o perfil de Raysha Neide](https://www.linkedin.com/in/rayshaneide?utm_source=share_via&utm_content=profile&utm_medium=member_ios)
 
 ---
 
