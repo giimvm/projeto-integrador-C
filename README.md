@@ -637,46 +637,37 @@ Durante o desenvolvimento das **US02**, atuei como **Navigator**, auxiliando Lum
 
 Product Owner
 
-- Giovana Monteiro
-  * 👔 **LinkedIn:** [Acesse o perfil de Giovana Monteiro](www.linkedin.com/in/giovana-monteiro-a419a4349)
+- Giovana Monteiro | [Acesse o perfil de Giovana Monteiro](www.linkedin.com/in/giovana-monteiro-a419a4349)
 
 
 
 👨‍💻 Programadores
 
-- Luma Frazão
-  * 👔 **LinkedIn:** [Acesse o perfil de Luma Frazão](https://www.linkedin.com/in/luma-frazão-5b91a239b)
+- Luma Frazão | [Acesse o perfil de Luma Frazão](https://www.linkedin.com/in/luma-frazão-5b91a239b)
   
-- Lanna Marcullino
-  * 👔 **LinkedIn:** [Acesse o perfil de Lanna Marcullino](https://www.linkedin.com/in/lanna-marculino-988aa03b2)
+- Lanna Marcullino | [Acesse o perfil de Lanna Marcullino](https://www.linkedin.com/in/lanna-marculino-988aa03b2)
     obs: máquina apresentou problema para dar commits
 
-- Letícia Minucelli
-  * 👔 **LinkedIn:** [Acesse o perfil de Letícia Minucelli](https://www.linkedin.com/in/letícia-minucelli-46106430b)
+- Letícia Minucelli | [Acesse o perfil de Letícia Minucelli](https://www.linkedin.com/in/letícia-minucelli-46106430b)
   
 
 🎮 Game e Visual Designer
 
-- Raysha Neide
-  * 👔 **LinkedIn:** [Acesse o perfil de Raysha Neide](https://www.linkedin.com/in/rayshaneide?utm_source=share_via&utm_content=profile&utm_medium=member_ios)
+- Raysha Neide | [Acesse o perfil de Raysha Neide](https://www.linkedin.com/in/rayshaneide?utm_source=share_via&utm_content=profile&utm_medium=member_ios)
     
 
 ✍️ Roteiristas
 
-- Raysha Neide
-  * 👔 **LinkedIn:** [Acesse o perfil de Raysha Neide](https://www.linkedin.com/in/rayshaneide?utm_source=share_via&utm_content=profile&utm_medium=member_ios)
+- Raysha Neide | [Acesse o perfil de Raysha Neide](https://www.linkedin.com/in/rayshaneide?utm_source=share_via&utm_content=profile&utm_medium=member_ios)
 
-- Letícia Minucelli
-  * 👔 **LinkedIn:** [Acesse o perfil de Letícia Minucelli](https://www.linkedin.com/in/letícia-minucelli-46106430b)
+- Letícia Minucelli | [Acesse o perfil de Letícia Minucelli](https://www.linkedin.com/in/letícia-minucelli-46106430b)
   
 
 🔬 Research / UX
 
-- Júlia Aquino
-  * 👔 **LinkedIn:** [Acesse o perfil de Júlia Aquino](https://www.linkedin.com/in/júlia-aquino-0764273b3)
+- Júlia Aquino | [Acesse o perfil de Júlia Aquino](https://www.linkedin.com/in/júlia-aquino-0764273b3)
 
-- Vitória Thayná
-  * 👔 **LinkedIn:** [Acesse o perfil de Vitória Thayná](https://www.linkedin.com/in/vitoriatayna)
+- Vitória Thayná | [Acesse o perfil de Vitória Thayná](https://www.linkedin.com/in/vitoriatayna)
 
 ---
 
