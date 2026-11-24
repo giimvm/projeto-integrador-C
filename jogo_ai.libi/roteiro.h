@@ -207,7 +207,7 @@ static const int NUM_FALAS_CENA8 = sizeof(falasCena8) / sizeof(falasCena8[0]);
 // ============================================================================
 // TRIBUNAL + FINAIS (Advogada defende o reu conforme qtd de provas)
 // ============================================================================
-// FINAL 1 - VERDADE ABSOLUTA (5/5 provas)
+// FINAL 1 - FINAL PERFEITO (Veredito correto + >=4 logicas + >=2 extras)
 static const Fala falasFinalPerfeitoJuliana[] = {
     { "JUIZ", "Declaro aberta a audiência de instrução contra Juliana Costa. A defesa tem a palavra.", BG_TRIBUNAL, JUIZ_TRIBUNAL },
     { "ADVOGADA", "Excelência, em 2045 qualquer mídia pode ser manipulada. Pela Lei da Dúvida Digital, peço a anulação das provas eletrônicas contra minha cliente.", BG_TRIBUNAL, ADVOGADA_SPRITE },
@@ -228,7 +228,7 @@ static const Fala falasFinalPerfeitoCaio[] = {
 };
 static const int NUM_FALAS_FINAL_PERF_CAIO = sizeof(falasFinalPerfeitoCaio) / sizeof(falasFinalPerfeitoCaio[0]);
 
-// FINAL 2 - A VERDADE (4/5 provas)
+// FINAL 2 - FINAL BOM (Veredito correto + >=3 logicas + >=2 extras)
 static const Fala falasFinalVerdadeJuliana[] = {
     { "JUIZ", "Iniciamos a audiência contra Juliana Costa. Defesa, manifeste-se.", BG_TRIBUNAL, JUIZ_TRIBUNAL },
     { "ADVOGADA", "Excelência, falta uma peça na perícia completa da acusação. Há margem para questionar a ordem cronológica.", BG_TRIBUNAL, ADVOGADA_SPRITE },
@@ -249,7 +249,7 @@ static const Fala falasFinalVerdadeCaio[] = {
 };
 static const int NUM_FALAS_FINAL_VERD_CAIO = sizeof(falasFinalVerdadeCaio) / sizeof(falasFinalVerdadeCaio[0]);
 
-// FINAL 3 - A DUVIDA (2 ou 3 provas)
+// FINAL 3 - INCONCLUSIVO (Veredito correto sem provas suficientes)
 static const Fala falasFinalDuvida[] = {
     { "JUIZ", "A acusação possui provas técnicas suficientes que uma máquina não pudesse ter fabricado?", BG_TRIBUNAL, JUIZ_TRIBUNAL },
     { "ADVOGADA", "Excelência, pela Lei da Dúvida Digital, qualquer indício sem cadeia de custódia completa deve ser anulado. Faltam laudos essenciais no mural da acusação. Há apenas uma narrativa.", BG_TRIBUNAL, ADVOGADA_SPRITE },
@@ -259,15 +259,15 @@ static const Fala falasFinalDuvida[] = {
 };
 static const int NUM_FALAS_FINAL_DUVIDA = sizeof(falasFinalDuvida) / sizeof(falasFinalDuvida[0]);
 
-// FINAL 4 - COLAPSO FORENSE (0 ou 1 prova)
-static const Fala falasFinalColapso[] = {
-    { "JUIZ", "Olhando os autos enviados ao tribunal... onde estão as provas periciais validadas?", BG_TRIBUNAL, JUIZ_TRIBUNAL },
-    { "ADVOGADA", "Não há nenhuma sustentação técnica aqui, Excelência! A acusação trouxe um mural praticamente vazio. Peço o arquivamento sumário por falta de justa causa.", BG_TRIBUNAL, ADVOGADA_SPRITE },
-    { "JOGADOR", "Mas eu sei o que aconteceu naquela noite...", BG_TRIBUNAL, ADVOGADA_SPRITE },
-    { "JUIZ", "Sem lastro pericial, este tribunal não pode sequer abrir instrução. Caso arquivado.", BG_TRIBUNAL, JUIZ_TRIBUNAL },
-    { "PENSAMENTO", "(O inquérito morreu no tribunal antes mesmo de começar. As pistas tavam na minha frente, e eu deixei escapar.)", BG_MURAL, SEM_SPRITE }
+// FINAL 4 - INJUSTICA E AFASTAMENTO (Acusou o inocente sem provas suficientes para prender)
+static const Fala falasFinalInjusticaAfastamento[] = {
+    { "JUIZ", "A acusação denunciou um suspeito sem lastro pericial suficiente para sustentar a prisão.", BG_TRIBUNAL, JUIZ_TRIBUNAL },
+    { "ADVOGADA", "Excelência, não há cadeia de custódia nem provas extras consistentes contra meu cliente! A acusação é infundada e peço a rejeição imediata da denúncia.", BG_TRIBUNAL, ADVOGADA_SPRITE },
+    { "DELEGADO MEIRELES", "Você acusou a pessoa errada e ainda foi ao tribunal sem provas suficientes. A corregedoria determinou o seu afastamento imediato.", BG_TRIBUNAL, DEL_ASSERTIVO },
+    { "JUIZ", "Denúncia rejeitada por falta de provas. O verdadeiro culpado pelo crime segue em liberdade.", BG_TRIBUNAL, JUIZ_TRIBUNAL },
+    { "PENSAMENTO", "(Acusei o inocente sem sequer ter provas para sustentar o caso. Perdi o distintivo e deixei o culpado escapar.)", BG_MURAL, SEM_SPRITE }
 };
-static const int NUM_FALAS_FINAL_COLAPSO = sizeof(falasFinalColapso) / sizeof(falasFinalColapso[0]);
+static const int NUM_FALAS_FINAL_INJ_AFAST = sizeof(falasFinalInjusticaAfastamento) / sizeof(falasFinalInjusticaAfastamento[0]);
 
 // FINAL 5 - A PRECIPITACAO
 static const Fala falasFinalPrecipitado[] = {

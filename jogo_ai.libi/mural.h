@@ -240,46 +240,82 @@ static inline const char *SlotCurtoMural(int idx, int culpado) {
 static inline const char *OndeAchadaEvidenciaMural(int idx, int culpado) {
     bool ehJu = (culpado == 0);
     switch (idx) {
-        case 0: return "Entrega anônima na delegacia (Cena 3)";
-        case 1: return "Enviada por Juliana à mãe / interrogatório (Cena 4)";
-        case 2: return "Torres de celular — barranco a 200m do galpão (Cena 5)";
-        case 3: return "Backup automático na nuvem de Gabriel (Cena 6)";
-        case 4: return ehJu ? "Registro oficial da Mobi — estrada de serviço (Cena 7)"
-                        : "Câmera da cancela do estacionamento da festa (Cena 7)";
-        case 5: return "Logs temporários recuperados do aparelho de Gabriel (02:15)";
-        case 6: return "Antena da região do galpão — chamada de 14s às 02:47";
-        case 7: return "Perícia de campo na borda do barranco (Cena 5)";
-        case 8: return "Servidor acadêmico / NEXARA — autoria corrompida (Cena 4)";
-        case 9: return "Relato inicial do Delegado Meireles (Cena 1)";
+        case 0: return "Áudio entregue anonimamente na delegacia.";
+        case 1: return "Foto enviada por Juliana durante o interrogatório.";
+        case 2: return "Triangulação de torres de celular perto do galpão.";
+        case 3: return "Arquivo recuperado do backup na nuvem de Gabriel.";
+        case 4: return ehJu ? "Registro oficial de corrida no aplicativo Mobi."
+                        : "Gravação da câmera da cancela do estacionamento.";
+        case 5: return "Logs temporários recuperados do celular de Gabriel.";
+        case 6: return "Registro de chamadas da operadora na torre do galpão.";
+        case 7: return "Perícia de campo feita na borda do barranco.";
+        case 8: return "Servidor acadêmico da UFPE / projeto NEXARA.";
+        case 9: return "Depoimento inicial colhido pelo Delegado Meireles.";
+    }
+    return "";
+}
+
+static inline const char *DescricaoAnaliseMural(int idx, int culpado, int status, int resp, int respCorreta) {
+    bool ehJu = (culpado == 0);
+    if (status == -1) {
+        return "Desafio lógico não validado. Você ainda pode conectar esta pista, mas ela não conta como prova válida.";
+    }
+    bool acertou = (resp == respCorreta);
+    bool ehIA = (respCorreta == 2);
+
+    if (!acertou) {
+        switch (idx) {
+            case 0: return "Gravação de voz atribuída a Caio e Gabriel. Não sei se esse áudio é realmente verdadeiro ou se foi adulterado.";
+            case 1: return "Foto de Juliana dentro de um carro às 03:05. Não sei se é uma foto real ou se foi manipulada por IA.";
+            case 2: return "Mapa de rastreamento do celular de Gabriel no barranco. Não sei se esses dados de localização são reais ou forjados.";
+            case 3: return "Documento recuperado da nuvem de Gabriel. Não sei se esse arquivo é autêntico ou se foi falsificado.";
+            case 4: return ehJu
+                ? "Comprovante de corrida da Mobi às 03:41. Não sei se esse registro do aplicativo é real ou editado."
+                : "Frame da câmera da cancela mostrando o carro de Caio. Não sei se é uma foto real ou uma montagem.";
+        }
+    }
+
+    if (ehIA) {
+        switch (idx) {
+            case 0: return "É um áudio gerado por IA! Dá para notar claramente a falta de respiração natural e cortes secos no som de fundo.";
+            case 1: return "É uma deepfake! Dá para ver claramente erros visuais: o carro autônomo tem volante, o brinco some no reflexo e o painel está borrado.";
+            case 4: return "É uma deepfake! Dá para ver claramente erros visuais: a placa 'SsaíDA' está escrita errada, a placa do carro distorcida e há reflexos artificiais.";
+        }
+    }
+
+    switch (idx) {
+        case 0: return "É um áudio real! A respiração ofegante e o som do vento são contínuos, sem sinais de síntese ou cortes.";
+        case 1: return "É uma foto real! Mostra Juliana em um carro autônomo sem volante, com reflexos e iluminação coerentes.";
+        case 2: return "É um registro real! O mapa mostra o último sinal do celular de Gabriel parado no barranco até as 03:22.";
+        case 3: return "É um arquivo real! Registro íntegro sincronizado na nuvem momentos antes de o celular perder o sinal no barranco.";
+        case 4: return "É um registro real! A tela da Mobi confirma que Juliana só pediu o carro às 03:41 na rodovia.";
     }
     return "";
 }
 
 static inline const char *ConteudoAmbiguoMural(int idx, int culpado) {
-    bool ehJu = (culpado == 0);
+    (void)culpado;
     if (idx == 5) {
-        return ehJu
-            ? "\"Preciso falar com você fora da pista. Me encontra perto dos fundos antes das 3h. É sobre o projeto.\"\n[FALTA CONECTAR AO DESTINATÁRIO]"
-            : "\"Não vou mais segurar essa história sozinho. Me encontra atrás do galpão antes das 3h, precisamos resolver hoje.\"\n[FALTA CONECTAR AO DESTINATÁRIO]";
+        return "Tela de conversa no celular de Gabriel mostrando 5 mensagens apagadas entre 02:39 e 02:46, logo antes do crime.";
     }
     if (idx == 6) {
-        return "Ligação de 14 segundos às 02:47 para número bloqueado na torre do galpão. Nenhum suspeito assumiu a chamada.";
+        return "Registro da operadora: chamada de voz atendida às 02:47, duração de 1m42s, feita de uma linha privada/oculta.";
     }
     if (idx == 7) {
-        return "Fibras sintéticas escuras e barro úmido na borda do barranco. Compatível com jaqueta universitária padrão.";
+        return "Foto da borda do barranco na chuva: jaqueta escura rasgada e alça arrebentada caídas na lama.";
     }
     if (idx == 8) {
-        return "Arquivo de empresa: rascunho de arquitetura de IA ligado à NEXARA, mas os metadados de autoria foram apagados. Não está claro se foi Juliana ou Caio quem escreveu. De quem é o projeto?";
+        return "Propriedades do arquivo 'Projeto_IA_UFPE.zip': autor, data de criação e dispositivo foram apagados.";
     }
     if (idx == 9) {
-        return "Testemunho dos pais do Gabriel: falando com quem ele falava na faculdade (Caio e Juliana).";
+        return "Ficha de depoimento dos pais de Gabriel: relataram que ele falava muito com Caio e Juliana na faculdade.";
     }
     return "";
 }
 
 static inline Rectangle ObterCalloutTutorialMural(int passo) {
     switch (passo) {
-        case 0: return (Rectangle){ 660, 395, 520, 152 }; // Acima do slot 9 no inventario
+        case 0: return (Rectangle){ 660, 380, 520, 152 }; // Acima do slot 9 no inventario (sem tocar na seta)
         case 1: return (Rectangle){ 710, 86, 520, 152 };  // Canto superior direito, livre das evidencias
         case 2: return (Rectangle){ 710, 86, 520, 152 };  // Canto superior direito, sem cobrir a ligacao
         case 3: return (Rectangle){ 440, 145, 520, 152 }; // Abaixo do botao Auto-Organizar
@@ -542,9 +578,10 @@ static inline int AtualizarMural(EstadoMural *m, int culpado, int cenaAtual, con
 
         if (CheckCollisionPointRec(mouse, painelEsq)) {
             int maxI = (m->abaEsquerda == 1) ? 3 : (m->abaEsquerda == 2) ? MURAL_NUM_TOTAL : 0;
-            float rowH = (m->abaEsquerda == 2) ? 28.0f : 42.0f;
+            float y0 = (m->abaEsquerda == 2) ? 56.0f : 60.0f;
+            float rowH = (m->abaEsquerda == 2) ? 26.0f : 42.0f;
             for (int i = 0; i < maxI; i++) {
-                Rectangle rItem = { painelEsq.x + 14, painelEsq.y + 60 + i * rowH, painelEsq.width - 28, rowH - 3 };
+                Rectangle rItem = { painelEsq.x + 14, painelEsq.y + y0 + i * rowH, painelEsq.width - 28, rowH - 3 };
                 if (CheckCollisionPointRec(mouse, rItem)) {
                     if (temSfx) PlaySound(sfxClick);
                     m->itemEsquerda = i;
@@ -904,56 +941,66 @@ static inline void DesenharMural(EstadoMural *m, GerenciadorAssets *assets, int 
             bool ehAmb = (i >= MURAL_NUM_EV_OFIC);
             bool desb = m->evDesbloqueada[i];
             int st = ehAmb ? (desb ? 1 : 0) : statusProva[i + 3];
-            Rectangle r = { painelEsq.x + 14, painelEsq.y + 60 + i * 28.0f, painelEsq.width - 28, 25 };
+            Rectangle r = { painelEsq.x + 14, painelEsq.y + 56 + i * 26.0f, painelEsq.width - 28, 23 };
             bool sel = (m->itemEsquerda == i);
             Color cSt = (st == 1) ? (ehAmb ? COR_AMARELO_AVISO : COR_VERDE_OK) : (st == -1) ? COR_VERMELHO_ERR : GRAY;
             DrawRectangleRec(r, sel ? ColorAlpha(COR_CIANO_NEON, 0.22f) : (Color){ 24, 14, 44, 200 });
             DrawRectangleLinesEx(r, 1.2f, sel ? COR_CIANO_NEON : ColorAlpha(cSt, 0.65f));
             const char *nomeLista = (!desb && st == 0) ? "??????" : NomeCurtoEvidenciaMural(i, culpado);
-            DrawTextEx(assets->fontes.bold, nomeLista, (Vector2){ r.x + 10, r.y + 4 }, 16, 1.0f, sel ? COR_CIANO_NEON : (st == -1 ? COR_VERMELHO_ERR : (desb ? WHITE : GRAY)));
+            DrawTextEx(assets->fontes.bold, nomeLista, (Vector2){ r.x + 10, r.y + 3 }, 16, 1.0f, sel ? COR_CIANO_NEON : (st == -1 ? COR_VERMELHO_ERR : (desb ? WHITE : GRAY)));
         }
 
         int idx = m->itemEsquerda;
-        char det[640] = "";
+        char det[720] = "";
         if (idx < MURAL_NUM_EV_OFIC) {
             int cena = idx + 3;
             if (statusProva[cena] == 0) {
-                snprintf(det, sizeof(det), "PROVA DE LÓGICA (BLOQUEADA)\nSTATUS: BLOQUEADA\n\nContinue investigando para descobrir e desbloquear esta evidência.");
-            } else if (statusProva[cena] == -1) {
-                snprintf(det, sizeof(det), "PROVA DE LÓGICA (NÃO VALIDADA)\nVocê errou o desafio lógico. A pista aparece no Mural em vermelho e pode ser conectada, mas não valida a lógica.\n\nONDE FOI ACHADA:\n%s",
-                    OndeAchadaEvidenciaMural(idx, culpado));
+                snprintf(det, sizeof(det), "PROVA BLOQUEADA\nContinue investigando para descobrir e desbloquear esta evidência.");
             } else {
-                const char *classif = (respostaProva[cena] == 1) ? "Marcada: REAL" : (respostaProva[cena] == 2) ? "Marcada: GERADA POR IA" : "Não classificada";
-                const char *muralSt = m->evPosicionada[idx]
-                    ? (m->evLigadaA[idx] >= 0 ? "No Mural (Ligada)" : "No Mural (Sem linha)")
-                    : "No Inventário inferior";
-                snprintf(det, sizeof(det), "PROVA DE LÓGICA\nONDE FOI ACHADA:\n%s\n\nANÁLISE: %s\nMURAL: %s",
-                    OndeAchadaEvidenciaMural(idx, culpado), classif, muralSt);
+                int respCorreta = (idx == 0 || idx == 1) ? (culpado == 0 ? 2 : 1)
+                                : (idx == 4) ? (culpado == 0 ? 1 : 2)
+                                : 1;
+                const char *analiseTxt = DescricaoAnaliseMural(idx, culpado, statusProva[cena], respostaProva[cena], respCorreta);
+                snprintf(det, sizeof(det), "ORIGEM: %s\n\n%s",
+                    OndeAchadaEvidenciaMural(idx, culpado), analiseTxt);
             }
         } else {
             if (!m->evDesbloqueada[idx]) {
-                snprintf(det, sizeof(det), "PISTA EXTRA (BLOQUEADA)\nSTATUS: BLOQUEADA\n\nContinue a investigação para descobrir esta pista.");
+                snprintf(det, sizeof(det), "PISTA EXTRA BLOQUEADA\nContinue a investigação para descobrir esta pista.");
             } else {
-                snprintf(det, sizeof(det), "PISTA AMBÍGUA (EXTRA)\nONDE FOI ACHADA:\n%s\n\nCONTEÚDO:\n%s",
+                snprintf(det, sizeof(det), "ORIGEM: %s\n\n%s",
                     OndeAchadaEvidenciaMural(idx, culpado), ConteudoAmbiguoMural(idx, culpado));
             }
         }
-        // Preview de imagem da evidencia quando disponivel e desbloqueada
+
+        // Preview de imagem da evidencia (embaixo da descricao, de acordo com a rota)
         const char *imgEv = NULL;
         bool evVisivel = (idx < MURAL_NUM_EV_OFIC) ? (statusProva[idx + 3] != 0) : m->evDesbloqueada[idx];
         if (evVisivel) {
-            if (idx == 1) imgEv = (culpado == 0) ? "AssetsRay/Personagens/Julia/novodeepfake.png" : "AssetsRay/Personagens/Julia/juliafotoreal.png";
-            else if (idx == 4 && culpado == 1) imgEv = "AssetsRay/Evidências/caiodeepfake.png";
+            switch (idx) {
+                case 1: imgEv = (culpado == 0) ? "AssetsRay/Personagens/Julia/novodeepfake.png" : "AssetsRay/Personagens/Julia/juliafotoreal.png"; break;
+                case 2: imgEv = "AssetsRay/Evidências/MapaCelularGabriel.png"; break;
+                case 4: imgEv = (culpado == 0) ? "AssetsRay/Evidências/AplicativoMobiJulia.png" : "AssetsRay/Evidências/CaioCancelaDeepfake.png"; break;
+                case 5: imgEv = "AssetsRay/Evidências/MensagensApagadas.png"; break;
+                case 6: imgEv = "AssetsRay/Evidências/Chamada.png"; break;
+                case 7: imgEv = "AssetsRay/Evidências/RoupasBarranco.png"; break;
+                case 8: imgEv = "AssetsRay/Evidências/ProjetoIA.png"; break;
+                case 9: imgEv = "AssetsRay/Evidências/TestemunhoPaisGabriel.png"; break;
+            }
         }
-        float yDet = painelEsq.y + 322;
+
+        float yDet = painelEsq.y + 324;
+        float hDet = (imgEv != NULL) ? 140.0f : 280.0f;
+        DesenharTextoQuebrado(assets->fontes.regular, det, (Rectangle){ painelEsq.x + 16, yDet, painelEsq.width - 32, hDet }, 16, 1.0f, WHITE);
+
         if (imgEv != NULL) {
-            Rectangle rPrev = { painelEsq.x + 16, painelEsq.y + 318, painelEsq.width - 32, 126 };
-            DrawRectangleRounded(rPrev, 0.05f, 4, (Color){ 12, 8, 24, 230 });
+            Rectangle rPrev = { painelEsq.x + 16, painelEsq.y + 474, painelEsq.width - 32, 144 };
+            DrawRectangleRounded(rPrev, 0.05f, 4, (Color){ 10, 7, 22, 235 });
             DesenharTexturaContain(ObterTexturaCache(&m->cacheEvImg, imgEv), rPrev, WHITE);
-            DrawRectangleRoundedLinesEx(rPrev, 0.05f, 4, 1.4f, COR_CIANO_NEON);
-            yDet = painelEsq.y + 452;
+            float scanPrev = rPrev.y + fmodf((float)tempo * 65.0f, rPrev.height);
+            DrawLineEx((Vector2){ rPrev.x + 4, scanPrev }, (Vector2){ rPrev.x + rPrev.width - 4, scanPrev }, 1.5f, ColorAlpha(COR_CIANO_NEON, 0.35f));
+            DrawRectangleRoundedLinesEx(rPrev, 0.05f, 4, 1.5f, COR_CIANO_NEON);
         }
-        DesenharTextoQuebrado(assets->fontes.regular, det, (Rectangle){ painelEsq.x + 16, yDet, painelEsq.width - 32, (painelEsq.y + 615) - yDet }, 17, 1.0f, WHITE);
 
         if (idx == 0 && statusProva[3] == 1) {
             Rectangle btnPlay = { painelEsq.x + 18, painelEsq.y + 620 - 46, 130, 34 };
@@ -1144,7 +1191,7 @@ static inline void DesenharMural(EstadoMural *m, GerenciadorAssets *assets, int 
     for (int i = 0; i < MURAL_NUM_TOTAL; i++) {
         if (m->evDesbloqueada[i] && !m->evPosicionada[i]) naoPos++;
     }
-    DrawTextEx(assets->fontes.bold, "INVENTÁRIO (CLIQUE OU ARRASTE P/ MURAL | P1..P5 LÓGICA, A1..A4 EXTRAS):",
+    DrawTextEx(assets->fontes.bold, "INVENTÁRIO (CLIQUE OU ARRASTE P/ MURAL | P1..P5 LÓGICA, A1..A5 EXTRAS):",
         (Vector2){ areaInv.x + 12, areaInv.y + 8 }, 15, 1.0f, COR_CIANO_NEON);
     if (naoPos > 0) {
         float pulseInv = 0.65f + 0.35f * sinf((float)tempo * 5.0f);

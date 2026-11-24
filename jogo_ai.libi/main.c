@@ -65,7 +65,7 @@ typedef enum {
     SEQ_FINAL_PERFEITO,
     SEQ_FINAL_VERDADE,
     SEQ_FINAL_DUVIDA,
-    SEQ_FINAL_COLAPSO,
+    SEQ_FINAL_INJUSTICA_AFASTAMENTO,
     SEQ_FINAL_PRECIPITADO,
     SEQ_FINAL_INJUSTICA
 } SequenciaDialogo;
@@ -112,7 +112,7 @@ typedef struct {
 
     // Veredito e 6 Finais
     int acusadoFinal; // 1 = Caio, 2 = Juliana
-    int tipoFinal;    // 1=Verdade Absoluta, 2=A Verdade, 3=A Duvida, 4=Colapso Forense, 5=Precipitacao, 6=A Injustica
+    int tipoFinal;    // 1=Final Perfeito, 2=Final Bom, 3=Inconclusivo, 4=Injustica e Afastamento, 5=Precipitado, 6=A Injustica
     bool vitoria;
 
     // Configuracoes
@@ -131,6 +131,7 @@ typedef struct {
     // Hovers suaves
     float hoverMenu[4];
     float hoverConfig[5];
+    float hoverCreditos[5];
     float hoverPausa[4];
     float hoverVeredito[3];
     float hoverSimNao[2];
@@ -194,13 +195,6 @@ static int ContarProvasValidadas(const EstadoJogo *e, const EstadoMural *m) {
     return count;
 }
 
-static bool AcertouTodasLogicas(const EstadoJogo *e) {
-    for (int c = 3; c <= 7; c++) {
-        if (e->statusProva[c] != 1) return false;
-    }
-    return true;
-}
-
 static int ContarAmbiguasCorretas(const EstadoJogo *e, const EstadoMural *m) {
     int alvoCulp = (e->culpado == CULPADO_JULIANA) ? 1 : 0;
     int count = 0;
@@ -260,8 +254,8 @@ static void ObterSequencia(SequenciaDialogo seq, CulpadoRota culpado, const Fala
             break;
         case SEQ_FINAL_DUVIDA:
             *outFalas = falasFinalDuvida; *outTotal = NUM_FALAS_FINAL_DUVIDA; break;
-        case SEQ_FINAL_COLAPSO:
-            *outFalas = falasFinalColapso; *outTotal = NUM_FALAS_FINAL_COLAPSO; break;
+        case SEQ_FINAL_INJUSTICA_AFASTAMENTO:
+            *outFalas = falasFinalInjusticaAfastamento; *outTotal = NUM_FALAS_FINAL_INJ_AFAST; break;
         case SEQ_FINAL_PRECIPITADO:
             *outFalas = falasFinalPrecipitado; *outTotal = NUM_FALAS_FINAL_PRECIPITADO; break;
         case SEQ_FINAL_INJUSTICA:
@@ -466,36 +460,64 @@ static void DesenharCardCentral(FontesUI *f, const char *titulo, const char *sub
     DesenharCardCentralEx(f, titulo, subtitulo, textoBtn, hoverBtn, tempo, corDestaque, false);
 }
 
-static void DesenharMapaLocalizacao(FontesUI *f, Rectangle area, double tempo) {
+static void DesenharMapaLocalizacao(GerenciadorAssets *assets, Rectangle area, double tempo) {
+    FontesUI *f = &assets->fontes;
     DesenharPainelCyber(area, COR_CIANO_NEON);
-    for (int x = (int)area.x + 40; x < (int)(area.x + area.width); x += 45) {
-        DrawLine(x, (int)area.y + 16, x, (int)(area.y + area.height - 16), (Color){ 30, 65, 95, 120 });
+    Texture2D texMapa = ObterTexturaCache(&assets->evidencia, "AssetsRay/Evidências/MapaCelularGabriel.png");
+    Rectangle inner = { area.x + 6, area.y + 6, area.width - 12, area.height - 12 };
+    if (texMapa.id != 0) {
+        DesenharTexturaCover(texMapa, inner, (Color){ 235, 240, 255, 245 });
+        DrawRectangleRec(inner, (Color){ 8, 6, 20, 75 });
     }
-    for (int y = (int)area.y + 40; y < (int)(area.y + area.height); y += 45) {
-        DrawLine((int)area.x + 16, y, (int)(area.x + area.width - 16), y, (Color){ 30, 65, 95, 120 });
-    }
-    Vector2 p1 = { area.x + 45, area.y + area.height - 45 };
-    Vector2 p2 = { area.x + area.width * 0.52f, area.y + area.height * 0.48f };
-    Vector2 p3 = { area.x + area.width - 45, area.y + 50 };
-    DrawLineEx(p1, p2, 6.0f, (Color){ 75, 95, 130, 255 });
-    DrawLineEx(p2, p3, 6.0f, (Color){ 75, 95, 130, 255 });
 
-    Vector2 pinCel = { area.x + area.width * 0.36f, area.y + area.height * 0.40f };
-    float radar = fmodf((float)tempo * 28.0f, 38.0f);
-    DrawCircleLines((int)pinCel.x, (int)pinCel.y, 10.0f + radar, ColorAlpha(COR_ROSA_NEON, 1.0f - radar / 38.0f));
-    DrawCircleLines((int)pinCel.x, (int)pinCel.y, 28, ColorAlpha(COR_ROSA_NEON, 0.65f));
-    DrawCircle((int)pinCel.x, (int)pinCel.y, 9, COR_ROSA_NEON);
-    DrawRectangleRounded((Rectangle){ pinCel.x + 16, pinCel.y - 42, 248, 60 }, 0.2f, 6, COR_PAINEL);
-    DrawRectangleRoundedLinesEx((Rectangle){ pinCel.x + 16, pinCel.y - 42, 248, 60 }, 0.2f, 6, 1.5f, COR_ROSA_NEON);
-    DrawTextEx(f->bold, "CELULAR GABRIEL", (Vector2){ pinCel.x + 26, pinCel.y - 36 }, 21, 1.0f, COR_ROSA_NEON);
-    DrawTextEx(f->regular, "03:20 | Ultimo: 03:22", (Vector2){ pinCel.x + 26, pinCel.y - 12 }, 20, 1.0f, WHITE);
+    // Feixe de varredura horizontal animado
+    float scanY = inner.y + fmodf((float)tempo * 75.0f, inner.height);
+    DrawLineEx((Vector2){ inner.x, scanY }, (Vector2){ inner.x + inner.width, scanY }, 2.0f, ColorAlpha(COR_CIANO_NEON, 0.45f));
 
-    Vector2 pinCorpo = { area.x + area.width * 0.42f, area.y + area.height * 0.64f };
-    DrawCircle((int)pinCorpo.x, (int)pinCorpo.y, 8, COR_AMARELO_AVISO);
-    DrawRectangleRounded((Rectangle){ pinCorpo.x + 16, pinCorpo.y - 12, 258, 58 }, 0.2f, 6, COR_PAINEL);
-    DrawRectangleRoundedLinesEx((Rectangle){ pinCorpo.x + 16, pinCorpo.y - 12, 258, 58 }, 0.2f, 6, 1.5f, COR_AMARELO_AVISO);
-    DrawTextEx(f->bold, "BARRANCO (200m GALPAO)", (Vector2){ pinCorpo.x + 26, pinCorpo.y - 6 }, 20, 1.0f, COR_AMARELO_AVISO);
-    DrawTextEx(f->regular, "3 torres / chip integro", (Vector2){ pinCorpo.x + 26, pinCorpo.y + 18 }, 20, 1.0f, WHITE);
+    // Coordenadas dos dois pontos principais alinhadas com o mapa
+    Vector2 pinCel = { inner.x + inner.width * 0.365f, inner.y + inner.height * 0.345f };
+    Vector2 pinCorpo = { inner.x + inner.width * 0.695f, inner.y + inner.height * 0.725f };
+
+    // Pulso de sinal viajando da estrada ate o barranco
+    float prog = fmodf((float)tempo * 0.65f, 1.0f);
+    Vector2 sig = {
+        pinCel.x + (pinCorpo.x - pinCel.x) * prog,
+        pinCel.y + (pinCorpo.y - pinCel.y) * prog
+    };
+    DrawLineEx(pinCel, pinCorpo, 2.0f, ColorAlpha(COR_CIANO_NEON, 0.35f));
+    DrawCircleV(sig, 5.0f, ColorAlpha(COR_CIANO_NEON, 0.90f));
+    DrawCircleV(sig, 9.0f, ColorAlpha(COR_CIANO_NEON, 0.30f));
+
+    // Sonar animado no pino do celular
+    float radar = fmodf((float)tempo * 30.0f, 40.0f);
+    DrawCircleLines((int)pinCel.x, (int)pinCel.y, 10.0f + radar, ColorAlpha(COR_ROSA_NEON, 1.0f - radar / 40.0f));
+    DrawCircleLines((int)pinCel.x, (int)pinCel.y, 20.0f + fmodf(radar + 20.0f, 40.0f), ColorAlpha(COR_ROSA_NEON, 0.55f));
+    DrawCircleV(pinCel, 6.0f, COR_ROSA_NEON);
+
+    // Alvo pulsante no barranco
+    float alvoP = 0.6f + 0.4f * sinf((float)tempo * 5.0f);
+    DrawCircleLines((int)pinCorpo.x, (int)pinCorpo.y, 18.0f + 4.0f * alvoP, ColorAlpha(COR_CIANO_NEON, alvoP));
+    DrawCircleV(pinCorpo, 5.0f, COR_AMARELO_AVISO);
+
+    // Barra HUD superior com texto
+    DrawRectangleRounded((Rectangle){ inner.x + 12, inner.y + 10, inner.width - 24, 30 }, 0.2f, 4, (Color){ 10, 8, 24, 215 });
+    DrawTextEx(f->bold, "RASTREAMENTO GPS // 3 TORRES ATIVAS", (Vector2){ inner.x + 22, inner.y + 16 }, 16, 1.0f, COR_CIANO_NEON);
+    float pisca = ((int)(tempo * 2.5) % 2 == 0) ? 1.0f : 0.45f;
+    DrawTextEx(f->bold, "SINAL PERDIDO 03:22", (Vector2){ inner.x + inner.width - 175, inner.y + 16 }, 15, 1.0f, ColorAlpha(COR_ROSA_NEON, pisca));
+
+    // Etiqueta Celular Gabriel
+    Rectangle boxCel = { pinCel.x + 20, pinCel.y - 38, 224, 52 };
+    DrawRectangleRounded(boxCel, 0.18f, 6, (Color){ 14, 9, 30, 228 });
+    DrawRectangleRoundedLinesEx(boxCel, 0.18f, 6, 1.5f, COR_ROSA_NEON);
+    DrawTextEx(f->bold, "CELULAR DE GABRIEL", (Vector2){ boxCel.x + 10, boxCel.y + 6 }, 17, 1.0f, COR_ROSA_NEON);
+    DrawTextEx(f->regular, "Parado às 03:20 | Bateria OK", (Vector2){ boxCel.x + 10, boxCel.y + 26 }, 16, 1.0f, WHITE);
+
+    // Etiqueta Barranco
+    Rectangle boxBar = { inner.x + 16, inner.y + inner.height - 68, 260, 54 };
+    DrawRectangleRounded(boxBar, 0.18f, 6, (Color){ 14, 9, 30, 228 });
+    DrawRectangleRoundedLinesEx(boxBar, 0.18f, 6, 1.5f, COR_AMARELO_AVISO);
+    DrawTextEx(f->bold, "BARRANCO (200m DO GALPÃO)", (Vector2){ boxBar.x + 10, boxBar.y + 6 }, 17, 1.0f, COR_AMARELO_AVISO);
+    DrawTextEx(f->regular, "Chip íntegro • Metadados originais", (Vector2){ boxBar.x + 10, boxBar.y + 27 }, 16, 1.0f, WHITE);
 }
 
 static void DesenharPlayerAudio(FontesUI *f, Rectangle area, bool tocando, float tempo, Vector2 mouse) {
@@ -693,7 +715,7 @@ static void AtualizarDevOverlay(EstadoJogo *e, EstadoCelular *cel, EstadoMural *
                 e->vitoria = (i < 2);
                 SequenciaDialogo seqsF[6] = {
                     SEQ_FINAL_PERFEITO, SEQ_FINAL_VERDADE, SEQ_FINAL_DUVIDA,
-                    SEQ_FINAL_COLAPSO, SEQ_FINAL_PRECIPITADO, SEQ_FINAL_INJUSTICA
+                    SEQ_FINAL_INJUSTICA_AFASTAMENTO, SEQ_FINAL_PRECIPITADO, SEQ_FINAL_INJUSTICA
                 };
                 IniciarSequencia(e, seqsF[i], 8);
                 return;
@@ -785,9 +807,9 @@ static void DesenharDevOverlay(const EstadoJogo *e, FontesUI *f, Vector2 mouse, 
 
         DrawTextEx(f->bold, "3. VER CENAS FINAIS DIRETO:", (Vector2){ 625, 380 }, 21, 1.0f, COR_VERDE_OK);
         const char *finaisTxt[6] = {
-            "F1: VERDADE ABSOLUTA", "F2: A VERDADE (4/5)",
-            "F3: A DÚVIDA (2-3/5)", "F4: COLAPSO FORENSE",
-            "F5: PRECIPITAÇÃO",     "F6: A INJUSTIÇA"
+            "F1: FINAL PERFEITO",   "F2: FINAL BOM",
+            "F3: INCONCLUSIVO",     "F4: INJUST. + AFAST.",
+            "F5: PRECIPITADO",      "F6: A INJUSTIÇA"
         };
         for (int i = 0; i < 6; i++) {
             int col = i % 2;
@@ -975,7 +997,7 @@ int main(void) {
                 if (e.podeAcusar && CheckCollisionPointRec(mouse, btnAcuTop)) {
                     TocarClick(&assets);
                     e.telaAnterior = e.tela;
-                    if (e.cenaAtual < 7) {
+                    if (e.cenaAtual < 7 || e.statusProva[7] == 0) {
                         e.tela = TELA_CONFIRMA_PRECIPITADO;
                     } else {
                         e.podeAcusar = false;
@@ -1095,7 +1117,13 @@ int main(void) {
                 } break;
 
                 case TELA_CREDITOS: {
-                    Rectangle btnVoltar = { 490, 555, 300, 50 };
+                    Rectangle credCards[5];
+                    for (int i = 0; i < 5; i++) {
+                        credCards[i] = (Rectangle){ 44.0f + i * (224.0f + 18.0f), 118.0f, 224.0f, 442.0f };
+                    }
+                    AtualizarHover(credCards, e.hoverCreditos, 5, mouse, dt);
+
+                    Rectangle btnVoltar = { 490, 642, 300, 48 };
                     AtualizarHover(&btnVoltar, &e.hoverBtnUnico, 1, mouse, dt);
                     if ((IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(mouse, btnVoltar)) || IsKeyPressed(KEY_ESCAPE)) {
                         TocarClick(&assets);
@@ -1318,7 +1346,7 @@ int main(void) {
                                     e.vitoria = false; e.tipoFinal = 3;
                                     MontarCutsceneFinal(&cutscene, e.tipoFinal, (int)e.culpado, e.statusProva, e.respostaProva);
                                     e.tela = TELA_CUTSCENE;
-                                } else if (e.seq == SEQ_FINAL_COLAPSO) {
+                                } else if (e.seq == SEQ_FINAL_INJUSTICA_AFASTAMENTO) {
                                     e.vitoria = false; e.tipoFinal = 4;
                                     MontarCutsceneFinal(&cutscene, e.tipoFinal, (int)e.culpado, e.statusProva, e.respostaProva);
                                     e.tela = TELA_CUTSCENE;
@@ -1519,30 +1547,31 @@ int main(void) {
                         e.podeAcusar = false;
                         bool acusouCorreto = (e.acusadoFinal == 2 && e.culpado == CULPADO_JULIANA) ||
                                              (e.acusadoFinal == 1 && e.culpado == CULPADO_CAIO);
+                        int provasLogVal = ContarProvasValidadas(&e, &mural);
+                        int ambCorretas = ContarAmbiguasCorretas(&e, &mural);
+                        bool temEvidenciasBomOuPerfeito = (provasLogVal >= 3 && ambCorretas >= 2);
                         if (!acusouCorreto) {
                             e.vitoria = false;
-                            e.tipoFinal = 6;
-                            IniciarSequencia(&e, SEQ_FINAL_INJUSTICA, 8);
+                            if (temEvidenciasBomOuPerfeito) {
+                                e.tipoFinal = 6;
+                                IniciarSequencia(&e, SEQ_FINAL_INJUSTICA, 8);
+                            } else {
+                                e.tipoFinal = 4;
+                                IniciarSequencia(&e, SEQ_FINAL_INJUSTICA_AFASTAMENTO, 8);
+                            }
                         } else {
-                            int provasLogVal = ContarProvasValidadas(&e, &mural);
-                            int ambCorretas = ContarAmbiguasCorretas(&e, &mural);
-                            bool todasLogicas = AcertouTodasLogicas(&e);
-                            if (todasLogicas && provasLogVal >= 3 && ambCorretas == MURAL_NUM_AMB) {
+                            if (provasLogVal >= 4 && ambCorretas >= 2) {
                                 e.vitoria = true;
                                 e.tipoFinal = 1;
                                 IniciarSequencia(&e, SEQ_FINAL_PERFEITO, 8);
-                            } else if (provasLogVal >= 2 && ambCorretas >= 1) {
+                            } else if (provasLogVal >= 3 && ambCorretas >= 2) {
                                 e.vitoria = true;
                                 e.tipoFinal = 2;
                                 IniciarSequencia(&e, SEQ_FINAL_VERDADE, 8);
-                            } else if (provasLogVal >= 1 || ambCorretas >= 1) {
+                            } else {
                                 e.vitoria = false;
                                 e.tipoFinal = 3;
                                 IniciarSequencia(&e, SEQ_FINAL_DUVIDA, 8);
-                            } else {
-                                e.vitoria = false;
-                                e.tipoFinal = 4;
-                                IniciarSequencia(&e, SEQ_FINAL_COLAPSO, 8);
                             }
                         }
                     } else if (nao) {
@@ -1643,17 +1672,154 @@ int main(void) {
             } break;
 
             case TELA_CREDITOS: {
-                if (assets.menuBg.id != 0) DesenharTexturaCover(assets.menuBg, (Rectangle){0, 0, VIRTUAL_W, VIRTUAL_H}, WHITE);
-                DrawRectangle(0, 0, VIRTUAL_W, VIRTUAL_H, (Color){ 10, 6, 20, 195 });
-                DesenharPainelCyber((Rectangle){ 200, 95, 880, 535 }, COR_ROXO_NEON);
-                DrawTextEx(assets.fontes.titulo, "CREDITOS - PROJETO INTEGRADOR", (Vector2){ 290, 138 }, 34, 1.0f, COR_ROSA_NEON);
-                const char *cred =
-                    "AI.libi e um jogo investigativo desenvolvido em C com Raylib,\n"
-                    "combinando Logica Proposicional, Pensamento Critico e Alfabetizacao Digital.\n\n"
-                    "Motor otimizado com carregamento sob demanda (cache de texturas),\n"
-                    "roteiro dirigido por dados e resolucao virtual escalavel.";
-                DesenharTextoQuebrado(assets.fontes.regular, cred, (Rectangle){ 265, 218, 750, 260 }, 28, 1.0f, WHITE);
-                DesenharBotaoCyber(assets.fontes.bold, (Rectangle){ 490, 555, 300, 50 }, "VOLTAR", 25, e.hoverBtnUnico, tempo, COR_CIANO_NEON);
+                static const char *chibiPaths[5] = {
+                    "AssetsRay/Chibis/JuizProductOwner.png",
+                    "AssetsRay/Chibis/JulianaDev.png",
+                    "AssetsRay/Chibis/CaioDesigner.png",
+                    "AssetsRay/Chibis/AdvogadaRoterista.png",
+                    "AssetsRay/Chibis/GabrielResearcher.png"
+                };
+                for (int i = 0; i < 5; i++) {
+                    if (assets.chibisCreditos[i].id == 0) {
+                        assets.chibisCreditos[i] = CarregarTexturaSegura(chibiPaths[i]);
+                    }
+                }
+
+                if (assets.menuBg.id != 0) DesenharTexturaCover(assets.menuBg, (Rectangle){ 0, 0, VIRTUAL_W, VIRTUAL_H }, WHITE);
+                DrawRectangle(0, 0, VIRTUAL_W, VIRTUAL_H, (Color){ 10, 6, 22, 212 });
+                DrawRectangleGradientV(0, 0, VIRTUAL_W, VIRTUAL_H, ColorAlpha(COR_ROXO_NEON, 0.08f), ColorAlpha(COR_CIANO_NEON, 0.06f));
+
+                // Particulas suaves decorativas
+                for (int p = 0; p < 22; p++) {
+                    float seed = (float)p * 53.7f;
+                    float px = fmodf(seed * 23.1f + (float)tempo * 6.0f, (float)VIRTUAL_W);
+                    float py = fmodf(seed * 17.3f - (float)tempo * (12.0f + (p % 4) * 5.0f), (float)VIRTUAL_H);
+                    if (py < 0) py += VIRTUAL_H;
+                    float pulse = 0.35f + 0.35f * sinf((float)tempo * 2.5f + p);
+                    Color pc = (p % 3 == 0) ? COR_ROSA_NEON : (p % 3 == 1) ? COR_CIANO_NEON : COR_AMARELO_AVISO;
+                    DrawCircle((int)px, (int)py, 1.8f + (p % 2) * 0.8f, ColorAlpha(pc, pulse * 0.45f));
+                }
+
+                // Cabecalho centralizado
+                const char *titCred = "CRÉDITOS";
+                Vector2 szTit = MeasureTextEx(assets.fontes.titulo, titCred, 40, 1.5f);
+                float titX = (VIRTUAL_W - szTit.x) * 0.5f;
+                DrawTextEx(assets.fontes.titulo, titCred, (Vector2){ titX + 2, 26 }, 40, 1.5f, ColorAlpha(COR_ROXO_NEON, 0.45f));
+                DrawTextEx(assets.fontes.titulo, titCred, (Vector2){ titX, 24 }, 40, 1.5f, COR_ROSA_NEON);
+
+                const char *subCred = "PROJETO INTEGRADOR  •  EQUIPE AI.LIBI";
+                Vector2 szSub = MeasureTextEx(assets.fontes.bold, subCred, 19, 1.5f);
+                float subX = (VIRTUAL_W - szSub.x) * 0.5f;
+                DrawLineEx((Vector2){ subX - 110, 81 }, (Vector2){ subX - 16, 81 }, 2.0f, ColorAlpha(COR_CIANO_NEON, 0.65f));
+                DrawTextEx(assets.fontes.bold, subCred, (Vector2){ subX, 71 }, 19, 1.5f, COR_CIANO_NEON);
+                DrawLineEx((Vector2){ subX + szSub.x + 16, 81 }, (Vector2){ subX + szSub.x + 110, 81 }, 2.0f, ColorAlpha(COR_CIANO_NEON, 0.65f));
+
+                typedef struct {
+                    const char *cargo;
+                    Color cor;
+                    int qtdNomes;
+                    const char *nomes[3];
+                } CardCredito;
+
+                const CardCredito equipe[5] = {
+                    { "PRODUCT OWNER",           COR_AMARELO_AVISO, 1, { "Giovana Monteiro", NULL, NULL } },
+                    { "DESENVOLVEDORES",         COR_CIANO_NEON,    3, { "Luma Frazão", "Letícia Minucelli", "Lanna Marcullino" } },
+                    { "GAME E VISUAL DESIGNER",  COR_ROSA_NEON,     1, { "Raysha Neide", NULL, NULL } },
+                    { "ROTEIRISTAS",             COR_ROXO_NEON,     2, { "Raysha Neide", "Letícia Minucelli", NULL } },
+                    { "RESEARCH E UX",           COR_VERDE_OK,      2, { "Júlia Aquino", "Vitória Thayná", NULL } }
+                };
+
+                for (int i = 0; i < 5; i++) {
+                    float h = e.hoverCreditos[i];
+                    float lift = -7.0f * h;
+                    Rectangle card = { 44.0f + i * (224.0f + 18.0f), 118.0f + lift, 224.0f, 442.0f };
+                    Color acento = equipe[i].cor;
+
+                    // Card chanfrado cyberpunk
+                    float c = 14.0f;
+                    Vector2 pts[8] = {
+                        { card.x + c, card.y }, { card.x + card.width - c, card.y },
+                        { card.x + card.width, card.y + c }, { card.x + card.width, card.y + card.height - c },
+                        { card.x + card.width - c, card.y + card.height }, { card.x + c, card.y + card.height },
+                        { card.x, card.y + card.height - c }, { card.x, card.y + c }
+                    };
+                    Vector2 centro = { card.x + card.width * 0.5f, card.y + card.height * 0.5f };
+
+                    if (h > 0.02f) {
+                        for (int k = 0; k < 8; k++) {
+                            DrawLineEx(pts[k], pts[(k + 1) % 8], 8.0f, ColorAlpha(acento, 0.22f * h));
+                        }
+                    }
+                    Color bgCard = {
+                        (unsigned char)(20 + 12 * h),
+                        (unsigned char)(12 + 8 * h),
+                        (unsigned char)(38 + 16 * h),
+                        236
+                    };
+                    for (int k = 0; k < 8; k++) {
+                        DrawTriangle(centro, pts[(k + 1) % 8], pts[k], bgCard);
+                    }
+                    DrawRectangleGradientV((int)(card.x + c), (int)card.y + 2, (int)(card.width - c * 2), 90,
+                        ColorAlpha(acento, 0.16f + 0.10f * h), ColorAlpha(acento, 0.0f));
+
+                    for (int k = 0; k < 8; k++) {
+                        DrawLineEx(pts[k], pts[(k + 1) % 8], 2.0f + 0.8f * h, ColorAlpha(acento, 0.65f + 0.35f * h));
+                    }
+
+                    // Halo suave atras do Chibi
+                    float cx = card.x + card.width * 0.5f;
+                    float cy = card.y + 122.0f;
+                    DrawCircleGradient((Vector2){ cx, cy }, 92.0f + 8.0f * h,
+                        ColorAlpha(acento, 0.24f + 0.16f * h), ColorAlpha(acento, 0.0f));
+                    DrawCircleLines((int)cx, (int)cy, 84.0f, ColorAlpha(acento, 0.22f + 0.25f * h));
+
+                    // Chibi animado (flutuacao suave + zoom no hover)
+                    float bob = sinf((float)tempo * 2.3f + i * 1.15f) * 3.5f;
+                    float pad = 16.0f - 5.0f * h;
+                    Rectangle chibiRect = {
+                        card.x + pad,
+                        card.y + 20.0f + bob - 4.0f * h,
+                        card.width - pad * 2.0f,
+                        204.0f + 8.0f * h
+                    };
+                    DesenharTexturaContain(assets.chibisCreditos[i], chibiRect, WHITE);
+
+                    // Badge do cargo
+                    float cargoFont = 16.5f;
+                    Vector2 szCargo = MeasureTextEx(assets.fontes.bold, equipe[i].cargo, cargoFont, 0.8f);
+                    float pillW = fminf(card.width - 18.0f, szCargo.x + 22.0f);
+                    Rectangle pill = { card.x + (card.width - pillW) * 0.5f, card.y + 244.0f, pillW, 28.0f };
+                    DrawRectangleRounded(pill, 0.45f, 6, ColorAlpha(acento, 0.18f + 0.10f * h));
+                    DrawRectangleRoundedLinesEx(pill, 0.45f, 6, 1.4f, ColorAlpha(acento, 0.85f));
+                    DrawTextEx(assets.fontes.bold, equipe[i].cargo,
+                        (Vector2){ card.x + (card.width - szCargo.x) * 0.5f, pill.y + (pill.height - cargoFont) * 0.5f },
+                        cargoFont, 0.8f, acento);
+
+                    // Divisor sutil
+                    DrawLineEx((Vector2){ card.x + 30.0f, card.y + 288.0f }, (Vector2){ card.x + card.width - 30.0f, card.y + 288.0f },
+                        1.2f, ColorAlpha(acento, 0.35f));
+
+                    // Nomes centralizados
+                    float nomeFont = 22.0f;
+                    float linhaH = 34.0f;
+                    float blocoH = equipe[i].qtdNomes * linhaH;
+                    float startNomeY = card.y + 302.0f + (120.0f - blocoH) * 0.5f;
+                    for (int n = 0; n < equipe[i].qtdNomes; n++) {
+                        const char *nome = equipe[i].nomes[n];
+                        Vector2 szNome = MeasureTextEx(assets.fontes.regular, nome, nomeFont, 0.8f);
+                        float nx = card.x + (card.width - szNome.x) * 0.5f;
+                        float ny = startNomeY + n * linhaH;
+                        DrawTextEx(assets.fontes.regular, nome, (Vector2){ nx + 1.0f, ny + 1.0f }, nomeFont, 0.8f, (Color){ 0, 0, 0, 150 });
+                        DrawTextEx(assets.fontes.regular, nome, (Vector2){ nx, ny }, nomeFont, 0.8f, h > 0.2f ? WHITE : (Color){ 232, 232, 245, 255 });
+                    }
+                }
+
+                // Rodape discreto sobre o projeto
+                const char *rodape = "AI.libi  •  Jogo investigativo em C com Raylib  •  Lógica Proposicional, Pensamento Crítico e Alfabetização Digital";
+                Vector2 szRod = MeasureTextEx(assets.fontes.regular, rodape, 18, 0.8f);
+                DrawTextEx(assets.fontes.regular, rodape, (Vector2){ (VIRTUAL_W - szRod.x) * 0.5f, 594 }, 18, 0.8f, ColorAlpha(LIGHTGRAY, 0.80f));
+
+                DesenharBotaoCyber(assets.fontes.bold, (Rectangle){ 490, 642, 300, 48 }, "VOLTAR", 24, e.hoverBtnUnico, tempo, COR_CIANO_NEON);
                 DesenharScanlinesHUD(tempo);
             } break;
 
@@ -1924,7 +2090,7 @@ int main(void) {
                 } else if (e.cenaAtual == 5) {
                     titulo = "PROVA 3 - LOCALIZAÇÃO DO CELULAR DE GABRIEL";
                     desc = "LUPA FORENSE: Celular parado no barranco a 200m do galpão às 03:20 (último sinal 03:22). Dados batem com três torres; bateria coerente; chip íntegro; metadados sem edição.";
-                    DesenharMapaLocalizacao(&assets.fontes, imgRect, tempo);
+                    DesenharMapaLocalizacao(&assets, imgRect, tempo);
                     motivo = "Prova Real: Gabriel nunca saiu da festa. Morreu no local antes das 03:05.";
                 } else if (e.cenaAtual == 6) {
                     titulo = "PROVA 4 - ARQUIVO OCULTO NA NUVEM";
@@ -1952,21 +2118,14 @@ int main(void) {
                     if (ehJu) {
                         titulo = "PROVA 5 - CORRIDA DE JULIANA (MOBI)";
                         desc = "LUPA FORENSE: Assinatura da Mobi válida; trilha de GPS contínua; nenhuma outra corrida registrada na conta naquela noite.";
-                        DesenharPainelCyber((Rectangle){ 115, 145, 500, 385 }, COR_CIANO_NEON);
-                        const char *mobiTxt =
-                            "MOBI // REGISTRO OFICIAL DE CORRIDA\n\n"
-                            "Conta: Juliana Costa\n"
-                            "Solicitada às: 03:41\n"
-                            "Embarque: Estrada de serviço (ao lado do galpão)\n"
-                            "Veículo: Autônomo, SEM volante\n"
-                            "Passageiros: 1";
-                        DesenharTextoQuebrado(assets.fontes.regular, mobiTxt, (Rectangle){ 142, 175, 446, 330 }, 24, 1.0f, WHITE);
+                        DesenharTexturaContain(ObterTexturaCache(&assets.evidencia, "AssetsRay/Evidências/AplicativoMobiJulia.png"), imgRect, WHITE);
+                        temScannerImg = true;
                         motivo = "Prova Real: derruba o álibi das 03:00 e o carro com volante da foto.";
                     } else {
-                        titulo = "PROVA 5 - CÂMERA DO ESTACIONAMENTO (02:42)";
-                        DesenharTexturaContain(ObterTexturaCache(&assets.evidencia, "AssetsRay/Evidências/caiodeepfake.png"), imgRect, WHITE);
+                        titulo = "PROVA 5 - CÂMERA DO ESTACIONAMENTO (02:56)";
+                        DesenharTexturaContain(ObterTexturaCache(&assets.evidencia, "AssetsRay/Evidências/CaioCancelaDeepfake.png"), imgRect, WHITE);
                         temScannerImg = true;
-                        desc = "LUPA FORENSE: Carro de Caio na cancela às 02:42. Placa com caracteres distorcidos; sombra dos postes no ângulo errado para o horário; ruído digital injetado sobre o frame original.";
+                        desc = "LUPA FORENSE: Carro de Caio na cancela às 02:56. Placa de saída escrita 'SsaíDA'; caracteres da placa do carro distorcidos; reflexos neon artificiais sobre a lataria.";
                         motivo = "Gerada por IA: Caio forjou o vídeo de saída para encobrir o horário real.";
                     }
                 }
@@ -2165,37 +2324,38 @@ int main(void) {
                 char txt[512] = "";
                 Color corFinal = COR_VERMELHO_ERR;
                 if (e.tipoFinal == 1) {
-                    tit = "FINAL 1 - VERDADE ABSOLUTA";
+                    tit = "FINAL 1 - FINAL PERFEITO";
                     snprintf(txt, sizeof(txt),
-                        "CASO PERFEITO (5/5 PROVAS)! Você prendeu %s e ainda expôs o esquema inteiro nos bastidores da NEXARA.\nCASO ENCERRADO - EXCELENTE TRABALHO, INVESTIGADORA!",
+                        "CASO PERFEITO! Você prendeu %s com 4+ provas lógicas e 2+ extras de diálogo corretas, expondo a NEXARA.\nCASO ENCERRADO - EXCELENTE TRABALHO, INVESTIGADORA!",
                         nomeCulpado);
                     corFinal = COR_VERDE_OK;
                 } else if (e.tipoFinal == 2) {
-                    tit = "FINAL 2 - A VERDADE";
+                    tit = "FINAL 2 - FINAL BOM";
                     snprintf(txt, sizeof(txt),
-                        "VEREDITO CORRETO! %s confessou o crime diante das provas técnicas validadas.\nCASO ENCERRADO - PARABÉNS, INVESTIGADORA!",
+                        "VEREDITO CORRETO! %s confessou o crime diante de 3 provas lógicas e 2+ extras de diálogo validadas.\nCASO ENCERRADO - PARABÉNS, INVESTIGADORA!",
                         nomeCulpado);
                     corFinal = COR_VERDE_OK;
                 } else if (e.tipoFinal == 3) {
-                    tit = "FINAL 3 - A DÚVIDA";
+                    tit = "FINAL 3 - INCONCLUSIVO";
                     snprintf(txt, sizeof(txt),
                         "VEREDITO CORRETO, MAS SEM PROVAS SUFICIENTES. %s foi absolvido(a) pela Lei da Dúvida Digital.\nCASO ARQUIVADO - A VERDADE FICOU PELO CAMINHO.",
                         nomeCulpado);
                     corFinal = COR_AMARELO_AVISO;
                 } else if (e.tipoFinal == 4) {
-                    tit = "FINAL 4 - COLAPSO FORENSE";
+                    tit = "FINAL 4 - INJUSTIÇA E AFASTAMENTO";
                     snprintf(txt, sizeof(txt),
-                        "INQUÉRITO ARQUIVADO ANTES DO TRIBUNAL. Com quase nenhuma prova validada, o Ministério Público rejeitou o caso.\nDICA: Valide pelo menos 4 provas para sustentar a prisão.");
+                        "VEREDITO INCORRETO E SEM PROVAS SUFICIENTES! Você acusou um inocente sem lastro para a prisão.\nO culpado era %s e você foi afastada do caso.",
+                        nomeCulpado);
                     corFinal = COR_VERMELHO_ERR;
                 } else if (e.tipoFinal == 5) {
-                    tit = "FINAL 5 - A PRECIPITAÇÃO";
+                    tit = "FINAL 5 - PRECIPITADO";
                     snprintf(txt, sizeof(txt),
-                        "ACUSAÇÃO PRECIPITADA! Você tentou encerrar o caso antes de concluir a perícia da nuvem e o confronto final.\nO Delegado Meireles te afastou da investigação.");
+                        "ACUSAÇÃO PRECIPITADA! Você acusou antes de reunir todas as evidências da investigação.\nO Delegado Meireles te afastou do caso.");
                     corFinal = COR_AMARELO_AVISO;
                 } else {
                     tit = "FINAL 6 - A INJUSTIÇA";
                     snprintf(txt, sizeof(txt),
-                        "VEREDITO INCORRETO. Um inocente pagou pelo crime. O verdadeiro culpado era %s.\nCASO ENCERRADO - VOCÊ PERDEU.",
+                        "VEREDITO INCORRETO COM PROVAS FORTES. Um inocente foi condenado injustamente. O verdadeiro culpado era %s.\nCASO ENCERRADO - VOCÊ PERDEU.",
                         nomeCulpado);
                     corFinal = COR_VERMELHO_ERR;
                 }

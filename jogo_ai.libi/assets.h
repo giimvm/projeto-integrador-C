@@ -40,6 +40,7 @@ typedef struct {
     Texture2D menuBg;
     Texture2D marcaLogo;
     Texture2D caixaDialogo;
+    Texture2D chibisCreditos[5];
 
     CacheTextura fundo;
     CacheTextura personagem;
@@ -123,6 +124,23 @@ static inline Texture2D CarregarTexturaSegura(const char *relativo) {
     const char *path = ResolverCaminho(relativo, buf, sizeof(buf));
     if (!FileExists(path)) return (Texture2D){0};
     Texture2D t = LoadTexture(path);
+    if (t.id == 0) {
+        int dataSize = 0;
+        unsigned char *data = LoadFileData(path, &dataSize);
+        if (data && dataSize >= 4) {
+            const char *extReal = (data[0] == 0xFF && data[1] == 0xD8) ? ".jpg"
+                                : (data[0] == 0x89 && data[1] == 0x50) ? ".png"
+                                : NULL;
+            if (extReal) {
+                Image img = LoadImageFromMemory(extReal, data, dataSize);
+                if (img.data != NULL) {
+                    t = LoadTextureFromImage(img);
+                    UnloadImage(img);
+                }
+            }
+        }
+        if (data) UnloadFileData(data);
+    }
     if (t.id != 0) SetTextureFilter(t, TEXTURE_FILTER_BILINEAR);
     return t;
 }
@@ -311,6 +329,9 @@ static inline void DescarregarGerenciadorAssets(GerenciadorAssets *g) {
     if (g->menuBg.id != 0) UnloadTexture(g->menuBg);
     if (g->marcaLogo.id != 0) UnloadTexture(g->marcaLogo);
     if (g->caixaDialogo.id != 0) UnloadTexture(g->caixaDialogo);
+    for (int i = 0; i < 5; i++) {
+        if (g->chibisCreditos[i].id != 0) UnloadTexture(g->chibisCreditos[i]);
+    }
     if (g->fundo.tex.id != 0) UnloadTexture(g->fundo.tex);
     if (g->personagem.tex.id != 0) UnloadTexture(g->personagem.tex);
     if (g->evidencia.tex.id != 0) UnloadTexture(g->evidencia.tex);
