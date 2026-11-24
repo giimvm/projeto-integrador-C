@@ -27,6 +27,7 @@ typedef struct {
     Font regular;
     Font titulo;
     Font teko;
+    Font tech;
     bool carregada;
 } FontesUI;
 
@@ -92,22 +93,28 @@ static inline Font CarregarFonteAltaRes(const char *relativo, int tamanhoBase, i
 
 static inline FontesUI CarregarFontesUI(void) {
     FontesUI f = {0};
-    int codepoints[224];
+    int codepoints[256];
     int count = 0;
     for (int c = 32; c <= 126; c++) codepoints[count++] = c;
     for (int c = 160; c <= 255; c++) codepoints[count++] = c;
+    const int extras[] = { 0x2013, 0x2014, 0x2018, 0x2019, 0x201C, 0x201D, 0x2022, 0x2026 };
+    for (int i = 0; i < (int)(sizeof(extras) / sizeof(extras[0])); i++) {
+        codepoints[count++] = extras[i];
+    }
 
     // Carrega em resolucao alta (48-72px) para nitidez maxima
     f.bold    = CarregarFonteAltaRes("src/fonts/Rajdhani-Bold.ttf", 52, codepoints, count);
     f.regular = CarregarFonteAltaRes("src/fonts/Rajdhani-SemiBold.ttf", 44, codepoints, count);
     f.titulo  = CarregarFonteAltaRes("src/fonts/Orbitron-Regular.ttf", 64, codepoints, count);
     f.teko    = CarregarFonteAltaRes("src/fonts/Teko-Regular.ttf", 72, codepoints, count);
+    f.tech    = CarregarFonteAltaRes("src/fonts/Tektur-Regular.ttf", 64, codepoints, count);
 
     if (f.bold.texture.id == 0) f.bold = GetFontDefault();
     else f.carregada = true;
     if (f.regular.texture.id == 0) f.regular = f.bold;
     if (f.titulo.texture.id == 0) f.titulo = f.bold;
     if (f.teko.texture.id == 0) f.teko = f.bold;
+    if (f.tech.texture.id == 0) f.tech = f.titulo;
     return f;
 }
 
@@ -313,6 +320,7 @@ static inline void DescarregarGerenciadorAssets(GerenciadorAssets *g) {
         if (g->fontes.regular.texture.id != g->fontes.bold.texture.id) UnloadFont(g->fontes.regular);
         if (g->fontes.titulo.texture.id != g->fontes.bold.texture.id) UnloadFont(g->fontes.titulo);
         if (g->fontes.teko.texture.id != g->fontes.bold.texture.id) UnloadFont(g->fontes.teko);
+        if (g->fontes.tech.texture.id != g->fontes.bold.texture.id && g->fontes.tech.texture.id != g->fontes.titulo.texture.id) UnloadFont(g->fontes.tech);
     }
     if (g->temMusicaMenu) UnloadMusicStream(g->musicaMenu);
     if (g->temMusicaJogo) UnloadMusicStream(g->musicaJogo);

@@ -383,7 +383,10 @@ static const char *NomeFalanteExibido(const char *falante, const EstadoJogo *e, 
     return falante;
 }
 
-static void DesenharBarraTopo(FontesUI *f, Vector2 mouse, double tempo, float hoverDos, bool podeAcusar, bool setaMuralTutorial, float toastTimer, const char *toastTxt) {
+static void DesenharBarraTopo(FontesUI *f, Vector2 mouse, double tempo, float hoverDos, bool podeAcusar, bool setaMuralTutorial, bool forcarSpotlightMural, float toastTimer, const char *toastTxt) {
+    if (forcarSpotlightMural) {
+        DesenharFundoSpotlightTutorial((Rectangle){ 988, 4, 210, 60 }, 155);
+    }
     if (toastTimer > 0.0f && toastTxt && toastTxt[0] != '\0') {
         float alpha = fminf(1.0f, toastTimer);
         Rectangle rT = { 22, 14, 495, 38 };
@@ -398,10 +401,21 @@ static void DesenharBarraTopo(FontesUI *f, Vector2 mouse, double tempo, float ho
     }
     Rectangle btnDos  = { 1000, 14, 186, 40 };
     Rectangle btnMenu = { 1196, 14, 62, 40 };
-    DesenharBotaoCyber(f->bold, btnDos, "MURAL [D]", 22, hoverDos, tempo, setaMuralTutorial ? COR_AMARELO_AVISO : COR_CIANO_NEON);
     if (setaMuralTutorial) {
+        float pulso = 0.55f + 0.45f * sinf((float)tempo * 6.5f);
+        DrawRectangleRoundedLinesEx((Rectangle){ btnDos.x - 6, btnDos.y - 6, btnDos.width + 12, btnDos.height + 12 }, 0.22f, 6, 3.5f, ColorAlpha(COR_AMARELO_AVISO, pulso));
+        DesenharSpotlightMural(btnDos, COR_AMARELO_AVISO, tempo);
+    }
+    DesenharBotaoCyber(f->bold, btnDos, "MURAL [D]", 22, hoverDos, tempo, setaMuralTutorial ? COR_AMARELO_AVISO : COR_CIANO_NEON);
+    if (forcarSpotlightMural) {
+        DesenharSetaTutorialMural((Vector2){ 1093, 126 }, (Vector2){ 1093, 62 }, COR_AMARELO_AVISO, tempo);
+        Rectangle cardTut = { 736, 134, 460, 108 };
+        DesenharPainelCyber(cardTut, COR_AMARELO_AVISO);
+        DrawTextEx(f->bold, "ABRA O MURAL / DOSSIÊ!", (Vector2){ cardTut.x + 18, cardTut.y + 14 }, 23, 1.0f, COR_AMARELO_AVISO);
+        DesenharTextoQuebrado(f->regular, "Clique no botão MURAL [D] acima (ou pressione a tecla D) para abrir o dossiê e continuar.", (Rectangle){ cardTut.x + 18, cardTut.y + 46, cardTut.width - 36, 52 }, 19, 1.0f, WHITE);
+    } else if (setaMuralTutorial) {
         DesenharSetaTutorialMural((Vector2){ 1093, 122 }, (Vector2){ 1093, 60 }, COR_AMARELO_AVISO, tempo);
-        DrawTextEx(f->bold, "ABRA O MURAL!", (Vector2){ 1028, 128 }, 17, 1.0f, COR_AMARELO_AVISO);
+        DrawTextEx(f->bold, "ABRA O MURAL! [D]", (Vector2){ 1012, 128 }, 18, 1.0f, COR_AMARELO_AVISO);
     }
     bool hovMenu = CheckCollisionPointRec(mouse, btnMenu);
     DrawRectangleRounded(btnMenu, 0.16f, 6, hovMenu ? (Color){ 28, 22, 54, 220 } : (Color){ 14, 10, 28, 175 });
@@ -409,14 +423,34 @@ static void DesenharBarraTopo(FontesUI *f, Vector2 mouse, double tempo, float ho
     DesenharIconeMenu(btnMenu, mouse);
 }
 
-static void DesenharCardCentral(FontesUI *f, const char *titulo, const char *subtitulo, const char *textoBtn, float hoverBtn, double tempo, Color corDestaque) {
+static void DesenharCardCentralEx(FontesUI *f, const char *titulo, const char *subtitulo, const char *textoBtn, float hoverBtn, double tempo, Color corDestaque, bool glitchLeve) {
     DesenharFundoCyberGrid(tempo, corDestaque);
     Rectangle card = { 180, 118, 920, 484 };
     DesenharPainelCyber(card, corDestaque);
 
     Vector2 szTit = MeasureTextEx(f->titulo, titulo, 42, 1.0f);
-    DrawTextEx(f->titulo, titulo, (Vector2){ card.x + (card.width - szTit.x) * 0.5f + 2, card.y + 72 }, 42, 1.0f, ColorAlpha(corDestaque, 0.35f));
-    DrawTextEx(f->titulo, titulo, (Vector2){ card.x + (card.width - szTit.x) * 0.5f, card.y + 70 }, 42, 1.0f, WHITE);
+    float titX = card.x + (card.width - szTit.x) * 0.5f;
+    float titY = card.y + 70.0f;
+
+    if (glitchLeve && gEfeitoGlitch) {
+        float ciclo = fmodf((float)tempo, 2.6f);
+        bool pulsoGlitch = (ciclo < 0.14f) || (ciclo > 1.40f && ciclo < 1.46f);
+        if (pulsoGlitch) {
+            float jx = sinf((float)tempo * 75.0f) * 1.6f;
+            float jy = cosf((float)tempo * 55.0f) * 0.8f;
+            DrawTextEx(f->titulo, titulo, (Vector2){ titX - 2.2f + jx, titY + jy }, 42, 1.0f, ColorAlpha(COR_CIANO_NEON, 0.55f));
+            DrawTextEx(f->titulo, titulo, (Vector2){ titX + 2.2f - jx, titY - jy }, 42, 1.0f, ColorAlpha(COR_ROSA_NEON, 0.55f));
+            DrawTextEx(f->titulo, titulo, (Vector2){ titX + jx * 0.5f, titY }, 42, 1.0f, WHITE);
+            float scanY = card.y + 58.0f + fmodf((float)tempo * 180.0f, 68.0f);
+            DrawRectangle((int)(card.x + 80), (int)scanY, (int)(card.width - 160), 2, ColorAlpha(COR_CIANO_NEON, 0.35f));
+        } else {
+            DrawTextEx(f->titulo, titulo, (Vector2){ titX + 2, titY + 2 }, 42, 1.0f, ColorAlpha(corDestaque, 0.35f));
+            DrawTextEx(f->titulo, titulo, (Vector2){ titX, titY }, 42, 1.0f, WHITE);
+        }
+    } else {
+        DrawTextEx(f->titulo, titulo, (Vector2){ titX + 2, titY + 2 }, 42, 1.0f, ColorAlpha(corDestaque, 0.35f));
+        DrawTextEx(f->titulo, titulo, (Vector2){ titX, titY }, 42, 1.0f, WHITE);
+    }
     DrawRectangle((int)(card.x + 120), (int)(card.y + 132), (int)(card.width - 240), 2, ColorAlpha(corDestaque, 0.45f));
 
     if (subtitulo && subtitulo[0] != '\0') {
@@ -426,6 +460,10 @@ static void DesenharCardCentral(FontesUI *f, const char *titulo, const char *sub
         Rectangle btn = { 455, 455, 370, 54 };
         DesenharBotaoCyber(f->bold, btn, textoBtn, 26, hoverBtn, tempo, corDestaque);
     }
+}
+
+static void DesenharCardCentral(FontesUI *f, const char *titulo, const char *subtitulo, const char *textoBtn, float hoverBtn, double tempo, Color corDestaque) {
+    DesenharCardCentralEx(f, titulo, subtitulo, textoBtn, hoverBtn, tempo, corDestaque, false);
 }
 
 static void DesenharMapaLocalizacao(FontesUI *f, Rectangle area, double tempo) {
@@ -962,10 +1000,10 @@ int main(void) {
             if (!clicouBarra) switch (e.tela) {
                 case TELA_MENU: {
                     Rectangle menuBtns[4] = {
-                        { 95, 325, 320, 58 },
-                        { 95, 392, 320, 58 },
-                        { 95, 459, 320, 58 },
-                        { 95, 526, 320, 58 }
+                        { 95.0f,          312.0f, 360.0f, 68.0f },
+                        { 95.0f + 26.0f,  394.0f, 360.0f, 68.0f },
+                        { 95.0f + 52.0f,  476.0f, 360.0f, 68.0f },
+                        { 95.0f + 78.0f,  558.0f, 360.0f, 68.0f }
                     };
                     AtualizarHover(menuBtns, e.hoverMenu, 4, mouse, dt);
                     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
@@ -1068,7 +1106,7 @@ int main(void) {
                 case TELA_NOME_JOGADOR: {
                     int key = GetCharPressed();
                     while (key > 0) {
-                        if (key >= 32 && key <= 125 && e.nomeJogadorLen < 20) {
+                        if (key >= 32 && key <= 125 && e.nomeJogadorLen < 9) {
                             e.nomeJogador[e.nomeJogadorLen++] = (char)key;
                             e.nomeJogador[e.nomeJogadorLen] = '\0';
                             e.nomeVazioErro = false;
@@ -1198,7 +1236,7 @@ int main(void) {
                         e.toastMuralTimer = 4.5f;
                         snprintf(e.toastMuralTxt, sizeof(e.toastMuralTxt), "[!] NOVA PISTA: Testemunho dos pais de Gabriel [D]");
                     }
-                    if (e.seq == SEQ_CENA2 && e.falaIdx >= 5 && !e.notaCaioCena2) {
+                    if (e.seq == SEQ_CENA2 && e.falaIdx >= 6 && !e.notaCaioCena2) {
                         e.notaCaioCena2 = true;
                         e.toastMuralTimer = 3.5f;
                         snprintf(e.toastMuralTxt, sizeof(e.toastMuralTxt), "[!] MURAL ATUALIZADO: Depoimento de Caio [D]");
@@ -1229,6 +1267,10 @@ int main(void) {
                     bool devSkipDlg = (e.devDesbloqueado && IsKeyPressed(KEY_S));
                     bool clicouAvancar = (!clicouBotaoCaixa && IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && mouse.y > 65) ||
                                          IsKeyPressed(KEY_SPACE) || IsKeyPressed(KEY_ENTER) || devSkipDlg;
+                    if (e.setaMuralTutorial && e.falaCompleta && !devSkipDlg) {
+                        clicouAvancar = false;
+                        autoAvancou = false;
+                    }
                     if (clicouAvancar || autoAvancou) {
                         if (devSkipDlg) e.falaIdx = total - 1;
                         if (!e.falaCompleta && !autoAvancou && !devSkipDlg) {
@@ -1552,10 +1594,10 @@ int main(void) {
                     DrawTextEx(assets.fontes.teko, "ai.libi", (Vector2){ 95, 115 }, 72, 2.0f, WHITE);
                 }
 
-                const char *menuTextos[4] = { "jogar", "configuracoes", "creditos", "sair" };
+                const char *menuTextos[4] = { "Jogar", "Configurações", "Créditos", "Sair" };
                 for (int i = 0; i < 4; i++) {
-                    Rectangle r = { 95, 325 + i * 67, 320, 58 };
-                    DesenharBotaoSolto(assets.fontes.teko, r, menuTextos[i], 54, e.hoverMenu[i], tempo, (Color){ 238, 235, 248, 255 });
+                    Rectangle r = { 95.0f + i * 26.0f, 312.0f + i * 82.0f, 360.0f, 68.0f };
+                    DesenharBotaoSolto(assets.fontes.teko, r, menuTextos[i], 62, e.hoverMenu[i], tempo, (Color){ 238, 235, 248, 255 });
                 }
                 DrawTextEx(assets.fontes.bold, "SYS // CYBER-INVESTIGACAO v2.0", (Vector2){ 935, 682 }, 20, 1.0f, ColorAlpha(COR_CIANO_NEON, 0.70f));
                 DesenharScanlinesHUD(tempo);
@@ -1566,11 +1608,11 @@ int main(void) {
                 DrawRectangle(0, 0, VIRTUAL_W, VIRTUAL_H, (Color){ 10, 6, 20, 195 });
 
                 DesenharPainelCyber((Rectangle){ 100, 110, 820, 460 }, COR_ROSA_NEON);
-                DrawTextEx(assets.fontes.teko, "configuracoes", (Vector2){ 145, 134 }, 58, 1.5f, WHITE);
+                DrawTextEx(assets.fontes.teko, "Configurações", (Vector2){ 145, 134 }, 58, 1.5f, WHITE);
                 DrawRectangle(145, 198, 730, 2, ColorAlpha(COR_ROSA_NEON, 0.45f));
 
                 // 1. Ajustar Musica
-                DesenharBotaoSolto(assets.fontes.teko, (Rectangle){ 140, 230, 340, 54 }, "ajustar musica", 46, e.hoverConfig[0], tempo, WHITE);
+                DesenharBotaoSolto(assets.fontes.teko, (Rectangle){ 140, 230, 340, 54 }, "Ajustar Música", 46, e.hoverConfig[0], tempo, WHITE);
                 Rectangle btnMusMenos = { 495, 238, 36, 38 };
                 Rectangle sliderMus   = { 540, 243, 220, 28 };
                 Rectangle btnMusMais  = { 770, 238, 36, 38 };
@@ -1580,7 +1622,7 @@ int main(void) {
                 DrawTextEx(assets.fontes.teko, TextFormat("%d%%", (int)(e.volMusica * 100.0f + 0.5f)), (Vector2){ 822, 235 }, 40, 1.0f, COR_CIANO_NEON);
 
                 // 2. Ajustar Efeitos
-                DesenharBotaoSolto(assets.fontes.teko, (Rectangle){ 140, 305, 340, 54 }, "ajustar efeitos", 46, e.hoverConfig[1], tempo, WHITE);
+                DesenharBotaoSolto(assets.fontes.teko, (Rectangle){ 140, 305, 340, 54 }, "Ajustar Efeitos", 46, e.hoverConfig[1], tempo, WHITE);
                 Rectangle btnSfxMenos = { 495, 313, 36, 38 };
                 Rectangle sliderSfx   = { 540, 318, 220, 28 };
                 Rectangle btnSfxMais  = { 770, 313, 36, 38 };
@@ -1590,11 +1632,11 @@ int main(void) {
                 DrawTextEx(assets.fontes.teko, TextFormat("%d%%", (int)(e.volSfx * 100.0f + 0.5f)), (Vector2){ 822, 310 }, 40, 1.0f, COR_CIANO_NEON);
 
                 // 3. Tela cheia
-                DesenharBotaoSolto(assets.fontes.teko, (Rectangle){ 140, 380, 340, 54 }, "tela cheia", 46, e.hoverConfig[2], tempo, WHITE);
-                DrawTextEx(assets.fontes.teko, e.telaCheia ? "ligada" : "desligada", (Vector2){ 540, 384 }, 44, 1.0f, e.telaCheia ? COR_ROSA_NEON : LIGHTGRAY);
+                DesenharBotaoSolto(assets.fontes.teko, (Rectangle){ 140, 380, 340, 54 }, "Tela Cheia", 46, e.hoverConfig[2], tempo, WHITE);
+                DrawTextEx(assets.fontes.teko, e.telaCheia ? "Ligada" : "Desligada", (Vector2){ 540, 384 }, 44, 1.0f, e.telaCheia ? COR_ROSA_NEON : LIGHTGRAY);
 
                 // 4. Voltar
-                DesenharBotaoSolto(assets.fontes.teko, (Rectangle){ 140, 470, 280, 54 }, "voltar", 48, e.hoverConfig[3], tempo, COR_CIANO_NEON);
+                DesenharBotaoSolto(assets.fontes.teko, (Rectangle){ 140, 470, 280, 54 }, "Voltar", 48, e.hoverConfig[3], tempo, COR_CIANO_NEON);
                 // Decoracao discreta (3 cliques abre o modo dev)
                 DrawTextEx(assets.fontes.bold, "SYS//2.0", (Vector2){ 836, 530 }, 16, 1.0f, ColorAlpha(COR_ROXO_NEON, 0.40f));
                 DesenharScanlinesHUD(tempo);
@@ -1619,7 +1661,7 @@ int main(void) {
                 DesenharFundoCyberGrid(tempo, COR_CIANO_NEON);
                 DesenharPainelCyber((Rectangle){ 260, 140, 760, 420 }, COR_CIANO_NEON);
                 DrawTextEx(assets.fontes.titulo, "IDENTIFICAÇÃO DO(A) INVESTIGADOR(A)", (Vector2){ 315, 185 }, 28, 1.0f, COR_CIANO_NEON);
-                DrawTextEx(assets.fontes.regular, "Digite seu nome para os registros do caso (obrigatório):", (Vector2){ 315, 240 }, 22, 1.0f, LIGHTGRAY);
+                DrawTextEx(assets.fontes.regular, "Digite seu nome para os registros do caso (obrigatório, máx. 9 caracteres):", (Vector2){ 315, 240 }, 22, 1.0f, LIGHTGRAY);
 
                 Rectangle box = { 340, 300, 600, 58 };
                 DrawRectangleRec(box, (Color){ 14, 10, 28, 255 });
@@ -1627,7 +1669,7 @@ int main(void) {
 
                 char disp[32] = "";
                 snprintf(disp, sizeof(disp), "%s%s", e.nomeJogador, ((int)(tempo * 3.0) % 2 == 0) ? "_" : "");
-                DrawTextEx(assets.fontes.titulo, disp, (Vector2){ box.x + 18, box.y + 14 }, 28, 1.5f, WHITE);
+                DrawTextEx(assets.fontes.tech, disp, (Vector2){ box.x + 18, box.y + 12 }, 32, 2.0f, WHITE);
 
                 if (e.nomeVazioErro) {
                     DrawTextEx(assets.fontes.bold, "Digite um nome para iniciar a investigação!", (Vector2){ 340, 372 }, 21, 1.0f, COR_VERMELHO_ERR);
@@ -1824,7 +1866,7 @@ int main(void) {
             } break;
 
             case TELA_NOVA_EVIDENCIA:
-                DesenharCardCentral(&assets.fontes, "NOVA EVIDÊNCIA DISPONÍVEL", "Uma nova pista pode mudar o rumo da investigação.\nResolva o desafio de lógica em até 20 segundos para desbloqueá-la.", "DESBLOQUEAR EVIDÊNCIA >>", e.hoverBtnUnico, tempo, COR_ROXO_NEON);
+                DesenharCardCentralEx(&assets.fontes, "NOVA EVIDÊNCIA DISPONÍVEL", "Uma nova pista pode mudar o rumo da investigação.\nResolva o desafio de lógica em até 20 segundos para desbloqueá-la.", "DESBLOQUEAR EVIDÊNCIA >>", e.hoverBtnUnico, tempo, COR_ROXO_NEON, true);
                 break;
 
             case TELA_MINIGAME:
@@ -2171,7 +2213,8 @@ int main(void) {
         }
 
         if (emGameplay && e.tela != TELA_CUTSCENE) {
-            DesenharBarraTopo(&assets.fontes, mouse, tempo, e.hoverDossieTop[0], e.podeAcusar, e.setaMuralTutorial, e.toastMuralTimer, e.toastMuralTxt);
+            bool forcarSpotlightMural = (e.setaMuralTutorial && (e.tela != TELA_DIALOGO || e.falaCompleta));
+            DesenharBarraTopo(&assets.fontes, mouse, tempo, e.hoverDossieTop[0], e.podeAcusar, e.setaMuralTutorial, forcarSpotlightMural, e.toastMuralTimer, e.toastMuralTxt);
             if (e.tela != TELA_DIALOGO && e.tela != TELA_MINIGAME) {
                 DesenharScanlinesHUD(tempo);
             }
