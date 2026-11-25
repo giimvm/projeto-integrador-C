@@ -161,6 +161,7 @@ typedef struct {
     bool devMuteCaio;
     bool devMuteJuliana;
     bool devMuteAdvogada;
+    bool devMuteMeireles;
 
     // Auto-dialogo e Historico de conversa
     bool autoDialogo;
@@ -296,6 +297,7 @@ static void NovoJogo(EstadoJogo *e, EstadoCelular *cel, EstadoMural *mural, Play
     bool muteC = e->devMuteCaio;
     bool muteJ = e->devMuteJuliana;
     bool muteA = e->devMuteAdvogada;
+    bool muteM = e->devMuteMeireles;
     int jw = e->janelaW, jh = e->janelaH;
     int ultCulp = e->ultimoCulpado;
     char nomeSalvo[24] = "";
@@ -312,6 +314,7 @@ static void NovoJogo(EstadoJogo *e, EstadoCelular *cel, EstadoMural *mural, Play
     e->devMuteCaio = muteC;
     e->devMuteJuliana = muteJ;
     e->devMuteAdvogada = muteA;
+    e->devMuteMeireles = muteM;
     e->janelaW = jw;
     e->janelaH = jh;
     // Re-semeia com entropia do instante do clique para garantir runs realmente randomizadas
@@ -760,9 +763,9 @@ static void AtualizarDevOverlay(EstadoJogo *e, EstadoCelular *cel, EstadoMural *
         }
 
         // Coluna 2 Base: Silenciar audio de voz por personagem
-        bool *mutes[3] = { &e->devMuteCaio, &e->devMuteJuliana, &e->devMuteAdvogada };
-        for (int i = 0; i < 3; i++) {
-            Rectangle b = { 625 + i * 184, 608, 172, 38 };
+        bool *mutes[4] = { &e->devMuteCaio, &e->devMuteJuliana, &e->devMuteAdvogada, &e->devMuteMeireles };
+        for (int i = 0; i < 4; i++) {
+            Rectangle b = { 625 + i * 138, 608, 128, 38 };
             if (CheckCollisionPointRec(mouse, b)) {
                 TocarClick(assets);
                 *mutes[i] = !(*mutes[i]);
@@ -876,13 +879,13 @@ static void DesenharDevOverlay(const EstadoJogo *e, FontesUI *f, Vector2 mouse, 
         }
 
         DrawTextEx(f->bold, "5. AUDIO DE VOZ (POR PERSONAGEM):", (Vector2){ 625, 582 }, 19, 1.0f, COR_AMARELO_AVISO);
-        const char *nomesMute[3] = { "CAIO", "JULIANA", "ADVOGADA" };
-        bool estadosMute[3] = { e->devMuteCaio, e->devMuteJuliana, e->devMuteAdvogada };
-        for (int i = 0; i < 3; i++) {
-            Rectangle b = { 625 + i * 184, 608, 172, 38 };
+        const char *nomesMute[4] = { "CAIO", "JULIANA", "ADVOGADA", "MEIRELES" };
+        bool estadosMute[4] = { e->devMuteCaio, e->devMuteJuliana, e->devMuteAdvogada, e->devMuteMeireles };
+        for (int i = 0; i < 4; i++) {
+            Rectangle b = { 625 + i * 138, 608, 128, 38 };
             bool mutado = estadosMute[i];
             DesenharBotaoCyber(f->bold, b,
-                TextFormat("%s: %s", nomesMute[i], mutado ? "MUDO" : "ON"), 17,
+                TextFormat("%s: %s", nomesMute[i], mutado ? "MUDO" : "ON"), 15,
                 CheckCollisionPointRec(mouse, b) ? 1.0f : 0.0f, tempo,
                 mutado ? COR_VERMELHO_ERR : COR_VERDE_OK);
         }
@@ -1360,7 +1363,8 @@ int main(void) {
                         const char *falante = falas[e.falaIdx].falante;
                         bool mutado = (strcmp(falante, "CAIO") == 0 && e.devMuteCaio) ||
                                       (strcmp(falante, "JULIANA") == 0 && e.devMuteJuliana) ||
-                                      (strcmp(falante, "ADVOGADA") == 0 && e.devMuteAdvogada);
+                                      (strcmp(falante, "ADVOGADA") == 0 && e.devMuteAdvogada) ||
+                                      (strcmp(falante, "DELEGADO MEIRELES") == 0 && e.devMuteMeireles);
                         TocarVozDialogo(&assets, mutado ? NULL : falas[e.falaIdx].audioPath, e.volSfx);
                     }
                     int lenTexto = (int)strlen(falas[e.falaIdx].texto);

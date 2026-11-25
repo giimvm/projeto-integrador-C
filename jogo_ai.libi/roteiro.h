@@ -55,9 +55,9 @@ typedef struct {
 // CENA 1 - Abertura do Delegado + Pensamento no Escritorio
 // ============================================================================
 static const Fala falasCena1Abertura[] = {
-    { "DELEGADO MEIRELES", "Acabou de entrar uma denúncia nova no sistema. Um universitário desapareceu depois de uma festa.", BG_EVIDENCIAS, DEL_NEUTRO },
-    { "DELEGADO MEIRELES", "A equipe já está ouvindo quem estava lá. Dê uma olhada nos dados iniciais no seu computador.", BG_EVIDENCIAS, DEL_ASSERTIVO },
-    { "DELEGADO MEIRELES", "E não se engane: hoje qualquer foto, voz ou vídeo pode ser fabricado. Não confie em prova só porque ela parece real.", BG_EVIDENCIAS, DEL_CONFIANTE }
+    { "DELEGADO MEIRELES", "Acabou de entrar uma denúncia nova no sistema. Um universitário desapareceu depois de uma festa.", BG_EVIDENCIAS, DEL_NEUTRO, "src/audio/vozes/del_c1a_01_denuncia_nova.ogg" },
+    { "DELEGADO MEIRELES", "A equipe já está ouvindo quem estava lá. Dê uma olhada nos dados iniciais no seu computador.", BG_EVIDENCIAS, DEL_ASSERTIVO, "src/audio/vozes/del_c1a_02_dados_iniciais.ogg" },
+    { "DELEGADO MEIRELES", "E não se engane: hoje qualquer foto, voz ou vídeo pode ser fabricado. Não confie em prova só porque ela parece real.", BG_EVIDENCIAS, DEL_CONFIANTE, "src/audio/vozes/del_c1a_03_nao_se_engane.ogg" }
 };
 static const int NUM_FALAS_CENA1_ABERTURA = sizeof(falasCena1Abertura) / sizeof(falasCena1Abertura[0]);
 
@@ -87,9 +87,9 @@ static const int NUM_FALAS_CENA2 = sizeof(falasCena2) / sizeof(falasCena2[0]);
 // CENA 3 - O pacote anonimo + reflexao no mural
 // ============================================================================
 static const Fala falasCena3[] = {
-    { "DELEGADO MEIRELES", "Acabou de chegar numa entrega anônima. Tem um dispositivo com áudio aí dentro. Mandaram um bilhete dizendo que explica a briga entre o Caio e o Gabriel.", BG_EVIDENCIAS, DEL_EVID1 },
+    { "DELEGADO MEIRELES", "Acabou de chegar numa entrega anônima. Tem um dispositivo com áudio aí dentro. Mandaram um bilhete dizendo que explica a briga entre o Caio e o Gabriel.", BG_EVIDENCIAS, DEL_EVID1, "src/audio/vozes/del_c3_01_entrega_anonima.ogg" },
     { "JOGADOR", "Quem grava uma briga no meio da festa e manda anonimamente pra polícia?", BG_EVIDENCIAS, DEL_EVID2 },
-    { "DELEGADO MEIRELES", "Alguém que quer que a gente ouça. Ou alguém que precisa muito que a gente acredite.", BG_EVIDENCIAS, DEL_ASSERTIVO }
+    { "DELEGADO MEIRELES", "Alguém que quer que a gente ouça. Ou alguém que precisa muito que a gente acredite.", BG_EVIDENCIAS, DEL_ASSERTIVO, "src/audio/vozes/del_c3_03_alguem_que_quer.ogg" }
 };
 static const int NUM_FALAS_CENA3 = sizeof(falasCena3) / sizeof(falasCena3[0]);
 
@@ -135,9 +135,9 @@ static const int NUM_FALAS_CENA4_POS_CAIO = sizeof(falasCena4PosCaio) / sizeof(f
 // CENA 5 - O corpo
 // ============================================================================
 static const Fala falasCena5[] = {
-    { "DELEGADO MEIRELES", "Acharam o Gabriel. Infelizmente, encontraram o corpo dele num barranco, a duzentos metros do galpão.", BG_EVIDENCIAS, DEL_NEUTRO },
+    { "DELEGADO MEIRELES", "Acharam o Gabriel. Infelizmente, encontraram o corpo dele num barranco, a duzentos metros do galpão.", BG_EVIDENCIAS, DEL_NEUTRO, "src/audio/vozes/del_c5_01_acharam_gabriel.ogg" },
     { "JOGADOR", "Praticamente do lado da festa?", BG_EVIDENCIAS, DEL_ASSERTIVO },
-    { "DELEGADO MEIRELES", "A perícia cravou a morte na própria madrugada, entre 2h50 e 3h05. Ele levou um golpe na têmpora antes de cair. A partir de agora, estamos lidando com homicídio.", BG_EVIDENCIAS, DEL_ASSERTIVO }
+    { "DELEGADO MEIRELES", "A perícia cravou a morte na própria madrugada, entre 2h50 e 3h05. Ele levou um golpe na têmpora antes de cair. A partir de agora, estamos lidando com homicídio.", BG_EVIDENCIAS, DEL_ASSERTIVO, "src/audio/vozes/del_c5_03_pericia_cravou.ogg" }
 };
 static const int NUM_FALAS_CENA5 = sizeof(falasCena5) / sizeof(falasCena5[0]);
 
@@ -145,7 +145,7 @@ static const int NUM_FALAS_CENA5 = sizeof(falasCena5) / sizeof(falasCena5[0]);
 // CENA 6 - A Caixa-Preta / Backup na Nuvem + reflexao no mural
 // ============================================================================
 static const Fala falasCena6[] = {
-    { "DELEGADO MEIRELES", "A perícia digital conseguiu resgatar o último backup automático da conta do Gabriel, minutos antes de o aparelho perder o sinal.", BG_EVIDENCIAS, DEL_EVID1 },
+    { "DELEGADO MEIRELES", "A perícia digital conseguiu resgatar o último backup automático da conta do Gabriel, minutos antes de o aparelho perder o sinal.", BG_EVIDENCIAS, DEL_EVID1, "src/audio/vozes/del_c6_01_backup_nuvem.ogg" },
     { "JOGADOR", "Se ele ia abrir o jogo com alguém naquela noite, tem alguma pista guardada aí.", BG_EVIDENCIAS, DEL_NEUTRO }
 };
 static const int NUM_FALAS_CENA6 = sizeof(falasCena6) / sizeof(falasCena6[0]);
