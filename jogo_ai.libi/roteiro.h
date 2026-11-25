@@ -211,7 +211,7 @@ static const int NUM_FALAS_CENA8 = sizeof(falasCena8) / sizeof(falasCena8[0]);
 // FINAL 1 - FINAL PERFEITO (Veredito correto + >=4 logicas + >=2 extras)
 static const Fala falasFinalPerfeitoJuliana[] = {
     { "JUIZ", "Declaro aberta a audiência de instrução contra Juliana Costa. A defesa tem a palavra.", BG_TRIBUNAL, JUIZ_TRIBUNAL },
-    { "ADVOGADA", "Excelência, em 2045 qualquer mídia pode ser manipulada. Pela Lei da Dúvida Digital, peço a anulação das provas eletrônicas contra minha cliente.", BG_TRIBUNAL, ADVOGADA_SPRITE },
+    { "ADVOGADA", "Excelência, em 2045 qualquer mídia pode ser manipulada. Pela Lei da Dúvida Digital, peço a anulação das provas eletrônicas contra minha cliente.", BG_TRIBUNAL, ADVOGADA_SPRITE, "src/audio/vozes/adv_f1_ju_duvida_digital.ogg" },
     { "JOGADOR", "Doutora, aqui não tem brecha nenhuma. O áudio do Caio e a foto no carro são falsos, o GPS e a nuvem fecham o horário, e a corrida da Mobi às 3h41 derruba o álibi inteiro.", BG_TRIBUNAL, ADVOGADA_SPRITE },
     { "JULIANA", "Chega, para com isso! Eu ralei três anos por aquela vaga e ele entregou tudo de mão beijada pro João Paulo! Eu perdi a cabeça... quando vi, ele já tinha caído no barranco!", BG_TRIBUNAL, JULIA_CORPO, "src/audio/vozes/ju_f1_chega.ogg" },
     { "JUIZ", "Diante das cinco provas técnicas validadas e da confissão, condeno Juliana Costa e determino inquérito contra o Prof. João Paulo na NEXARA.", BG_TRIBUNAL, JUIZ_TRIBUNAL },
@@ -221,7 +221,7 @@ static const int NUM_FALAS_FINAL_PERF_JULIANA = sizeof(falasFinalPerfeitoJuliana
 
 static const Fala falasFinalPerfeitoCaio[] = {
     { "JUIZ", "Declaro aberta a audiência de instrução contra Caio Vasconcelos. A defesa tem a palavra.", BG_TRIBUNAL, JUIZ_TRIBUNAL },
-    { "ADVOGADA", "Excelência, meu cliente apresentou vídeo de saída às 02h42. O restante é suposição sobre ajuda financeira estudantil.", BG_TRIBUNAL, ADVOGADA_SPRITE },
+    { "ADVOGADA", "Excelência, meu cliente apresentou vídeo de saída às 02h42. O restante é suposição sobre ajuda financeira estudantil.", BG_TRIBUNAL, ADVOGADA_SPRITE, "src/audio/vozes/adv_f1_caio_video_saida.ogg" },
     { "JOGADOR", "Aquele vídeo da cancela foi forjado por IA, Excelência. As cinco provas batem: a ameaça no áudio é real, o GPS crava 3h20 no barranco e a nuvem mostra o esquema de lavagem.", BG_TRIBUNAL, ADVOGADA_SPRITE },
     { "CAIO", "Ele ia acabar com a minha família! Tudo que meu pai construiu ia pro ralo! Eu só empurrei pra ele calar a boca... não sabia que tinha pedra lá embaixo!", BG_TRIBUNAL, CAIO_CORPO, "src/audio/vozes/caio_f1_foi_sem_querer.ogg" },
     { "JUIZ", "Com os cinco laudos periciais íntegros, condeno Caio Vasconcelos e determino o bloqueio da empresa de fachada ligada à NEXARA.", BG_TRIBUNAL, JUIZ_TRIBUNAL },
@@ -232,7 +232,7 @@ static const int NUM_FALAS_FINAL_PERF_CAIO = sizeof(falasFinalPerfeitoCaio) / si
 // FINAL 2 - FINAL BOM (Veredito correto + >=3 logicas + >=2 extras)
 static const Fala falasFinalVerdadeJuliana[] = {
     { "JUIZ", "Iniciamos a audiência contra Juliana Costa. Defesa, manifeste-se.", BG_TRIBUNAL, JUIZ_TRIBUNAL },
-    { "ADVOGADA", "Excelência, falta uma peça na perícia completa da acusação. Há margem para questionar a ordem cronológica.", BG_TRIBUNAL, ADVOGADA_SPRITE },
+    { "ADVOGADA", "Excelência, falta uma peça na perícia completa da acusação. Há margem para questionar a ordem cronológica.", BG_TRIBUNAL, ADVOGADA_SPRITE, "src/audio/vozes/adv_f2_ju_falta_peca.ogg" },
     { "JOGADOR", "Pode até faltar um laudo, mas os quatro que estão aqui fecham a conta: a foto no carro é falsa, a Mobi marca 3h41 e o GPS prova que o Gabriel nunca saiu do galpão.", BG_TRIBUNAL, ADVOGADA_SPRITE },
     { "JULIANA", "Ele ainda tentou pedir desculpa... eu gritei que era tarde demais. Bati nele e ele caiu... fiquei desesperada.", BG_TRIBUNAL, JULIA_CORPO, "src/audio/vozes/ju_f2_ele_chorou.ogg" },
     { "JUIZ", "As quatro provas convergem sem contradição. Juliana Costa está condenada pelo homicídio de Gabriel Moura.", BG_TRIBUNAL, JUIZ_TRIBUNAL },
@@ -242,7 +242,7 @@ static const int NUM_FALAS_FINAL_VERD_JULIANA = sizeof(falasFinalVerdadeJuliana)
 
 static const Fala falasFinalVerdadeCaio[] = {
     { "JUIZ", "Iniciamos a audiência contra Caio Vasconcelos. Defesa, manifeste-se.", BG_TRIBUNAL, JUIZ_TRIBUNAL },
-    { "ADVOGADA", "Excelência, a acusação não fechou todos os cinco laudos do inquérito. Peço a rejeição da denúncia.", BG_TRIBUNAL, ADVOGADA_SPRITE },
+    { "ADVOGADA", "Excelência, a acusação não fechou todos os cinco laudos do inquérito. Peço a rejeição da denúncia.", BG_TRIBUNAL, ADVOGADA_SPRITE, "src/audio/vozes/adv_f2_caio_cinco_laudos.ogg" },
     { "JOGADOR", "Quatro laudos fechados já bastam pra derrubar esse álibi. Os extratos, o GPS e a falha no vídeo da cancela colocam o Caio lá atrás do galpão.", BG_TRIBUNAL, ADVOGADA_SPRITE },
     { "CAIO", "Ele ia jogar tudo no ventilador! Eu só empurrei pra calar a boca dele, não era pra acontecer aquilo!", BG_TRIBUNAL, CAIO_CORPO, "src/audio/vozes/caio_f2_ele_ia_acabar.ogg" },
     { "JUIZ", "Com quatro laudos periciais consistentes e a confissão em audiência, Caio Vasconcelos está condenado.", BG_TRIBUNAL, JUIZ_TRIBUNAL },
@@ -253,7 +253,7 @@ static const int NUM_FALAS_FINAL_VERD_CAIO = sizeof(falasFinalVerdadeCaio) / siz
 // FINAL 3 - INCONCLUSIVO (Veredito correto sem provas suficientes)
 static const Fala falasFinalDuvida[] = {
     { "JUIZ", "A acusação possui provas técnicas suficientes que uma máquina não pudesse ter fabricado?", BG_TRIBUNAL, JUIZ_TRIBUNAL },
-    { "ADVOGADA", "Excelência, pela Lei da Dúvida Digital, qualquer indício sem cadeia de custódia completa deve ser anulado. Faltam laudos essenciais aqui, há apenas uma narrativa.", BG_TRIBUNAL, ADVOGADA_SPRITE },
+    { "ADVOGADA", "Excelência, pela Lei da Dúvida Digital, qualquer indício sem cadeia de custódia completa deve ser anulado. Faltam laudos essenciais aqui, há apenas uma narrativa.", BG_TRIBUNAL, ADVOGADA_SPRITE, "src/audio/vozes/adv_f3_cadeia_custodia.ogg" },
     { "JOGADOR", "...Os laudos que faltavam ficaram pelo caminho, Excelência.", BG_TRIBUNAL, ADVOGADA_SPRITE },
     { "JUIZ", "Sendo assim, em nome da dúvida razoável, declaro o réu absolvido.", BG_TRIBUNAL, JUIZ_TRIBUNAL },
     { "PENSAMENTO", "(Quatro meses depois, tava lá a notícia da nova liderança de IA na NEXARA. Em 2045, saber a verdade não basta, tem que provar sem deixar ponta solta.)", BG_MURAL, SEM_SPRITE }
@@ -263,7 +263,7 @@ static const int NUM_FALAS_FINAL_DUVIDA = sizeof(falasFinalDuvida) / sizeof(fala
 // FINAL 4 - INJUSTICA E AFASTAMENTO (Acusou o inocente sem provas suficientes para prender)
 static const Fala falasFinalInjusticaAfastamento[] = {
     { "JUIZ", "A acusação denunciou um suspeito sem lastro pericial suficiente para sustentar a prisão.", BG_TRIBUNAL, JUIZ_TRIBUNAL },
-    { "ADVOGADA", "Excelência, não há cadeia de custódia nem provas consistentes contra meu cliente! Peço a rejeição imediata da denúncia.", BG_TRIBUNAL, ADVOGADA_SPRITE },
+    { "ADVOGADA", "Excelência, não há cadeia de custódia nem provas consistentes contra meu cliente! Peço a rejeição imediata da denúncia.", BG_TRIBUNAL, ADVOGADA_SPRITE, "src/audio/vozes/adv_f4_sem_sustentacao.ogg" },
     { "DELEGADO MEIRELES", "Você apontou pra pessoa errada e ainda entrou no tribunal de mãos vazias. A corregedoria mandou te afastar na hora.", BG_TRIBUNAL, DEL_ASSERTIVO },
     { "JUIZ", "Denúncia rejeitada por falta de provas. O verdadeiro culpado pelo crime segue em liberdade.", BG_TRIBUNAL, JUIZ_TRIBUNAL },
     { "PENSAMENTO", "(Acusei quem não devia sem nem fechar as provas. Perdi o caso e deixei o culpado sair andando pela porta da frente.)", BG_MURAL, SEM_SPRITE }
@@ -282,7 +282,7 @@ static const int NUM_FALAS_FINAL_PRECIPITADO = sizeof(falasFinalPrecipitado) / s
 // FINAL 6 - A INJUSTICA (acusou o inocente no Tribunal)
 static const Fala falasFinalInjusticaCaio[] = {
     { "JUIZ", "A acusação sustenta a denúncia contra Caio Vasconcelos. A defesa tem a palavra.", BG_TRIBUNAL, JUIZ_TRIBUNAL },
-    { "ADVOGADA", "Excelência, o álibi do meu cliente tem base sólida, e a acusação ignorou sinais claros de fabricação digital nas provas contra ele.", BG_TRIBUNAL, ADVOGADA_SPRITE },
+    { "ADVOGADA", "Excelência, o álibi do meu cliente tem base sólida, e a acusação ignorou sinais claros de fabricação digital nas provas contra ele.", BG_TRIBUNAL, ADVOGADA_SPRITE, "src/audio/vozes/adv_f6_caio_alibi_solido.ogg" },
     { "DELEGADO MEIRELES", "Motivo a cidade inteira tem. Você trouxe alguém pro banco dos réus sem fechar a prova técnica.", BG_TRIBUNAL, DEL_ASSERTIVO },
     { "PENSAMENTO", "(Semanas depois, o Caio ouviu a sentença injusta com o olhar vazio. Quando olhei de novo pra foto da Juliana no mural, caiu a ficha do tamanho do meu erro.)", BG_MURAL, SEM_SPRITE }
 };
@@ -290,7 +290,7 @@ static const int NUM_FALAS_FINAL_INJ_CAIO = sizeof(falasFinalInjusticaCaio) / si
 
 static const Fala falasFinalInjusticaJuliana[] = {
     { "JUIZ", "A acusação sustenta a denúncia contra Juliana Costa. A defesa tem a palavra.", BG_TRIBUNAL, JUIZ_TRIBUNAL },
-    { "ADVOGADA", "Excelência, a foto da minha cliente no carro é autêntica e o horário bate. A acusação trouxe ressentimento, não prova.", BG_TRIBUNAL, ADVOGADA_SPRITE },
+    { "ADVOGADA", "Excelência, a foto da minha cliente no carro é autêntica e o horário bate. A acusação trouxe ressentimento, não prova.", BG_TRIBUNAL, ADVOGADA_SPRITE, "src/audio/vozes/adv_f6_ju_foto_autentica.ogg" },
     { "DELEGADO MEIRELES", "Motivo a cidade inteira tem. Você trouxe alguém pro banco dos réus sem fechar a prova técnica.", BG_TRIBUNAL, DEL_ASSERTIVO },
     { "PENSAMENTO", "(Semanas depois, a Juliana ouviu a sentença injusta com o olhar vazio. Quando encarei a foto do Caio no mural, percebi tarde demais quem realmente me passou a perna.)", BG_MURAL, SEM_SPRITE }
 };

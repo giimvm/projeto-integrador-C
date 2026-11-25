@@ -158,6 +158,9 @@ typedef struct {
     char devSenhaInput[8];
     int devSenhaLen;
     bool devSenhaErro;
+    bool devMuteCaio;
+    bool devMuteJuliana;
+    bool devMuteAdvogada;
 
     // Auto-dialogo e Historico de conversa
     bool autoDialogo;
@@ -290,6 +293,9 @@ static void NovoJogo(EstadoJogo *e, EstadoCelular *cel, EstadoMural *mural, Play
     bool tc = e->telaCheia;
     bool tn = e->modoTechNight;
     bool dev = e->devDesbloqueado;
+    bool muteC = e->devMuteCaio;
+    bool muteJ = e->devMuteJuliana;
+    bool muteA = e->devMuteAdvogada;
     int jw = e->janelaW, jh = e->janelaH;
     int ultCulp = e->ultimoCulpado;
     char nomeSalvo[24] = "";
@@ -303,6 +309,9 @@ static void NovoJogo(EstadoJogo *e, EstadoCelular *cel, EstadoMural *mural, Play
     e->telaCheia = tc;
     e->modoTechNight = tn;
     e->devDesbloqueado = dev;
+    e->devMuteCaio = muteC;
+    e->devMuteJuliana = muteJ;
+    e->devMuteAdvogada = muteA;
     e->janelaW = jw;
     e->janelaH = jh;
     // Re-semeia com entropia do instante do clique para garantir runs realmente randomizadas
@@ -671,7 +680,7 @@ static void AtualizarDevOverlay(EstadoJogo *e, EstadoCelular *cel, EstadoMural *
 
         // Coluna 2 Superior: Mural & Rota (4 botoes)
         for (int i = 0; i < 4; i++) {
-            Rectangle b = { 625, 168 + i * 50, 540, 42 };
+            Rectangle b = { 625, 158 + i * 44, 540, 38 };
             if (CheckCollisionPointRec(mouse, b)) {
                 TocarClick(assets);
                 switch (i) {
@@ -719,7 +728,7 @@ static void AtualizarDevOverlay(EstadoJogo *e, EstadoCelular *cel, EstadoMural *
         for (int i = 0; i < 6; i++) {
             int col = i % 2;
             int row = i / 2;
-            Rectangle b = { 625 + col * 276, 408 + row * 46, 264, 38 };
+            Rectangle b = { 625 + col * 276, 368 + row * 42, 264, 36 };
             if (CheckCollisionPointRec(mouse, b)) {
                 TocarClick(assets);
                 e->devPainelAberto = false;
@@ -737,7 +746,7 @@ static void AtualizarDevOverlay(EstadoJogo *e, EstadoCelular *cel, EstadoMural *
 
         // Coluna 2 Rodape: 6 Botoes diretos para abrir o Gibi (HQ) de cada final
         for (int i = 0; i < 6; i++) {
-            Rectangle b = { 625 + i * 91, 586, 84, 42 };
+            Rectangle b = { 625 + i * 91, 528, 84, 38 };
             if (CheckCollisionPointRec(mouse, b)) {
                 TocarClick(assets);
                 e->devPainelAberto = false;
@@ -746,6 +755,17 @@ static void AtualizarDevOverlay(EstadoJogo *e, EstadoCelular *cel, EstadoMural *
                 e->vitoria = (i < 2);
                 MontarCutsceneFinal(cs, e->tipoFinal, (int)e->culpado, e->statusProva, e->respostaProva);
                 e->tela = TELA_CUTSCENE;
+                return;
+            }
+        }
+
+        // Coluna 2 Base: Silenciar audio de voz por personagem
+        bool *mutes[3] = { &e->devMuteCaio, &e->devMuteJuliana, &e->devMuteAdvogada };
+        for (int i = 0; i < 3; i++) {
+            Rectangle b = { 625 + i * 184, 608, 172, 38 };
+            if (CheckCollisionPointRec(mouse, b)) {
+                TocarClick(assets);
+                *mutes[i] = !(*mutes[i]);
                 return;
             }
         }
@@ -821,7 +841,7 @@ static void DesenharDevOverlay(const EstadoJogo *e, FontesUI *f, Vector2 mouse, 
                 sel ? COR_ROSA_NEON : COR_CIANO_NEON);
         }
 
-        DrawTextEx(f->bold, "2. MURAL & ROTA:", (Vector2){ 625, 134 }, 21, 1.0f, COR_ROSA_NEON);
+        DrawTextEx(f->bold, "2. MURAL & ROTA:", (Vector2){ 625, 130 }, 20, 1.0f, COR_ROSA_NEON);
         const char *acoesTxt[4] = {
             "DESBLOQUEAR PROVAS (SEM LIGAR NO MURAL)",
             "VALIDAR + LIGAR TODAS AS 5 PROVAS",
@@ -829,12 +849,12 @@ static void DesenharDevOverlay(const EstadoJogo *e, FontesUI *f, Vector2 mouse, 
             (e->culpado == CULPADO_JULIANA) ? "ROTA ATIVA: JULIANA (CLIQUE P/ CAIO)" : "ROTA ATIVA: CAIO (CLIQUE P/ JULIANA)"
         };
         for (int i = 0; i < 4; i++) {
-            Rectangle b = { 625, 168 + i * 50, 540, 42 };
+            Rectangle b = { 625, 158 + i * 44, 540, 38 };
             Color cor = (i < 3) ? COR_ROXO_NEON : COR_ROSA_NEON;
-            DesenharBotaoCyber(f->bold, b, acoesTxt[i], 19, CheckCollisionPointRec(mouse, b) ? 1.0f : 0.0f, tempo, cor);
+            DesenharBotaoCyber(f->bold, b, acoesTxt[i], 18, CheckCollisionPointRec(mouse, b) ? 1.0f : 0.0f, tempo, cor);
         }
 
-        DrawTextEx(f->bold, "3. VER CENAS FINAIS (TRIBUNAL):", (Vector2){ 625, 378 }, 20, 1.0f, COR_VERDE_OK);
+        DrawTextEx(f->bold, "3. VER CENAS FINAIS (TRIBUNAL):", (Vector2){ 625, 342 }, 19, 1.0f, COR_VERDE_OK);
         const char *finaisTxt[6] = {
             "F1: FINAL PERFEITO",   "F2: FINAL BOM",
             "F3: INCONCLUSIVO",     "F4: INJUST. + AFAST.",
@@ -843,16 +863,28 @@ static void DesenharDevOverlay(const EstadoJogo *e, FontesUI *f, Vector2 mouse, 
         for (int i = 0; i < 6; i++) {
             int col = i % 2;
             int row = i / 2;
-            Rectangle b = { 625 + col * 276, 408 + row * 46, 264, 38 };
+            Rectangle b = { 625 + col * 276, 368 + row * 42, 264, 36 };
             Color cor = (i < 2) ? COR_VERDE_OK : (i < 5) ? COR_AMARELO_AVISO : COR_VERMELHO_ERR;
-            DesenharBotaoCyber(f->bold, b, finaisTxt[i], 18, CheckCollisionPointRec(mouse, b) ? 1.0f : 0.0f, tempo, cor);
+            DesenharBotaoCyber(f->bold, b, finaisTxt[i], 17, CheckCollisionPointRec(mouse, b) ? 1.0f : 0.0f, tempo, cor);
         }
 
-        DrawTextEx(f->bold, "4. ABRIR GIBI (HQ) DIRETO:", (Vector2){ 625, 556 }, 20, 1.0f, COR_CIANO_NEON);
+        DrawTextEx(f->bold, "4. ABRIR GIBI (HQ) DIRETO:", (Vector2){ 625, 502 }, 19, 1.0f, COR_CIANO_NEON);
         for (int i = 0; i < 6; i++) {
-            Rectangle b = { 625 + i * 91, 586, 84, 42 };
+            Rectangle b = { 625 + i * 91, 528, 84, 38 };
             Color cor = (i < 2) ? COR_VERDE_OK : (i < 5) ? COR_AMARELO_AVISO : COR_VERMELHO_ERR;
             DesenharBotaoCyber(f->bold, b, TextFormat("HQ F%d", i + 1), 17, CheckCollisionPointRec(mouse, b) ? 1.0f : 0.0f, tempo, cor);
+        }
+
+        DrawTextEx(f->bold, "5. AUDIO DE VOZ (POR PERSONAGEM):", (Vector2){ 625, 582 }, 19, 1.0f, COR_AMARELO_AVISO);
+        const char *nomesMute[3] = { "CAIO", "JULIANA", "ADVOGADA" };
+        bool estadosMute[3] = { e->devMuteCaio, e->devMuteJuliana, e->devMuteAdvogada };
+        for (int i = 0; i < 3; i++) {
+            Rectangle b = { 625 + i * 184, 608, 172, 38 };
+            bool mutado = estadosMute[i];
+            DesenharBotaoCyber(f->bold, b,
+                TextFormat("%s: %s", nomesMute[i], mutado ? "MUDO" : "ON"), 17,
+                CheckCollisionPointRec(mouse, b) ? 1.0f : 0.0f, tempo,
+                mutado ? COR_VERMELHO_ERR : COR_VERDE_OK);
         }
     }
 }
@@ -1078,10 +1110,10 @@ int main(void) {
             if (!clicouBarra) switch (e.tela) {
                 case TELA_MENU: {
                     Rectangle menuBtns[4] = {
-                        { 95.0f,          312.0f, 360.0f, 68.0f },
-                        { 95.0f + 26.0f,  394.0f, 360.0f, 68.0f },
-                        { 95.0f + 52.0f,  476.0f, 360.0f, 68.0f },
-                        { 95.0f + 78.0f,  558.0f, 360.0f, 68.0f }
+                        { 95.0f, 312.0f, 360.0f, 68.0f },
+                        { 95.0f, 394.0f, 360.0f, 68.0f },
+                        { 95.0f, 476.0f, 360.0f, 68.0f },
+                        { 95.0f, 558.0f, 360.0f, 68.0f }
                     };
                     AtualizarHover(menuBtns, e.hoverMenu, 4, mouse, dt);
                     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
@@ -1325,7 +1357,11 @@ int main(void) {
                     if ((int)e.seq != ultimoVozSeq || e.falaIdx != ultimoVozIdx) {
                         ultimoVozSeq = (int)e.seq;
                         ultimoVozIdx = e.falaIdx;
-                        TocarVozDialogo(&assets, falas[e.falaIdx].audioPath, e.volSfx);
+                        const char *falante = falas[e.falaIdx].falante;
+                        bool mutado = (strcmp(falante, "CAIO") == 0 && e.devMuteCaio) ||
+                                      (strcmp(falante, "JULIANA") == 0 && e.devMuteJuliana) ||
+                                      (strcmp(falante, "ADVOGADA") == 0 && e.devMuteAdvogada);
+                        TocarVozDialogo(&assets, mutado ? NULL : falas[e.falaIdx].audioPath, e.volSfx);
                     }
                     int lenTexto = (int)strlen(falas[e.falaIdx].texto);
 
@@ -1711,7 +1747,7 @@ int main(void) {
 
                 const char *menuTextos[4] = { "Jogar", "Configurações", "Créditos", "Sair" };
                 for (int i = 0; i < 4; i++) {
-                    Rectangle r = { 95.0f + i * 26.0f, 312.0f + i * 82.0f, 360.0f, 68.0f };
+                    Rectangle r = { 95.0f, 312.0f + i * 82.0f, 360.0f, 68.0f };
                     DesenharBotaoSolto(assets.fontes.teko, r, menuTextos[i], 62, e.hoverMenu[i], tempo, (Color){ 238, 235, 248, 255 });
                 }
                 if (e.devDesbloqueado) {
