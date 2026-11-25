@@ -157,16 +157,75 @@ Esses conceitos são utilizados como parte da própria progressão do jogo, evit
 
 ## User Stories
 
-As histórias detalhadas podem ser consultadas no Figma:
-<a href="https://www.figma.com/make/Gbf4PrvbA808cUpLNcBonx/Storyboard-para-User-Stories?fullscreen=1&t=CxG7oRRqDXarRII3-1&code-node-id=0-6">Figma</a>
+As histórias detalhadas podem ser consultadas no <a href="https://www.figma.com/make/Gbf4PrvbA808cUpLNcBonx/Storyboard-para-User-Stories?fullscreen=1&t=CxG7oRRqDXarRII3-1&code-node-id=0-6">Figma</a>
 
+# 🔗 Rastreabilidade
 
-##🎮 Protótipo Navegável
+Esta seção tem como objetivo demonstrar a relação entre os requisitos do projeto, as funcionalidades implementadas e as evidências produzidas durante o desenvolvimento.
+
+| História de Usuário | Funcionalidade Entregue | Sprint | Evidência |
+|--------------------|-------------------------|---------|-----------|
+| US01 - Iniciar investigação | Fluxo inicial do jogo e entrada na investigação | Sprint 01 | Protótipo, Screencast e Commit |
+| US02 - Consultar tutorial | Tela de tutorial e explicação das mecânicas | Sprint 01 | Protótipo, Screencast e Commit |
+| US03 - Configurar o jogo | Tela de configurações | Sprint 01 | Protótipo, Screencast e Commit |
+| US04 - Conhecer o contexto do caso | Introdução narrativa da investigação | Sprint 01 | Protótipo, Screencast e Commit |
+| US05 - Interrogar suspeitos | Sistema de diálogos e interrogatórios | Sprint 01 | Protótipo, Screencast e Commit |
+| US06 - Resolver desafios de lógica | Perguntas de lógica proposicional | Sprint 01 | Protótipo, Screencast e Commit |
+| US07 - Desbloquear evidências | Liberação de evidências após acertos | Sprint 02 | Protótipo, Screencast e Commit |
+| US08 - Identificar conteúdo adulterado por IA | Análise de evidências geradas ou manipuladas por IA | Sprint 01 | Protótipo, Screencast e Commit |
+| US09 - Avançar para novos interrogatórios | Progressão da investigação | Sprint 02 | Protótipo, Screencast e Commit |
+| US10 - Falhar na investigação por falta de evidências | Consequências para decisões incorretas | Sprint 02 | Protótipo, Screencast e Commit |
+| US11 - Revisar todas as evidências | Painel de consulta das evidências coletadas | Sprint 02 | Protótipo, Screencast e Commit |
+| US12 - Escolher o culpado | Sistema de acusação final | Sprint 02 | Protótipo, Screencast e Commit |
+| US13 - Receber o Good Ending | Final positivo da investigação | Sprint 02 | Protótipo, Screencast e Commit |
+| US14 - Receber o Bad Ending | Final negativo da investigação | Sprint 02 | Protótipo, Screencast e Commit |
+| US15 - Visualizar relatório final | Relatório completo da investigação | Sprint 02 | Protótipo, Screencast e Commit |
+
+---
+
+## 📋 Evolução das Sprints
+
+### Sprint 01
+
+Foram implementadas as funcionalidades responsáveis por estabelecer a base da experiência do jogador:
+
+- US01 – Iniciar investigação
+- US02 – Consultar tutorial
+- US03 – Configurar o jogo
+- US04 – Conhecer o contexto do caso
+- US05 – Interrogar suspeitos
+- US06 – Resolver desafios de lógica
+- US08 – Identificar conteúdo adulterado por IA
+
+### 📸 Evidências da Sprint 01:
+
+- [Acesse o vídeo de navegação pelo protótipo no Google Drive](https://drive.google.com/file/d/1w0aCzOO3d0PE_nThnVuaYUD0AvGshSVF/view?usp=sharing)
+- [Protótipo no Figma](https://www.figma.com/proto/nYrh1RndZJO9kXkZlXdNWN/ai.libe?node-id=8-10&t=DVWzvsOVZvj6wX6e-0&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1)
+- [Screencast dos Testes](https://drive.google.com/file/d/1QYxtFs5ZoVz9ueSk89od_WC6WQeR7DDE/view?usp=sharing)
+- [ScreenCast das Histórias de Usuários np Trello](https://drive.google.com/file/d/1LvloIpaRKzMaGN2_6kSzIHapZJP6Z9-s/view?usp=sharing)
+- <img src="prototipo_de_baixa/src/trello.png" width="300">
+
+### Sprint 02
+
+Foram implementadas as funcionalidades relacionadas a melhoria, desenvolvimento e encerramento da investigação:
+
+- US07 – Desbloquear evidências
+- US09 – Avançar para novos interrogatórios
+- US10 – Falhar na investigação por falta de evidências
+- US11 – Revisar todas as evidências
+- US12 – Escolher o culpado
+- US13 – Receber o Good Ending
+- US14 – Receber o Bad Ending
+- US15 – Visualizar relatório final
+
+### 📸 Evidências da Sprint 02:
+
+---
+
+## 🎮 Protótipo Navegável
 
 [Protótipo no Figma](https://www.figma.com/proto/nYrh1RndZJO9kXkZlXdNWN/ai.libe?node-id=8-10&t=DVWzvsOVZvj6wX6e-0&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1
 )
-
-[Acesse o vídeo de navegação pelo protótipo no Google Drive](https://drive.google.com/file/d/1w0aCzOO3d0PE_nThnVuaYUD0AvGshSVF/view?usp=sharing)
 
 
 # Como Compilar e Executar
@@ -232,10 +291,6 @@ Durante o desenvolvimento das **US02**, atuei como **Driver**, sendo responsáve
 
 Durante o desenvolvimento das **US02**, atuei como **Navigator**, auxiliando Luma na análise da lógica, revisão das implementações e tomada de decisões técnicas. A atividade favoreceu a colaboração e a identificação de melhorias no código. Como desafio, o processo exigiu um maior alinhamento entre a dupla, tornando algumas etapas mais demoradas do que no desenvolvimento individual.
 
-[ScreenCast das Histórias de Usuários](https://drive.google.com/file/d/1LvloIpaRKzMaGN2_6kSzIHapZJP6Z9-s/view?usp=sharing)
-
-<img src="prototipo_de_baixa/src/trello.png" width="300">
-
 ## 👥 Equipe
 
 Product Owner
@@ -274,13 +329,6 @@ Product Owner
 
 ---
 
-## 📋 Backlog
-
-O backlog contém as funcionalidades, tarefas e atividades planejadas para o desenvolvimento do IA.libi.
-
-<img src="src/backlog.png" width="400">
-
----
 
 🗂️ Estrutura do Projeto
 
