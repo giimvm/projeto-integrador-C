@@ -155,13 +155,36 @@ Esses conceitos são utilizados como parte da própria progressão do jogo, evit
 - ✅ Bad Ending para conclusões equivocadas;
 - ✅ Relatório final detalhando os resultados da investigação.
 
-## User Stories
+## 📖 Storyboard e User Stories
 
-As histórias detalhadas podem ser consultadas no <a href="https://www.figma.com/make/Gbf4PrvbA808cUpLNcBonx/Storyboard-para-User-Stories?fullscreen=1&t=CxG7oRRqDXarRII3-1&code-node-id=0-6">Figma</a>
+As User Stories do projeto foram documentadas em um storyboard navegável desenvolvido no Figma.
+
+Cada história apresenta:
+
+- História de usuário;
+- Objetivo da funcionalidade;
+- Sketch da interface;
+- Navegação entre funcionalidades;
+- Evidências visuais da implementação.
+
+O storyboard foi utilizado como artefato de apoio durante o desenvolvimento e como mecanismo de rastreabilidade entre os requisitos e as funcionalidades implementadas.
+
+🔗 Acesse o storyboard completo:
+[Storyboard e User Stories](https://www.figma.com/make/Gbf4PrvbA808cUpLNcBonx/Storyboard-para-User-Stories?code-node-id=0-6&p=f&t=Oml7Zc8YCxebr5G2-0)
 
 # 🔗 Rastreabilidade
 
-Esta seção tem como objetivo demonstrar a relação entre os requisitos do projeto, as funcionalidades implementadas e as evidências produzidas durante o desenvolvimento.
+Para garantir a rastreabilidade do projeto foram utilizados os seguintes artefatos:
+
+- User Stories documentadas no storyboard do Figma;
+- Board de gerenciamento no Trello;
+- Histórico de commits no GitHub;
+- Screencasts das funcionalidades implementadas;
+- Testes de sistema;
+- Bug Tracker;
+- Relatos de programação em pares.
+
+Esses artefatos permitem acompanhar a evolução do projeto desde a definição dos requisitos até a entrega das funcionalidades.
 
 | História de Usuário | Funcionalidade Entregue | Sprint | Evidência |
 |--------------------|-------------------------|---------|-----------|
@@ -202,7 +225,7 @@ Foram implementadas as funcionalidades responsáveis por estabelecer a base da e
 - [Acesse o vídeo de navegação pelo protótipo no Google Drive](https://drive.google.com/file/d/1w0aCzOO3d0PE_nThnVuaYUD0AvGshSVF/view?usp=sharing)
 - [Protótipo no Figma](https://www.figma.com/proto/nYrh1RndZJO9kXkZlXdNWN/ai.libe?node-id=8-10&t=DVWzvsOVZvj6wX6e-0&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1)
 - [Screencast dos Testes](https://drive.google.com/file/d/1QYxtFs5ZoVz9ueSk89od_WC6WQeR7DDE/view?usp=sharing)
-- [ScreenCast das Histórias de Usuários np Trello](https://drive.google.com/file/d/1LvloIpaRKzMaGN2_6kSzIHapZJP6Z9-s/view?usp=sharing)
+- [ScreenCast das Histórias de Usuários no Trello](https://drive.google.com/file/d/1LvloIpaRKzMaGN2_6kSzIHapZJP6Z9-s/view?usp=sharing)
 - <img src="prototipo_de_baixa/src/trello.png" width="300">
 
 ### Sprint 02
@@ -220,13 +243,14 @@ Foram implementadas as funcionalidades relacionadas a melhoria, desenvolvimento 
 
 ### 📸 Evidências da Sprint 02:
 
+- [Screencast dos Testes](https://drive.google.com/file/d/1XMqJAy4WeaSpG0mHwiGUokfC4kdFG3Bu/view)
+- [User Stories Implementadas Atualizada](https://www.figma.com/make/Gbf4PrvbA808cUpLNcBonx/Storyboard-para-User-Stories?code-node-id=0-6&p=f&t=Oml7Zc8YCxebr5G2-0)
+- [Link para o Trello](https://trello.com/b/1ANqqPw6/squad-3)
 ---
 
 ## 🎮 Protótipo Navegável
 
-[Protótipo no Figma](https://www.figma.com/proto/nYrh1RndZJO9kXkZlXdNWN/ai.libe?node-id=8-10&t=DVWzvsOVZvj6wX6e-0&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1
-)
-
+[Protótipo no Figma](https://www.figma.com/proto/nYrh1RndZJO9kXkZlXdNWN/ai.libe?node-id=8-10&t=DVWzvsOVZvj6wX6e-0&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1)
 
 # Como compilar e executar para a contribuição no projeto  
 
@@ -298,24 +322,6 @@ Product Owner
 
 ---
 
-
-🗂️ Estrutura do Projeto
-
-A organização atual do projeto segue a estrutura abaixo:
-
-IA.libi/
-│
-├── src/
-│   └── backlog.png
-│
-├── README.md
-│
-└── ...
-
-«A estrutura será atualizada conforme novas funcionalidades e componentes forem adicionados ao projeto.»
-
----
-
 🚀 Desenvolvimento
 
 O desenvolvimento do IA.libi é realizado de forma colaborativa, envolvendo diferentes áreas:
@@ -325,20 +331,75 @@ Produto → Design → Roteiro → UX/Research → Programação → Testes
 Cada área contribui para transformar a proposta educacional em uma experiência investigativa interativa.
 
 ---
+# 🗂️ Estrutura do Projeto
 
-🛠️ Tecnologias
+A organização do projeto foi dividida de forma a separar os recursos visuais, o código-fonte do jogo, os protótipos e a documentação utilizada durante o desenvolvimento.
 
-«Em desenvolvimento»
+```text
+projeto-integrador-C/
+│
+├── .vscode/
+│   └── Configurações do ambiente de desenvolvimento
+│
+├── AssetsRay/
+│   └── Recursos visuais, imagens, áudios e elementos gráficos utilizados no jogo
+│
+├── jogo_ai.libi/
+│   └── Código-fonte principal da versão final do jogo
+│
+├── jogo_terminal/
+│   └── Implementações e versões desenvolvidas em linguagem C para execução em terminal
+│
+├── .agyignore
+│
+├── .gitignore
+│   └── Arquivos e diretórios ignorados pelo Git
+│
+├── CONTRIBUTING.md
+│   └── Guia de contribuição para novos colaboradores
+│
+└── README.md
+    └── Documentação principal do projeto
+```
 
-As tecnologias utilizadas no projeto serão documentadas nesta seção conforme forem definidas e incorporadas ao desenvolvimento.
+## 📁 Organização dos Componentes
+
+### 🎮 jogo_ai.libi
+
+Contém o código-fonte da versão principal do jogo, incluindo as funcionalidades relacionadas à investigação, interrogatórios, desafios de lógica, análise de evidências e finais da história.
+
+### 💻 jogo_terminal
+
+Contém implementações desenvolvidas em linguagem C e utilizadas durante etapas do desenvolvimento e testes do projeto.
+
+### 🎨 AssetsRay
+
+Diretório responsável pelo armazenamento dos recursos visuais utilizados na interface e na ambientação do jogo.
+
+### 📄 Documentação
+
+Os arquivos de documentação estão localizados na raiz do projeto:
+
+- **README.md**: visão geral do projeto, funcionalidades, rastreabilidade e evidências.
+- **CONTRIBUTING.md**: orientações para configuração do ambiente e contribuição de novos integrantes.
+
+# 🛠️ Tecnologias
+
+- Raylib
+- Linguagem C
+- VSCode
+- Figma
+- Google Gemini
+- Claude Code
+- Google Antigravity
 
 ---
 
-📈 Status do Projeto
+## 📈 Status do Projeto
 
-🟡 Em desenvolvimento
+✅ Concluído para fins acadêmicos
 
-O projeto encontra-se em fase de desenvolvimento e planejamento de suas mecânicas, narrativa, experiência do usuário e implementação.
+O projeto possui todas as histórias de usuário planejadas implementadas e testadas durante as Sprints 01 e 02.
 
 ---
 
