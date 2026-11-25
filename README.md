@@ -7,45 +7,42 @@
 
 ## 📌 Sobre o Projeto
 
-O IA.libi coloca o jogador no papel de um detetive responsável por investigar um suspeito.
+AI.libi é um jogo digital educativo no qual o jogador assume o papel de um investigador responsável por solucionar um caso criminal.
 
-Durante a investigação, diferentes evidências são apresentadas ao jogador, incluindo imagens, documentos, vídeos, depoimentos e outras informações digitais. O problema é que nem todas essas evidências são confiáveis.
+Ao longo da investigação, o jogador coleta depoimentos, analisa evidências e enfrenta desafios de lógica proposicional para avançar na narrativa. Além de resolver o caso, o jogador precisa avaliar criticamente as provas encontradas, identificando possíveis conteúdos manipulados ou gerados por Inteligência Artificial.
 
-Algumas podem ter sido geradas, alteradas ou manipuladas por Inteligência Artificial, fazendo com que o jogador precise investigar cuidadosamente antes de tirar qualquer conclusão.
-
-O avanço da investigação acontece por meio de desafios de lógica proposicional. Para desbloquear novas evidências e continuar o caso, o jogador precisa resolver corretamente os desafios apresentados.
-
-Ao final, cabe ao jogador analisar o conjunto de evidências, identificar contradições e decidir:
-
-- 🔎 Qual evidência é confiável;
-- 🤖 Qual conteúdo pode ter sido gerado ou manipulado por IA;
-- ⚠️ Quais informações apresentam inconsistências;
-- ⚖️ Se existem evidências suficientes para considerar o suspeito culpado ou inocente.
+O projeto foi desenvolvido com o objetivo de unir aprendizado e entretenimento, incentivando o raciocínio lógico, a análise crítica de informações e a conscientização sobre os impactos das tecnologias de IA na produção de conteúdos digitais.
 
 ---
 
 ## 🎯 Objetivos
 
-O jogo foi desenvolvido com os seguintes objetivos:
+O AI.libi foi desenvolvido com os seguintes objetivos:
 
-- Desenvolver o pensamento crítico;
-- Trabalhar conceitos de lógica proposicional de forma interativa;
-- Estimular a capacidade de investigação e análise;
-- Desenvolver a alfabetização digital;
-- Ensinar o jogador a questionar informações antes de considerá-las verdadeiras;
-- Apresentar situações relacionadas à manipulação e geração de conteúdo por IA.
+- Ensinar conceitos de lógica proposicional de forma prática e interativa;
+- Desenvolver habilidades de raciocínio lógico e pensamento crítico;
+- Estimular a análise e interpretação de evidências durante uma investigação;
+- Promover a alfabetização digital em um contexto cada vez mais influenciado pela Inteligência Artificial;
+- Demonstrar como conteúdos digitais podem ser manipulados ou gerados por IA;
+- Incentivar a tomada de decisões baseadas em evidências e não apenas em suposições.
 
 ## 💡 Conceito principal
 
-«Nem toda evidência é verdadeira. Nem toda informação deve ser aceita sem questionamento.»
+> **Nem toda evidência é verdadeira. Nem toda informação deve ser aceita sem questionamento.**
 
-O jogador precisa utilizar lógica, investigação e análise crítica para descobrir o que realmente aconteceu.
+O AI.libi foi desenvolvido para demonstrar que uma informação aparentemente convincente nem sempre é verdadeira. Por meio da investigação, da lógica e da análise crítica, o jogador aprende a questionar evidências, verificar fatos e construir conclusões baseadas em informações confiáveis.
 
 ---
 
-🎮 Como o jogo funciona
+## 🎮 Como o jogo funciona
 
-A experiência é estruturada como uma investigação.
+O jogador assume o papel de um detetive responsável por investigar um crime.
+
+A investigação acontece por etapas, nas quais o jogador conversa com suspeitos, responde desafios de lógica e desbloqueia novas evidências relacionadas ao caso.
+
+Durante a análise das evidências, o jogador deve identificar possíveis adulterações realizadas por Inteligência Artificial, cruzar informações e revisar os dados coletados para descobrir a verdade.
+
+Ao final da investigação, o jogador deverá escolher quem considera culpado e receberá um relatório explicando os resultados alcançados.
 
            🕵️ INVESTIGAÇÃO
                   │
@@ -72,62 +69,20 @@ A experiência é estruturada como uma investigação.
                   ▼
            ⚖️ Conclusão do caso
 
-1. Interrogatório
-
-O jogador inicia a investigação interrogando um suspeito e recebendo as primeiras informações sobre o caso.
-
-2. Desafios de lógica
-
-Para avançar, o jogador precisa resolver questões envolvendo lógica proposicional, como:
-
-- Proposições;
-- Conectivos lógicos;
-- Negação;
-- Conjunção;
-- Disjunção;
-- Implicação;
-- Equivalência;
-- Tabelas-verdade.
-
-3. Coleta de evidências
-
-Cada resposta correta pode desbloquear uma nova evidência relacionada ao caso.
-
-As evidências podem assumir diferentes formatos:
-
-📄 Documentos
-🖼️ Imagens
-🎥 Vídeos
-💬 Depoimentos
-📱 Informações digitais
-
-4. Análise
-
-O jogador deve comparar as evidências obtidas e procurar:
-
-- Contradições;
-- Informações suspeitas;
-- Alterações;
-- Inconsistências;
-- Evidências incompatíveis entre si.
-
-5. Decisão final
-
-Ao reunir informações suficientes, o jogador precisa tomar uma decisão sobre o caso.
-
-A conclusão depende das evidências analisadas durante a investigação.
-
 ---
 
-## 🧠 Mecânicas Principais
+# 🧠 Mecânicas Principais
 
-Mecânica| Descrição
-🔐 Desafios de lógica| Questões de lógica proposicional utilizadas para liberar novas informações
-🔎 Investigação| Coleta e análise de evidências durante o caso
-🧩 Dedução| Cruzamento de informações para encontrar inconsistências
-🤖 Detecção de IA| Identificação de conteúdos possivelmente gerados ou manipulados por IA
-⚖️ Tomada de decisão| O jogador decide a conclusão da investigação com base nas evidências
-📚 Aprendizado| Conceitos educacionais são incorporados à experiência do jogo
+| Mecânica | Descrição |
+|-----------|-----------|
+| 🔎 Investigação | Exploração da narrativa por meio da coleta de informações e análise de suspeitos |
+| 💬 Interrogatórios | Conversas com personagens para obtenção de pistas e depoimentos |
+| 🧩 Desafios de Lógica | Questões baseadas em lógica proposicional utilizadas para progressão da investigação |
+| 🔓 Desbloqueio de Evidências | Novas provas são liberadas conforme o jogador avança no caso |
+| 🤖 Análise de IA | Identificação de conteúdos possivelmente manipulados ou gerados por Inteligência Artificial |
+| 📂 Dossiê de Evidências | Consulta e revisão das provas coletadas durante a investigação |
+| ⚖️ Tomada de Decisão | Escolha do culpado com base nas evidências reunidas |
+| 📊 Relatório Final | Explicação da solução do caso e análise das decisões tomadas pelo jogador |
 
 ---
 
@@ -165,398 +120,46 @@ Esses conceitos são utilizados como parte da própria progressão do jogo, evit
 
 ---
 
-# User storys
+# 🚀 Funcionalidades Implementadas
 
-FIGMA COM USER STORYS: 
+## Investigação e Narrativa
+
+- ✅ Iniciar uma investigação criminal;
+- ✅ Conhecer o contexto do caso através da introdução da narrativa;
+- ✅ Interrogar suspeitos para obter informações sobre o crime;
+- ✅ Avançar entre diferentes interrogatórios durante a investigação.
+
+## Configurações e Suporte ao Jogador
+
+- ✅ Consultar tutorial com explicação das mecânicas do jogo;
+- ✅ Configurar aspectos da experiência do jogador.
+
+## Desafios e Progressão
+
+- ✅ Resolver desafios de lógica proposicional;
+- ✅ Desbloquear novas evidências ao acertar desafios;
+- ✅ Progressão da investigação baseada no desempenho do jogador.
+
+## Análise de Evidências
+
+- ✅ Consultar evidências desbloqueadas;
+- ✅ Revisar todas as evidências antes da conclusão do caso;
+- ✅ Analisar conteúdos potencialmente adulterados por IA;
+- ✅ Classificar evidências como autênticas, manipuladas ou geradas por Inteligência Artificial.
+
+## Conclusão da Investigação
+
+- ✅ Escolher o suspeito considerado culpado;
+- ✅ Sistema de consequências para decisões incorretas;
+- ✅ Good Ending para investigações bem-sucedidas;
+- ✅ Bad Ending para conclusões equivocadas;
+- ✅ Relatório final detalhando os resultados da investigação.
+
+## User Stories
+
+As histórias detalhadas podem ser consultadas no Figma:
 <a href="https://www.figma.com/make/Gbf4PrvbA808cUpLNcBonx/Storyboard-para-User-Stories?fullscreen=1&t=CxG7oRRqDXarRII3-1&code-node-id=0-6">Figma</a>
 
-# US01 - Iniciar Investigação
-
-## História de Usuário
-
-Como jogador,
-quero iniciar uma investigação,
-para resolver o caso apresentado.
-
-## Sketch
-
-<img src="prototipo_de_baixa/src/US01.png" width="300">
-
-## Storyboard
-
-1. O jogador abre o jogo.
-2. O menu principal é apresentado.
-3. O jogador seleciona "Iniciar Investigação".
-4. O contexto do caso é exibido.
-5. O primeiro interrogatório é iniciado.
-
-## Diagrama de Atividades
-
-<img src="prototipo_de_baixa/src/us01_diagrama.png" width="300">
-
----
-
-# US02 - Consultar Tutorial
-
-## História de Usuário
-
-Como jogador,
-quero acessar o tutorial,
-para entender as mecânicas do jogo.
-
-## Sketch
-
-<img src="prototipo_de_baixa/src/US02.png" width="300">
-
-## Storyboard
-
-1. O jogador acessa o menu principal.
-2. Seleciona a opção Tutorial.
-3. O sistema apresenta as regras.
-4. O jogador aprende as mecânicas.
-5. Retorna ao menu principal.
-
-## Diagrama de Atividades
-
-<img src="prototipo_de_baixa/src/us02_diagrama.png" width="300">
-
-
----
-
-# US03 - Configurações
-
-## História de Usuário
-
-Como jogador,
-quero alterar as configurações,
-para personalizar minha experiência.
-
-## Sketch
-
-<img src="prototipo_de_baixa/src/US03.png" width="300">
-
-## Storyboard
-
-1. O jogador acessa configurações.
-2. Ajusta as opções desejadas.
-3. Salva as alterações.
-4. O sistema registra as mudanças.
-5. Retorna ao menu principal.
-
-## Diagrama de Atividades
-
-<img src="prototipo_de_baixa/src/us03_diagrama.png" width="300">
-
----
-
-# US04 - Conhecer o Contexto do Caso
-
-## História de Usuário
-
-Como investigador,
-quero conhecer os detalhes do caso,
-para iniciar a investigação.
-
-## Sketch
-
-<img src="prototipo_de_baixa/src/US04.png" width="300">
-
-## Storyboard
-
-1. A narrativa inicial é apresentada.
-2. O crime é descrito.
-3. Os suspeitos são apresentados.
-4. O objetivo da investigação é explicado.
-5. O jogador segue para o interrogatório.
-
-## Diagrama de Atividades
-
-<img src="prototipo_de_baixa/src/us04_diagrama.png" width="300">
-
----
-
-# US05 - Interrogar Suspeito
-
-## História de Usuário
-
-Como investigador,
-quero interrogar suspeitos,
-para obter informações sobre o caso.
-
-## Sketch
-
-<img src="prototipo_de_baixa/src/US05.png" width="300">
-
-## Storyboard
-
-1. O jogador encontra um suspeito.
-2. O suspeito fornece seu depoimento.
-3. O jogador acompanha o diálogo.
-4. Novas pistas surgem.
-5. O desafio lógico é iniciado.
-
-## Diagrama de Atividades
-
-<img src="prototipo_de_baixa/src/us05_diagrama.png" width="300">
-
----
-
-# US06 - Resolver Pergunta de Lógica
-
-## História de Usuário
-
-Como investigador,
-quero resolver desafios de lógica,
-para desbloquear evidências.
-
-## Sketch
-
-<img src="prototipo_de_baixa/src/US06.png" width="300">
-
-## Storyboard
-
-1. Uma pergunta lógica é apresentada.
-2. O jogador analisa as alternativas.
-3. Seleciona uma resposta.
-4. O sistema valida a resposta.
-5. O resultado é exibido.
-
-## Diagrama de Atividades
-
-<img src="prototipo_de_baixa/src/us06_diagrama.png" width="300">
-
----
-
-# US07 - Desbloquear Evidência
-
-## História de Usuário
-
-Como investigador,
-quero desbloquear evidências,
-para avançar na investigação.
-
-## Sketch
-
-<img src="prototipo_de_baixa/src/US07.png" width="300">
-
-## Storyboard
-
-1. O jogador responde corretamente.
-2. A evidência é liberada.
-3. A evidência é adicionada ao dossiê.
-4. O jogador a visualiza.
-5. A análise é iniciada.
-
-## Diagrama de Atividades
-
-<img src="prototipo_de_baixa/src/us07_diagrama.png" width="300">
-
----
-
-# US08 - Identificar Evidência Gerada por IA
-
-## História de Usuário
-
-Como investigador,
-quero analisar evidências,
-para identificar adulterações por IA.
-
-## Sketch
-
-<img src="prototipo_de_baixa/src/US08.png" width="300">
-
-## Storyboard
-
-1. O jogador visualiza a evidência.
-2. Analisa o conteúdo.
-3. Procura sinais de adulteração.
-4. Marca IA ou Autêntica.
-5. O sistema registra a resposta.
-
-## Diagrama de Atividades
-
-<img src="prototipo_de_baixa/src/us08_diagrama.png" width="300">
-
----
-
-# US09 - Consultar Dossiê
-
-## História de Usuário
-
-Como investigador,
-quero acessar o dossiê da investigação,
-para revisar as evidências obtidas.
-
-## Sketch
-
-<img src="prototipo_de_baixa/src/US09.png" width="300">
-
-## Storyboard
-
-1. O jogador abre o dossiê.
-2. A lista de evidências é exibida.
-3. Uma evidência é selecionada.
-4. Os detalhes são analisados.
-5. O jogador retorna à investigação.
-
-## Diagrama de Atividades
-
-<img src="prototipo_de_baixa/src/us09_diagrama.png" width="300">
-
----
-
-# US10 - Avançar Entre Interrogatórios
-
-## História de Usuário
-
-Como investigador,
-quero avançar para novos interrogatórios,
-para continuar a investigação.
-
-## Sketch
-
-<img src="prototipo_de_baixa/src/US10.png" width="300">
-
-## Storyboard
-
-1. O interrogatório atual termina.
-2. O sistema apresenta o resumo do desempenho.
-3. O jogador analisa as evidências obtidas.
-4. Clica em "Próximo Interrogatório".
-5. O próximo suspeito é carregado.
-
-## Diagrama de Atividades
-
-<img src="prototipo_de_baixa/src/us10_diagrama.png" width="300">
-
----
-
-# US11 - Revisar Evidências
-
-## História de Usuário
-
-Como investigador,
-quero revisar todas as evidências,
-para tomar uma decisão correta.
-
-## Sketch
-
-<img src="prototipo_de_baixa/src/US11.png" width="300">
-
-## Storyboard
-
-1. Os interrogatórios terminam.
-2. O painel de evidências é aberto.
-3. O jogador revisa as provas.
-4. Compara os resultados.
-5. Prepara sua acusação.
-
-## Diagrama de Atividades
-
-<img src="prototipo_de_baixa/src/us11_diagrama.png" width="300">
-
----
-
-# US12 - Escolher Culpado
-
-## História de Usuário
-
-Como investigador,
-quero escolher o culpado,
-para encerrar a investigação.
-
-## Sketch
-
-<img src="prototipo_de_baixa/src/US12.png" width="300">
-
-## Storyboard
-
-1. A lista de suspeitos é apresentada.
-2. O jogador revisa as informações.
-3. Seleciona um suspeito.
-4. Confirma a acusação.
-5. O sistema processa a escolha.
-
-## Diagrama de Atividades
-
-<img src="prototipo_de_baixa/src/us12_diagrama.png" width="300">
----
-
-# US13 - Good Ending
-
-## História de Usuário
-
-Como jogador,
-quero receber um final positivo,
-quando solucionar corretamente o caso.
-
-## Sketch
-
-<img src="prototipo_de_baixa/src/US13.png" width="300">
-
-## Storyboard
-
-1. A acusação é enviada.
-2. O sistema verifica a resposta.
-3. O culpado correto é identificado.
-4. O caso é resolvido.
-5. O relatório final é exibido.
-
-## Diagrama de Atividades
-
-<img src="prototipo_de_baixa/src/us13_diagrama.png" width="300">
-
----
-
-# US14 - Bad Ending
-
-## História de Usuário
-
-Como jogador,
-quero visualizar as consequências de um erro,
-para compreender o resultado da investigação.
-
-## Sketch
-
-<img src="prototipo_de_baixa/src/US14.png" width="300">
-
-## Storyboard
-
-1. A acusação é enviada.
-2. O sistema verifica a resposta.
-3. Um inocente é acusado.
-4. O caso permanece sem solução.
-5. O relatório final é apresentado.
-
-## Diagrama de Atividades
-
-<img src="prototipo_de_baixa/src/us14_diagrama.png" width="300">
-
----
-
-# US15 - Relatório Final
-
-## História de Usuário
-
-Como jogador,
-quero visualizar o relatório final,
-para compreender toda a investigação.
-
-## Sketch
-
-<img src="prototipo_de_baixa/src/US15.png" width="300">
-
-## Storyboard
-
-1. A tela final é aberta.
-2. Todas as evidências são exibidas.
-3. As adulterações por IA são destacadas.
-4. A solução é explicada.
-5. Um alerta sobre o uso indevido da IA é apresentado.
-
-## Diagrama de Atividades
-
-<img src="prototipo_de_baixa/src/us15_diagrama.png" width="300">
 
 ##🎮 Protótipo Navegável
 
