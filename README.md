@@ -228,50 +228,9 @@ Foram implementadas as funcionalidades relacionadas a melhoria, desenvolvimento 
 )
 
 
-# Como Compilar e Executar
+# Como compilar e executar para a contribuição no projeto  
 
-## Compilação
-
-No terminal, navegue até a pasta onde está localizado o arquivo `.c` e execute:
-
-```bash
-gcc terminal.c -o terminal.exe
-```
-
-> Substitua `terminal.c` pelo nome do seu arquivo-fonte, se for diferente.
-
-## Execução
-
-Após a compilação, execute o programa com o comando:
-
-```bash
-./terminal.exe
-```
-
-## Exemplo
-
-Arquivo:
-
-```text
-terminal.c
-```
-
-Compilar:
-
-```bash
-gcc terminal.c -o terminal.exe
-```
-
-Executar:
-
-```bash
-./terminal.exe
-```
-
-## Requisitos
-
-- GCC instalado e configurado no sistema.
-- Terminal compatível com a execução de programas em C.
+**Presente no arquivo:** [CONTRIBUTION.md](CONTRIBUTION.MD)
 
 ## Qualidade e Testes
 
@@ -285,9 +244,9 @@ Executar:
 
 ### Relato de Programação em Pares - Luma (Driver)
 
-Durante o desenvolvimento das **US02**, atuei como **Driver**, sendo responsável pela implementação do código, enquanto Letícia atuou como **Navigator**, acompanhando a lógica e sugerindo melhorias. A experiência contribuiu para a troca de conhecimentos e para a validação das soluções durante o desenvolvimento. Como ponto negativo, algumas decisões demandaram mais tempo devido às discussões antes da implementação.
+Durante o desenvolvimento das **US02**, atuei como **Driver**, sendo responsável pela implementação do código, enquanto Lanna atuou como **Navigator**, acompanhando a lógica e sugerindo melhorias. A experiência contribuiu para a troca de conhecimentos e para a validação das soluções durante o desenvolvimento. Como ponto negativo, algumas decisões demandaram mais tempo devido às discussões antes da implementação.
 
-### Relato de Programação em Pares - Letícia (Navigator)
+### Relato de Programação em Pares - Lanna (Navigator)
 
 Durante o desenvolvimento das **US02**, atuei como **Navigator**, auxiliando Luma na análise da lógica, revisão das implementações e tomada de decisões técnicas. A atividade favoreceu a colaboração e a identificação de melhorias no código. Como desafio, o processo exigiu um maior alinhamento entre a dupla, tornando algumas etapas mais demoradas do que no desenvolvimento individual.
 
