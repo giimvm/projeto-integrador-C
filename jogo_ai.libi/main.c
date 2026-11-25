@@ -116,6 +116,7 @@ typedef struct {
     bool vitoria;
 
     // Configuracoes
+    float volGeral;
     float volMusica;
     float volSfx;
     bool telaCheia;
@@ -279,11 +280,12 @@ static void IniciarSequencia(EstadoJogo *e, SequenciaDialogo seq, int cenaNum) {
 }
 
 static void SalvarConfigEstado(const EstadoJogo *e) {
-    ConfigSalva cfg = { e->volMusica, e->volSfx, e->telaCheia, e->modoTechNight };
+    ConfigSalva cfg = { e->volMusica, e->volSfx, e->telaCheia, e->modoTechNight, e->devDesbloqueado, e->volGeral };
     SalvarConfig(cfg);
 }
 
 static void NovoJogo(EstadoJogo *e, EstadoCelular *cel, EstadoMural *mural, PlayerStats *stats) {
+    float vg = e->volGeral;
     float vm = e->volMusica, vs = e->volSfx;
     bool tc = e->telaCheia;
     bool tn = e->modoTechNight;
@@ -295,6 +297,7 @@ static void NovoJogo(EstadoJogo *e, EstadoCelular *cel, EstadoMural *mural, Play
     memset(e, 0, sizeof(*e));
     snprintf(e->nomeJogador, sizeof(e->nomeJogador), "%s", (nomeSalvo[0] != '\0') ? nomeSalvo : "Helena");
     e->nomeJogadorLen = (int)strlen(e->nomeJogador);
+    e->volGeral = vg;
     e->volMusica = vm;
     e->volSfx = vs;
     e->telaCheia = tc;
@@ -543,7 +546,7 @@ static void DesenharPlayerAudio(FontesUI *f, Rectangle area, bool tocando, float
     DrawTextEx(f->regular, "Duração: 00:12 | Entrega Anônima", (Vector2){ area.x + 198, area.y + area.height - 52 }, 22, 1.0f, LIGHTGRAY);
 }
 
-static void AtualizarDevOverlay(EstadoJogo *e, EstadoCelular *cel, EstadoMural *mural, PlayerStats *stats, const GerenciadorAssets *assets, Vector2 mouse) {
+static void AtualizarDevOverlay(EstadoJogo *e, EstadoCelular *cel, EstadoMural *mural, EstadoCutscene *cs, PlayerStats *stats, const GerenciadorAssets *assets, Vector2 mouse) {
     (void)cel;
     (void)stats;
     if (e->devPopupSenha) {
@@ -573,6 +576,7 @@ static void AtualizarDevOverlay(EstadoJogo *e, EstadoCelular *cel, EstadoMural *
                 e->devPainelAberto = true;
                 e->devSenhaInput[0] = '\0';
                 e->devSenhaLen = 0;
+                SalvarConfigEstado(e);
             } else {
                 e->devSenhaErro = true;
             }
@@ -592,6 +596,15 @@ static void AtualizarDevOverlay(EstadoJogo *e, EstadoCelular *cel, EstadoMural *
             return;
         }
         if (!IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) return;
+
+        // Botao desligar modo dev (remove persistencia e botoes dedicados)
+        if (CheckCollisionPointRec(mouse, (Rectangle){ 845, 66, 180, 38 })) {
+            TocarClick(assets);
+            e->devDesbloqueado = false;
+            e->devPainelAberto = false;
+            SalvarConfigEstado(e);
+            return;
+        }
 
         // Botao fechar
         if (CheckCollisionPointRec(mouse, (Rectangle){ 1040, 66, 130, 38 })) {
@@ -702,11 +715,11 @@ static void AtualizarDevOverlay(EstadoJogo *e, EstadoCelular *cel, EstadoMural *
             }
         }
 
-        // Coluna 2 Inferior: Grid 2x3 para rodar os 6 Finais direto
+        // Coluna 2 Inferior: Grid 2x3 para rodar os 6 Finais (Tribunal)
         for (int i = 0; i < 6; i++) {
             int col = i % 2;
             int row = i / 2;
-            Rectangle b = { 625 + col * 276, 412 + row * 50, 264, 42 };
+            Rectangle b = { 625 + col * 276, 408 + row * 46, 264, 38 };
             if (CheckCollisionPointRec(mouse, b)) {
                 TocarClick(assets);
                 e->devPainelAberto = false;
@@ -718,6 +731,21 @@ static void AtualizarDevOverlay(EstadoJogo *e, EstadoCelular *cel, EstadoMural *
                     SEQ_FINAL_INJUSTICA_AFASTAMENTO, SEQ_FINAL_PRECIPITADO, SEQ_FINAL_INJUSTICA
                 };
                 IniciarSequencia(e, seqsF[i], 8);
+                return;
+            }
+        }
+
+        // Coluna 2 Rodape: 6 Botoes diretos para abrir o Gibi (HQ) de cada final
+        for (int i = 0; i < 6; i++) {
+            Rectangle b = { 625 + i * 91, 586, 84, 42 };
+            if (CheckCollisionPointRec(mouse, b)) {
+                TocarClick(assets);
+                e->devPainelAberto = false;
+                e->podeAcusar = false;
+                e->tipoFinal = i + 1;
+                e->vitoria = (i < 2);
+                MontarCutsceneFinal(cs, e->tipoFinal, (int)e->culpado, e->statusProva, e->respostaProva);
+                e->tela = TELA_CUTSCENE;
                 return;
             }
         }
@@ -757,6 +785,7 @@ static void DesenharDevOverlay(const EstadoJogo *e, FontesUI *f, Vector2 mouse, 
         DrawRectangle(0, 0, VIRTUAL_W, VIRTUAL_H, (Color){ 6, 4, 14, 228 });
         DesenharPainelCyber((Rectangle){ 80, 48, 1120, 624 }, COR_VERDE_OK);
         DrawTextEx(f->titulo, "SYS.DEV // CONSOLE DE TESTES", (Vector2){ 112, 70 }, 28, 1.0f, COR_VERDE_OK);
+        DesenharBotaoCyber(f->bold, (Rectangle){ 845, 66, 180, 38 }, "DESLIGAR DEV", 18, CheckCollisionPointRec(mouse, (Rectangle){ 845, 66, 180, 38 }) ? 1.0f : 0.0f, tempo, COR_AMARELO_AVISO);
         DesenharBotaoCyber(f->bold, (Rectangle){ 1040, 66, 130, 38 }, "FECHAR [F9]", 19, CheckCollisionPointRec(mouse, (Rectangle){ 1040, 66, 130, 38 }) ? 1.0f : 0.0f, tempo, COR_ROSA_NEON);
         DrawRectangle(112, 116, 1058, 2, ColorAlpha(COR_VERDE_OK, 0.45f));
 
@@ -805,7 +834,7 @@ static void DesenharDevOverlay(const EstadoJogo *e, FontesUI *f, Vector2 mouse, 
             DesenharBotaoCyber(f->bold, b, acoesTxt[i], 19, CheckCollisionPointRec(mouse, b) ? 1.0f : 0.0f, tempo, cor);
         }
 
-        DrawTextEx(f->bold, "3. VER CENAS FINAIS DIRETO:", (Vector2){ 625, 380 }, 21, 1.0f, COR_VERDE_OK);
+        DrawTextEx(f->bold, "3. VER CENAS FINAIS (TRIBUNAL):", (Vector2){ 625, 378 }, 20, 1.0f, COR_VERDE_OK);
         const char *finaisTxt[6] = {
             "F1: FINAL PERFEITO",   "F2: FINAL BOM",
             "F3: INCONCLUSIVO",     "F4: INJUST. + AFAST.",
@@ -814,9 +843,16 @@ static void DesenharDevOverlay(const EstadoJogo *e, FontesUI *f, Vector2 mouse, 
         for (int i = 0; i < 6; i++) {
             int col = i % 2;
             int row = i / 2;
-            Rectangle b = { 625 + col * 276, 412 + row * 50, 264, 42 };
+            Rectangle b = { 625 + col * 276, 408 + row * 46, 264, 38 };
             Color cor = (i < 2) ? COR_VERDE_OK : (i < 5) ? COR_AMARELO_AVISO : COR_VERMELHO_ERR;
             DesenharBotaoCyber(f->bold, b, finaisTxt[i], 18, CheckCollisionPointRec(mouse, b) ? 1.0f : 0.0f, tempo, cor);
+        }
+
+        DrawTextEx(f->bold, "4. ABRIR GIBI (HQ) DIRETO:", (Vector2){ 625, 556 }, 20, 1.0f, COR_CIANO_NEON);
+        for (int i = 0; i < 6; i++) {
+            Rectangle b = { 625 + i * 91, 586, 84, 42 };
+            Color cor = (i < 2) ? COR_VERDE_OK : (i < 5) ? COR_AMARELO_AVISO : COR_VERMELHO_ERR;
+            DesenharBotaoCyber(f->bold, b, TextFormat("HQ F%d", i + 1), 17, CheckCollisionPointRec(mouse, b) ? 1.0f : 0.0f, tempo, cor);
         }
     }
 }
@@ -854,14 +890,18 @@ int main(void) {
     e.telaUltima = TELA_MENU;
     e.transicaoT = 1.0f;
     e.charAnimT = 1.0f;
+    e.volGeral = 1.00f;
     e.volMusica = 0.45f;
     e.volSfx = 0.80f;
 
-    ConfigSalva cfg = { e.volMusica, e.volSfx, true, false };
+    ConfigSalva cfg = { e.volMusica, e.volSfx, true, false, false, e.volGeral };
     CarregarConfig(&cfg);
+    e.volGeral = cfg.volGeral;
     e.volMusica = cfg.volMusica;
     e.volSfx = cfg.volSfx;
     e.modoTechNight = cfg.modoTechNight;
+    e.devDesbloqueado = cfg.devDesbloqueado;
+    SetMasterVolume(e.volGeral);
     // Sempre comeca com tela cheia
     AlternarTelaCheia(&e);
 
@@ -883,11 +923,14 @@ int main(void) {
     if (assets.temMusicaMenu) PlayMusicStream(assets.musicaMenu);
     if (assets.temMusicaJogo) PlayMusicStream(assets.musicaJogo);
 
+    int ultimoVozSeq = -1;
+    int ultimoVozIdx = -1;
     while (!WindowShouldClose()) {
         float dt = GetFrameTime();
         if (dt > 0.05f) dt = 0.05f;
         double tempo = GetTime();
 
+        SetMasterVolume(e.volGeral);
         bool naAreaMenu = (e.tela == TELA_MENU || e.tela == TELA_CONFIG || e.tela == TELA_CREDITOS || e.tela == TELA_NOME_JOGADOR);
         if (assets.temMusicaMenu) {
             SetMusicVolume(assets.musicaMenu, naAreaMenu ? e.volMusica : 0.0f);
@@ -906,6 +949,7 @@ int main(void) {
         if (assets.temSfxEscritorio) SetSoundVolume(assets.sfxEscritorio, e.volSfx);
         if (assets.temSfxLinkOk) SetSoundVolume(assets.sfxLinkOk, e.volSfx);
         if (assets.temSfxLinkErr) SetSoundVolume(assets.sfxLinkErr, e.volSfx);
+        if (assets.temVozAtual) SetSoundVolume(assets.vozAtual, e.volSfx);
         if (e.toastMuralTimer > 0.0f) e.toastMuralTimer -= dt;
 
         if (IsKeyPressed(KEY_F11)) AlternarTelaCheia(&e);
@@ -916,6 +960,11 @@ int main(void) {
         if (e.audioTocando) e.audioTempo += dt;
 
         // Animacoes globais de transicao e entrada de personagem
+        if (e.tela != TELA_DIALOGO) {
+            if (assets.temVozAtual) PararVozDialogo(&assets);
+            ultimoVozSeq = -1;
+            ultimoVozIdx = -1;
+        }
         if (e.tela != e.telaUltima) {
             e.transicaoT = 0.0f;
             e.telaUltima = e.tela;
@@ -965,7 +1014,7 @@ int main(void) {
 
         // =================== ATUALIZACAO ===================
         if (e.devPopupSenha || e.devPainelAberto) {
-            AtualizarDevOverlay(&e, &celular, &mural, &stats, &assets, mouse);
+            AtualizarDevOverlay(&e, &celular, &mural, &cutscene, &stats, &assets, mouse);
         } else if (e.menuPausa) {
             Rectangle pausaBtns[4] = {
                 { 465, 252, 350, 48 },
@@ -990,8 +1039,15 @@ int main(void) {
             Rectangle btnAcuTop  = { 804, 14, 186, 40 };
             Rectangle btnDosTop  = { 1000, 14, 186, 40 };
             Rectangle btnMenuTop = { 1196, 14, 62, 40 };
+            Rectangle btnDevTop  = { 18, 14, 108, 36 };
             AtualizarHover(&btnDosTop, &e.hoverDossieTop[0], 1, mouse, dt);
             bool clicouBarra = false;
+            if (e.devDesbloqueado && e.tela != TELA_MENU && e.tela != TELA_NOME_JOGADOR && e.tela != TELA_CONFIG && e.tela != TELA_CREDITOS &&
+                IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(mouse, btnDevTop)) {
+                TocarClick(&assets);
+                e.devPainelAberto = true;
+                clicouBarra = true;
+            }
 
             if (emGameplay && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
                 if (e.podeAcusar && CheckCollisionPointRec(mouse, btnAcuTop)) {
@@ -1038,26 +1094,41 @@ int main(void) {
                         else if (CheckCollisionPointRec(mouse, menuBtns[1])) { TocarClick(&assets); e.configVeioDePausa = false; e.telaAnterior = TELA_MENU; e.tela = TELA_CONFIG; }
                         else if (CheckCollisionPointRec(mouse, menuBtns[2])) { TocarClick(&assets); e.tela = TELA_CREDITOS; }
                         else if (CheckCollisionPointRec(mouse, menuBtns[3])) { CloseWindow(); }
+                        else if (e.devDesbloqueado && CheckCollisionPointRec(mouse, (Rectangle){ 980, 626, 235, 42 })) {
+                            TocarClick(&assets);
+                            e.devPainelAberto = true;
+                        }
                     }
                 } break;
 
                 case TELA_CONFIG: {
-                    Rectangle rowMusica  = { 140, 230, 740, 54 };
-                    Rectangle rowEfeitos = { 140, 305, 740, 54 };
-                    Rectangle rowTela    = { 140, 380, 480, 54 };
-                    Rectangle btnVoltar  = { 140, 470, 280, 54 };
-                    Rectangle cfgRows[4] = { rowMusica, rowEfeitos, rowTela, btnVoltar };
-                    AtualizarHover(cfgRows, e.hoverConfig, 4, mouse, dt);
+                    Rectangle rowGeral   = { 140, 198, 740, 54 };
+                    Rectangle rowMusica  = { 140, 268, 740, 54 };
+                    Rectangle rowEfeitos = { 140, 338, 740, 54 };
+                    Rectangle rowTela    = { 140, 408, 480, 54 };
+                    Rectangle btnVoltar  = { 140, 496, 280, 54 };
+                    Rectangle cfgRows[5] = { rowGeral, rowMusica, rowEfeitos, rowTela, btnVoltar };
+                    AtualizarHover(cfgRows, e.hoverConfig, 5, mouse, dt);
 
-                    Rectangle btnMusMenos = { 495, 238, 36, 38 };
-                    Rectangle sliderMus   = { 540, 243, 220, 28 };
-                    Rectangle btnMusMais  = { 770, 238, 36, 38 };
+                    Rectangle btnGerMenos = { 495, 206, 36, 38 };
+                    Rectangle sliderGer   = { 540, 211, 220, 28 };
+                    Rectangle btnGerMais  = { 770, 206, 36, 38 };
 
-                    Rectangle btnSfxMenos = { 495, 313, 36, 38 };
-                    Rectangle sliderSfx   = { 540, 318, 220, 28 };
-                    Rectangle btnSfxMais  = { 770, 313, 36, 38 };
+                    Rectangle btnMusMenos = { 495, 276, 36, 38 };
+                    Rectangle sliderMus   = { 540, 281, 220, 28 };
+                    Rectangle btnMusMais  = { 770, 276, 36, 38 };
+
+                    Rectangle btnSfxMenos = { 495, 346, 36, 38 };
+                    Rectangle sliderSfx   = { 540, 351, 220, 28 };
+                    Rectangle btnSfxMais  = { 770, 346, 36, 38 };
 
                     if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+                        if (CheckCollisionPointRec(mouse, (Rectangle){ sliderGer.x - 4, sliderGer.y - 6, sliderGer.width + 8, 40 })) {
+                            float raw = (mouse.x - sliderGer.x) / sliderGer.width;
+                            e.volGeral = roundf(fmaxf(0.0f, fminf(1.0f, raw)) * 20.0f) / 20.0f;
+                            SetMasterVolume(e.volGeral);
+                            SalvarConfigEstado(&e);
+                        }
                         if (CheckCollisionPointRec(mouse, (Rectangle){ sliderMus.x - 4, sliderMus.y - 6, sliderMus.width + 8, 40 })) {
                             float raw = (mouse.x - sliderMus.x) / sliderMus.width;
                             e.volMusica = roundf(fmaxf(0.0f, fminf(1.0f, raw)) * 20.0f) / 20.0f;
@@ -1071,7 +1142,17 @@ int main(void) {
                     }
 
                     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-                        if (CheckCollisionPointRec(mouse, btnMusMenos)) {
+                        if (CheckCollisionPointRec(mouse, btnGerMenos)) {
+                            e.volGeral = fmaxf(0.0f, roundf((e.volGeral - 0.05f) * 20.0f) / 20.0f);
+                            SetMasterVolume(e.volGeral);
+                            SalvarConfigEstado(&e);
+                            TocarClick(&assets);
+                        } else if (CheckCollisionPointRec(mouse, btnGerMais)) {
+                            e.volGeral = fminf(1.0f, roundf((e.volGeral + 0.05f) * 20.0f) / 20.0f);
+                            SetMasterVolume(e.volGeral);
+                            SalvarConfigEstado(&e);
+                            TocarClick(&assets);
+                        } else if (CheckCollisionPointRec(mouse, btnMusMenos)) {
                             e.volMusica = fmaxf(0.0f, roundf((e.volMusica - 0.05f) * 20.0f) / 20.0f);
                             SalvarConfigEstado(&e);
                             TocarClick(&assets);
@@ -1095,7 +1176,7 @@ int main(void) {
                             e.devCliquesSecretos = 0;
                             e.tela = e.telaAnterior;
                             if (e.configVeioDePausa) e.menuPausa = true;
-                        } else if (CheckCollisionPointRec(mouse, (Rectangle){ 832, 526, 68, 28 })) {
+                        } else if (CheckCollisionPointRec(mouse, (Rectangle){ 832, 562, 68, 28 })) {
                             e.devCliquesSecretos++;
                             if (e.devDesbloqueado) {
                                 TocarClick(&assets);
@@ -1241,6 +1322,11 @@ int main(void) {
                     const Fala *falas = NULL;
                     int total = 0;
                     ObterSequencia(e.seq, e.culpado, &falas, &total);
+                    if ((int)e.seq != ultimoVozSeq || e.falaIdx != ultimoVozIdx) {
+                        ultimoVozSeq = (int)e.seq;
+                        ultimoVozIdx = e.falaIdx;
+                        TocarVozDialogo(&assets, falas[e.falaIdx].audioPath, e.volSfx);
+                    }
                     int lenTexto = (int)strlen(falas[e.falaIdx].texto);
 
                     // Efeito typing rapido e fluido
@@ -1628,6 +1714,11 @@ int main(void) {
                     Rectangle r = { 95.0f + i * 26.0f, 312.0f + i * 82.0f, 360.0f, 68.0f };
                     DesenharBotaoSolto(assets.fontes.teko, r, menuTextos[i], 62, e.hoverMenu[i], tempo, (Color){ 238, 235, 248, 255 });
                 }
+                if (e.devDesbloqueado) {
+                    Rectangle btnDevMenu = { 980, 626, 235, 42 };
+                    DesenharBotaoCyber(assets.fontes.bold, btnDevMenu, "CONSOLE DEV [F9]", 18,
+                        CheckCollisionPointRec(mouse, btnDevMenu) ? 1.0f : 0.0f, tempo, COR_VERDE_OK);
+                }
                 DrawTextEx(assets.fontes.bold, "SYS // CYBER-INVESTIGACAO v2.0", (Vector2){ 935, 682 }, 20, 1.0f, ColorAlpha(COR_CIANO_NEON, 0.70f));
                 DesenharScanlinesHUD(tempo);
             } break;
@@ -1636,38 +1727,48 @@ int main(void) {
                 if (assets.menuBg.id != 0) DesenharTexturaCover(assets.menuBg, (Rectangle){0, 0, VIRTUAL_W, VIRTUAL_H}, WHITE);
                 DrawRectangle(0, 0, VIRTUAL_W, VIRTUAL_H, (Color){ 10, 6, 20, 195 });
 
-                DesenharPainelCyber((Rectangle){ 100, 110, 820, 460 }, COR_ROSA_NEON);
-                DrawTextEx(assets.fontes.teko, "Configurações", (Vector2){ 145, 134 }, 58, 1.5f, WHITE);
-                DrawRectangle(145, 198, 730, 2, ColorAlpha(COR_ROSA_NEON, 0.45f));
+                DesenharPainelCyber((Rectangle){ 100, 86, 820, 520 }, COR_ROSA_NEON);
+                DrawTextEx(assets.fontes.teko, "Configurações", (Vector2){ 145, 108 }, 58, 1.5f, WHITE);
+                DrawRectangle(145, 170, 730, 2, ColorAlpha(COR_ROSA_NEON, 0.45f));
+
+                // 0. Volume Geral
+                DesenharBotaoSolto(assets.fontes.teko, (Rectangle){ 140, 198, 340, 54 }, "Volume Geral", 46, e.hoverConfig[0], tempo, WHITE);
+                Rectangle btnGerMenos = { 495, 206, 36, 38 };
+                Rectangle sliderGer   = { 540, 211, 220, 28 };
+                Rectangle btnGerMais  = { 770, 206, 36, 38 };
+                DrawTextEx(assets.fontes.teko, "<", (Vector2){ btnGerMenos.x + 8, btnGerMenos.y - 4 }, 46, 1.0f, CheckCollisionPointRec(mouse, btnGerMenos) ? COR_ROSA_NEON : WHITE);
+                DesenharBarraCyberInclinada(sliderGer, e.volGeral);
+                DrawTextEx(assets.fontes.teko, ">", (Vector2){ btnGerMais.x + 8, btnGerMais.y - 4 }, 46, 1.0f, CheckCollisionPointRec(mouse, btnGerMais) ? COR_ROSA_NEON : WHITE);
+                DrawTextEx(assets.fontes.teko, TextFormat("%d%%", (int)(e.volGeral * 100.0f + 0.5f)), (Vector2){ 822, 203 }, 40, 1.0f, COR_CIANO_NEON);
 
                 // 1. Ajustar Musica
-                DesenharBotaoSolto(assets.fontes.teko, (Rectangle){ 140, 230, 340, 54 }, "Ajustar Música", 46, e.hoverConfig[0], tempo, WHITE);
-                Rectangle btnMusMenos = { 495, 238, 36, 38 };
-                Rectangle sliderMus   = { 540, 243, 220, 28 };
-                Rectangle btnMusMais  = { 770, 238, 36, 38 };
+                DesenharBotaoSolto(assets.fontes.teko, (Rectangle){ 140, 268, 340, 54 }, "Ajustar Música", 46, e.hoverConfig[1], tempo, WHITE);
+                Rectangle btnMusMenos = { 495, 276, 36, 38 };
+                Rectangle sliderMus   = { 540, 281, 220, 28 };
+                Rectangle btnMusMais  = { 770, 276, 36, 38 };
                 DrawTextEx(assets.fontes.teko, "<", (Vector2){ btnMusMenos.x + 8, btnMusMenos.y - 4 }, 46, 1.0f, CheckCollisionPointRec(mouse, btnMusMenos) ? COR_ROSA_NEON : WHITE);
                 DesenharBarraCyberInclinada(sliderMus, e.volMusica);
                 DrawTextEx(assets.fontes.teko, ">", (Vector2){ btnMusMais.x + 8, btnMusMais.y - 4 }, 46, 1.0f, CheckCollisionPointRec(mouse, btnMusMais) ? COR_ROSA_NEON : WHITE);
-                DrawTextEx(assets.fontes.teko, TextFormat("%d%%", (int)(e.volMusica * 100.0f + 0.5f)), (Vector2){ 822, 235 }, 40, 1.0f, COR_CIANO_NEON);
+                DrawTextEx(assets.fontes.teko, TextFormat("%d%%", (int)(e.volMusica * 100.0f + 0.5f)), (Vector2){ 822, 273 }, 40, 1.0f, COR_CIANO_NEON);
 
                 // 2. Ajustar Efeitos
-                DesenharBotaoSolto(assets.fontes.teko, (Rectangle){ 140, 305, 340, 54 }, "Ajustar Efeitos", 46, e.hoverConfig[1], tempo, WHITE);
-                Rectangle btnSfxMenos = { 495, 313, 36, 38 };
-                Rectangle sliderSfx   = { 540, 318, 220, 28 };
-                Rectangle btnSfxMais  = { 770, 313, 36, 38 };
+                DesenharBotaoSolto(assets.fontes.teko, (Rectangle){ 140, 338, 340, 54 }, "Ajustar Efeitos", 46, e.hoverConfig[2], tempo, WHITE);
+                Rectangle btnSfxMenos = { 495, 346, 36, 38 };
+                Rectangle sliderSfx   = { 540, 351, 220, 28 };
+                Rectangle btnSfxMais  = { 770, 346, 36, 38 };
                 DrawTextEx(assets.fontes.teko, "<", (Vector2){ btnSfxMenos.x + 8, btnSfxMenos.y - 4 }, 46, 1.0f, CheckCollisionPointRec(mouse, btnSfxMenos) ? COR_ROSA_NEON : WHITE);
                 DesenharBarraCyberInclinada(sliderSfx, e.volSfx);
                 DrawTextEx(assets.fontes.teko, ">", (Vector2){ btnSfxMais.x + 8, btnSfxMais.y - 4 }, 46, 1.0f, CheckCollisionPointRec(mouse, btnSfxMais) ? COR_ROSA_NEON : WHITE);
-                DrawTextEx(assets.fontes.teko, TextFormat("%d%%", (int)(e.volSfx * 100.0f + 0.5f)), (Vector2){ 822, 310 }, 40, 1.0f, COR_CIANO_NEON);
+                DrawTextEx(assets.fontes.teko, TextFormat("%d%%", (int)(e.volSfx * 100.0f + 0.5f)), (Vector2){ 822, 343 }, 40, 1.0f, COR_CIANO_NEON);
 
                 // 3. Tela cheia
-                DesenharBotaoSolto(assets.fontes.teko, (Rectangle){ 140, 380, 340, 54 }, "Tela Cheia", 46, e.hoverConfig[2], tempo, WHITE);
-                DrawTextEx(assets.fontes.teko, e.telaCheia ? "Ligada" : "Desligada", (Vector2){ 540, 384 }, 44, 1.0f, e.telaCheia ? COR_ROSA_NEON : LIGHTGRAY);
+                DesenharBotaoSolto(assets.fontes.teko, (Rectangle){ 140, 408, 340, 54 }, "Tela Cheia", 46, e.hoverConfig[3], tempo, WHITE);
+                DrawTextEx(assets.fontes.teko, e.telaCheia ? "Ligada" : "Desligada", (Vector2){ 540, 412 }, 44, 1.0f, e.telaCheia ? COR_ROSA_NEON : LIGHTGRAY);
 
                 // 4. Voltar
-                DesenharBotaoSolto(assets.fontes.teko, (Rectangle){ 140, 470, 280, 54 }, "Voltar", 48, e.hoverConfig[3], tempo, COR_CIANO_NEON);
+                DesenharBotaoSolto(assets.fontes.teko, (Rectangle){ 140, 496, 280, 54 }, "Voltar", 48, e.hoverConfig[4], tempo, COR_CIANO_NEON);
                 // Decoracao discreta (3 cliques abre o modo dev)
-                DrawTextEx(assets.fontes.bold, "SYS//2.0", (Vector2){ 836, 530 }, 16, 1.0f, ColorAlpha(COR_ROXO_NEON, 0.40f));
+                DrawTextEx(assets.fontes.bold, "SYS//2.0", (Vector2){ 836, 566 }, 16, 1.0f, ColorAlpha(COR_ROXO_NEON, 0.40f));
                 DesenharScanlinesHUD(tempo);
             } break;
 
@@ -2391,6 +2492,12 @@ int main(void) {
             for (int i = 0; i < 4; i++) {
                 DesenharBotaoCyber(assets.fontes.bold, (Rectangle){ 465, 252 + i * 58, 350, 48 }, pausaTxt[i], 24, e.hoverPausa[i], tempo, pausaCor[i]);
             }
+        }
+
+        if (e.devDesbloqueado && e.tela != TELA_MENU && e.tela != TELA_NOME_JOGADOR && e.tela != TELA_CONFIG && e.tela != TELA_CREDITOS && !e.menuPausa && !e.devPainelAberto && !e.devPopupSenha) {
+            Rectangle btnDevTop = { 18, 14, 108, 36 };
+            DesenharBotaoCyber(assets.fontes.bold, btnDevTop, "DEV [F9]", 17,
+                CheckCollisionPointRec(mouse, btnDevTop) ? 1.0f : 0.0f, tempo, COR_VERDE_OK);
         }
 
         DesenharDevOverlay(&e, &assets.fontes, mouse, tempo);

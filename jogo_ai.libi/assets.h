@@ -63,6 +63,8 @@ typedef struct {
     bool temSfxEscritorio;
     bool temSfxLinkOk;
     bool temSfxLinkErr;
+    Sound vozAtual;
+    bool temVozAtual;
 } GerenciadorAssets;
 
 static inline const char *ResolverCaminho(const char *relativo, char *buffer, int tam) {
@@ -171,8 +173,20 @@ static inline void IniciarGerenciadorAssets(GerenciadorAssets *g) {
     g->fontes = CarregarFontesUI();
 
     g->menuBg       = CarregarTexturaSegura("AssetsRay/MenuPrincipal/menu (1).png");
-    g->marcaLogo    = CarregarTexturaSegura("AssetsRay/MenuPrincipal/ailibe marca.png");
+    g->marcaLogo    = CarregarTexturaSegura("AssetsRay/MenuPrincipal/Logo.png");
     g->caixaDialogo = CarregarTexturaSegura("AssetsRay/UI/CaixaDialogo.png");
+    {
+        static const char *chibiPaths[5] = {
+            "AssetsRay/Chibis/JuizProductOwner.png",
+            "AssetsRay/Chibis/JulianaDev.png",
+            "AssetsRay/Chibis/CaioDesigner.png",
+            "AssetsRay/Chibis/AdvogadaRoterista.png",
+            "AssetsRay/Chibis/GabrielResearcher.png"
+        };
+        for (int i = 0; i < 5; i++) {
+            g->chibisCreditos[i] = CarregarTexturaSegura(chibiPaths[i]);
+        }
+    }
 
     char buf[256];
     const char *m1 = ResolverCaminho("src/audio/ai.libi_1.wav", buf, sizeof(buf));
@@ -325,7 +339,37 @@ static inline Sound ObterSfxClick(const GerenciadorAssets *g, int preset) {
     return g->sfxClick;
 }
 
+static inline void PararVozDialogo(GerenciadorAssets *g) {
+    if (g->temVozAtual) {
+        if (IsSoundPlaying(g->vozAtual)) StopSound(g->vozAtual);
+        UnloadSound(g->vozAtual);
+        g->vozAtual = (Sound){0};
+        g->temVozAtual = false;
+    }
+}
+
+static inline void TocarVozDialogo(GerenciadorAssets *g, const char *relativo, float vol) {
+    PararVozDialogo(g);
+    if (!relativo || relativo[0] == '\0') return;
+    char buf[256];
+    const char *p = ResolverCaminho(relativo, buf, sizeof(buf));
+    if (!FileExists(p)) {
+        char alt[256];
+        snprintf(alt, sizeof(alt), "jogo_ai.libi/%s", relativo);
+        p = ResolverCaminho(alt, buf, sizeof(buf));
+    }
+    if (FileExists(p)) {
+        g->vozAtual = LoadSound(p);
+        if (g->vozAtual.frameCount > 0) {
+            SetSoundVolume(g->vozAtual, vol);
+            PlaySound(g->vozAtual);
+            g->temVozAtual = true;
+        }
+    }
+}
+
 static inline void DescarregarGerenciadorAssets(GerenciadorAssets *g) {
+    PararVozDialogo(g);
     if (g->menuBg.id != 0) UnloadTexture(g->menuBg);
     if (g->marcaLogo.id != 0) UnloadTexture(g->marcaLogo);
     if (g->caixaDialogo.id != 0) UnloadTexture(g->caixaDialogo);

@@ -54,12 +54,19 @@ typedef struct {
     float volSfx;
     bool telaCheia;
     bool modoTechNight;
+    bool devDesbloqueado;
+    float volGeral;
 } ConfigSalva;
 
 static inline void SalvarConfig(ConfigSalva cfg) {
     FILE *arquivo = fopen("config.txt", "w");
     if (arquivo != NULL) {
-        fprintf(arquivo, "%.3f\n%.3f\n%d\n%d\n", cfg.volMusica, cfg.volSfx, cfg.telaCheia ? 1 : 0, cfg.modoTechNight ? 1 : 0);
+        fprintf(arquivo, "%.3f\n%.3f\n%d\n%d\n%d\n%.3f\n",
+            cfg.volMusica, cfg.volSfx,
+            cfg.telaCheia ? 1 : 0,
+            cfg.modoTechNight ? 1 : 0,
+            cfg.devDesbloqueado ? 1 : 0,
+            cfg.volGeral);
         fclose(arquivo);
     }
 }
@@ -67,14 +74,22 @@ static inline void SalvarConfig(ConfigSalva cfg) {
 static inline void CarregarConfig(ConfigSalva *cfg) {
     FILE *arquivo = fopen("config.txt", "r");
     if (arquivo != NULL) {
-        int tc = 0, tn = 0;
-        if (fscanf(arquivo, "%f\n%f\n%d\n%d\n", &cfg->volMusica, &cfg->volSfx, &tc, &tn) >= 2) {
+        int tc = 0, tn = 0, dv = 0;
+        float vg = cfg->volGeral;
+        int lidos = fscanf(arquivo, "%f\n%f\n%d\n%d\n%d\n%f\n", &cfg->volMusica, &cfg->volSfx, &tc, &tn, &dv, &vg);
+        if (lidos >= 2) {
             if (cfg->volMusica < 0.0f) cfg->volMusica = 0.0f;
             if (cfg->volMusica > 1.0f) cfg->volMusica = 1.0f;
             if (cfg->volSfx < 0.0f) cfg->volSfx = 0.0f;
             if (cfg->volSfx > 1.0f) cfg->volSfx = 1.0f;
             cfg->telaCheia = (tc != 0);
             cfg->modoTechNight = (tn != 0);
+            if (lidos >= 5) cfg->devDesbloqueado = (dv != 0);
+            if (lidos >= 6) {
+                if (vg < 0.0f) vg = 0.0f;
+                if (vg > 1.0f) vg = 1.0f;
+                cfg->volGeral = vg;
+            }
         }
         fclose(arquivo);
     }
