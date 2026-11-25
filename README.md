@@ -242,13 +242,23 @@ Foram implementadas as funcionalidades relacionadas a melhoria, desenvolvimento 
 
 ## Colaboração e evidências
 
-### Relato de Programação em Pares - Luma (Driver)
+### Relato de Programação em Pares  
 
-Durante o desenvolvimento das **US02**, atuei como **Driver**, sendo responsável pela implementação do código, enquanto Lanna atuou como **Navigator**, acompanhando a lógica e sugerindo melhorias. A experiência contribuiu para a troca de conhecimentos e para a validação das soluções durante o desenvolvimento. Como ponto negativo, algumas decisões demandaram mais tempo devido às discussões antes da implementação.
+## Relato de Programação em Pares — US02
 
-### Relato de Programação em Pares - Lanna (Navigator)
+Durante o desenvolvimento da **US02**, no **dia 12/10/2026**, as **desenvolvedoras: Luma Frazão (Driver) e Letícia (Navigator)** utilizaram a programação em pares para implementar e revisar as soluções da história de usuário. Enquanto Luma ficou responsável pela implementação direta do código, Letícia acompanhou a lógica, revisou as implementações, sugeriu melhorias e auxiliou na tomada de decisões técnicas.
 
-Durante o desenvolvimento das **US02**, atuei como **Navigator**, auxiliando Luma na análise da lógica, revisão das implementações e tomada de decisões técnicas. A atividade favoreceu a colaboração e a identificação de melhorias no código. Como desafio, o processo exigiu um maior alinhamento entre a dupla, tornando algumas etapas mais demoradas do que no desenvolvimento individual.
+**Reflexão (Driver):** "Durante o desenvolvimento da US02, atuei como Driver, sendo responsável pela implementação do código, enquanto Letícia atuou como Navigator, acompanhando a lógica e sugerindo melhorias. A experiência contribuiu para a troca de conhecimentos e para a validação das soluções durante o desenvolvimento. Como ponto negativo, algumas decisões demandaram mais tempo devido às discussões antes da implementação.", *relato feito por Luma Frazão.*
+
+**Reflexão (Navigator):** "Durante o desenvolvimento da US02, atuei como Navigator, auxiliando Luma na análise da lógica, revisão das implementações e tomada de decisões técnicas. A atividade favoreceu a colaboração e a identificação de melhorias no código. Como desafio, o processo exigiu um maior alinhamento entre a dupla, tornando algumas etapas mais demoradas do que no desenvolvimento individual.", *relato feito por Letícia.*
+
+
+## Relato da Programção em Pares - US06
+
+Durante o desenvolvimento da **US06**, no **dia 29/10/2026**,  as **desevolvedoras: Luma Frazão e Lanna Marculino** utilizaram a programação em pares para resolver o problema da **contabilização de erros e acertos do jogo**. Lanna pesquisou os comandos necessários através da CLAUDE.AI, juntou eles em arquivo e mandou via e-mail para Luma, a qual separou os comandos e juntou eles à main.  
+**Reflexão (Driver):** "A experência foi interessante, pois otimiza o trabalho de ambos. Enquanto eu resolvia outras features do jogo, Lanna estava pesquisando as coisas necessárias para resolver a seguinte. Assim tornando o trabalho mais rapido e conseguindo incluir Lanna no desenvolvimento do projeto também, pois ela passou um tempo sem notebook e essa foi a alternativa que encontramos para todo mundo ficar por dentro do que estava acontecendo no desenvolvimento do AI.LIBI", *relato feito por Luma Frazão.*  
+
+
 
 ## 👥 Equipe
 
