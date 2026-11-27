@@ -272,64 +272,24 @@ Foram implementadas as funcionalidades relacionadas a melhoria, desenvolvimento 
 
 ---
 
-# Como compilar e executar para a contribuição no projeto  
-
-**Presente no arquivo:** [CONTRIBUTION.md](CONTRIBUTION.MD)
-
-## 🐞 Issue Tracker
-
-Durante a Sprint 02 foi utilizado um Issue Tracker para registrar, acompanhar e validar a correção dos problemas identificados durante os testes do projeto.
-
-### Objetivos
-
-- Registrar defeitos encontrados durante o desenvolvimento;
-- Priorizar correções;
-- Acompanhar o progresso das resoluções;
-- Garantir maior estabilidade do sistema antes da entrega final.
-
-### Estado Inicial da Sprint 02
-
-O Issue Tracker abaixo apresenta os problemas identificados no início da Sprint 02.
-
-<img src="prototipo_de_baixa/src/IssueTracker01.jpeg" width="800">
-
-### Estado Final da Sprint 02
-
-Após o ciclo de desenvolvimento e testes, os problemas registrados foram revisados e tratados conforme as prioridades definidas pela equipe.
-
-<img src="prototipo_de_baixa/src/IssueTrackerFinal.png" width="800">
-
-### Resultado
-
-Ao final da Sprint 02, as funcionalidades implementadas foram testadas e os problemas identificados foram registrados, analisados e corrigidos, contribuindo para a estabilidade e qualidade do AI.libi antes da entrega final do projeto.
-
-## Colaboração e evidências
-
-### Relato de Programação em Pares  
-
-## Relato de Programação em Pares — US02
-
-Durante o desenvolvimento da **US02**, no **dia 12/10/2026**, as **desenvolvedoras: Luma Frazão (Driver) e Letícia (Navigator)** utilizaram a programação em pares para implementar e revisar as soluções da história de usuário. Enquanto Luma ficou responsável pela implementação direta do código, Letícia acompanhou a lógica, revisou as implementações, sugeriu melhorias e auxiliou na tomada de decisões técnicas.
-
-**Reflexão (Driver):** "Durante o desenvolvimento da US02, atuei como Driver, sendo responsável pela implementação do código, enquanto Letícia atuou como Navigator, acompanhando a lógica e sugerindo melhorias. A experiência contribuiu para a troca de conhecimentos e para a validação das soluções durante o desenvolvimento. Como ponto negativo, algumas decisões demandaram mais tempo devido às discussões antes da implementação.", *relato feito por Luma Frazão.*
-
-**Reflexão (Navigator):** "Durante o desenvolvimento da US02, atuei como Navigator, auxiliando Luma na análise da lógica, revisão das implementações e tomada de decisões técnicas. A atividade favoreceu a colaboração e a identificação de melhorias no código. Como desafio, o processo exigiu um maior alinhamento entre a dupla, tornando algumas etapas mais demoradas do que no desenvolvimento individual.", *relato feito por Letícia.*
-
-
-## Relato da Programção em Pares - US06
-
-Durante o desenvolvimento da **US06**, no **dia 29/10/2026**,  as **desevolvedoras: Luma Frazão e Lanna Marculino** utilizaram a programação em pares para resolver o problema da **contabilização de erros e acertos do jogo**. Lanna pesquisou os comandos necessários através da CLAUDE.AI, juntou eles em arquivo e mandou via e-mail para Luma, a qual separou os comandos e juntou eles à main.  
-**Reflexão (Driver):** "A experência foi interessante, pois otimiza o trabalho de ambos. Enquanto eu resolvia outras features do jogo, Lanna estava pesquisando as coisas necessárias para resolver a seguinte. Assim tornando o trabalho mais rapido e conseguindo incluir Lanna no desenvolvimento do projeto também, pois ela passou um tempo sem notebook e essa foi a alternativa que encontramos para todo mundo ficar por dentro do que estava acontecendo no desenvolvimento do AI.LIBI", *relato feito por Luma Frazão.*
-**Reflexão (Navigator):** "Acredito que não fosse conseguir dar continuidade ao desenvolvimento do jogo com as meninas devido aos problemas técnicos, mas a programação em pares se mostrou uma ótima alternativa enquanto eu estava sem meu notebook. Gostei bastante da dinâmica de programar simultaneamente com duas pessoas diferentes, pois isso proporcionou uma troca de ideias mais clara e me permitiu acompanhar melhor o andamento do nosso projeto."
-
-
-
 ## 👥 Equipe
 
-Product Owner
+Além dos integrantes reais do projeto, o AI.libi também conta com uma representação artística da equipe presente na tela de créditos do jogo.
+
+<p align="center">
+  <img src="prototipo_de_baixa/src/EquipeVirtual.png" width="450" alt="Representação artística da equipe nos créditos do jogo">
+  <img src="prototipo_de_baixa/src/EquipeReal.jpeg" width="450" alt="Foto da equipe de desenvolvimento">
+</p>
+
+<p align="center">
+  <em>À esquerda, representação artística dos integrantes utilizada nos créditos do AI.libi. À direita, a equipe responsável pelo desenvolvimento do projeto.</em>
+</p>
+
+---
+
+👑 Product Owner
 
 - Giovana Monteiro | [Acesse o perfil de Giovana Monteiro](www.linkedin.com/in/giovana-monteiro-a419a4349)
-
 
 
 👨‍💻 Programadores
@@ -362,13 +322,38 @@ Product Owner
 
 ---
 
-🚀 Desenvolvimento
+## Como compilar e executar para a contribuição no projeto  
 
-O desenvolvimento do IA.libi é realizado de forma colaborativa, envolvendo diferentes áreas:
+**Presente no arquivo:** [CONTRIBUTION.md](CONTRIBUTION.MD)
 
-Produto → Design → Roteiro → UX/Research → Programação → Testes
+---
 
-Cada área contribui para transformar a proposta educacional em uma experiência investigativa interativa.
+## 🐞 Issue Tracker
+
+Durante a Sprint 02 foi utilizado um Issue Tracker para registrar, acompanhar e validar a correção dos problemas identificados durante os testes do projeto.
+
+### Objetivos
+
+- Registrar defeitos encontrados durante o desenvolvimento;
+- Priorizar correções;
+- Acompanhar o progresso das resoluções;
+- Garantir maior estabilidade do sistema antes da entrega final.
+
+### Estado Inicial da Sprint 02
+
+O Issue Tracker abaixo apresenta os problemas identificados no início da Sprint 02.
+
+<img src="prototipo_de_baixa/src/IssueTracker01.jpeg" width="800">
+
+### Estado Final da Sprint 02
+
+Após o ciclo de desenvolvimento e testes, os problemas registrados foram revisados e tratados conforme as prioridades definidas pela equipe.
+
+<img src="prototipo_de_baixa/src/IssueTrackerFinal.png" width="800">
+
+### Resultado
+
+Ao final da Sprint 02, as funcionalidades implementadas foram testadas e os problemas identificados foram registrados, analisados e corrigidos, contribuindo para a estabilidade e qualidade do AI.libi antes da entrega final do projeto.
 
 ---
 # 🗂️ Estrutura do Projeto
@@ -432,6 +417,25 @@ Os arquivos de documentação estão localizados na raiz do projeto:
 - Google Gemini
 - Claude Code
 - Google Antigravity
+
+---
+
+### Relato de Programação em Pares  
+
+## Relato de Programação em Pares — US02
+
+Durante o desenvolvimento da **US02**, no **dia 12/10/2026**, as **desenvolvedoras: Luma Frazão (Driver) e Letícia (Navigator)** utilizaram a programação em pares para implementar e revisar as soluções da história de usuário. Enquanto Luma ficou responsável pela implementação direta do código, Letícia acompanhou a lógica, revisou as implementações, sugeriu melhorias e auxiliou na tomada de decisões técnicas.
+
+**Reflexão (Driver):** "Durante o desenvolvimento da US02, atuei como Driver, sendo responsável pela implementação do código, enquanto Letícia atuou como Navigator, acompanhando a lógica e sugerindo melhorias. A experiência contribuiu para a troca de conhecimentos e para a validação das soluções durante o desenvolvimento. Como ponto negativo, algumas decisões demandaram mais tempo devido às discussões antes da implementação.", *relato feito por Luma Frazão.*
+
+**Reflexão (Navigator):** "Durante o desenvolvimento da US02, atuei como Navigator, auxiliando Luma na análise da lógica, revisão das implementações e tomada de decisões técnicas. A atividade favoreceu a colaboração e a identificação de melhorias no código. Como desafio, o processo exigiu um maior alinhamento entre a dupla, tornando algumas etapas mais demoradas do que no desenvolvimento individual.", *relato feito por Letícia.*
+
+
+## Relato da Programção em Pares - US06
+
+Durante o desenvolvimento da **US06**, no **dia 29/10/2026**,  as **desevolvedoras: Luma Frazão e Lanna Marculino** utilizaram a programação em pares para resolver o problema da **contabilização de erros e acertos do jogo**. Lanna pesquisou os comandos necessários através da CLAUDE.AI, juntou eles em arquivo e mandou via e-mail para Luma, a qual separou os comandos e juntou eles à main.  
+**Reflexão (Driver):** "A experência foi interessante, pois otimiza o trabalho de ambos. Enquanto eu resolvia outras features do jogo, Lanna estava pesquisando as coisas necessárias para resolver a seguinte. Assim tornando o trabalho mais rapido e conseguindo incluir Lanna no desenvolvimento do projeto também, pois ela passou um tempo sem notebook e essa foi a alternativa que encontramos para todo mundo ficar por dentro do que estava acontecendo no desenvolvimento do AI.LIBI", *relato feito por Luma Frazão.*
+**Reflexão (Navigator):** "Acredito que não fosse conseguir dar continuidade ao desenvolvimento do jogo com as meninas devido aos problemas técnicos, mas a programação em pares se mostrou uma ótima alternativa enquanto eu estava sem meu notebook. Gostei bastante da dinâmica de programar simultaneamente com duas pessoas diferentes, pois isso proporcionou uma troca de ideias mais clara e me permitiu acompanhar melhor o andamento do nosso projeto."
 
 ---
 
