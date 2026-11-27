@@ -155,17 +155,37 @@ Esses conceitos são utilizados como parte da própria progressão do jogo, evit
 - ✅ Bad Ending para conclusões equivocadas;
 - ✅ Relatório final detalhando os resultados da investigação.
 
+# 🌟 Funcionalidades Adicionais
+
+Durante o desenvolvimento do AI.libi, a equipe implementou funcionalidades que não faziam parte do escopo inicial do projeto, mas que contribuíram significativamente para a experiência do jogador.
+
+## 🎙️ Dublagem Original
+
+Além dos elementos visuais e textuais da narrativa, o jogo recebeu dublagens originais produzidas pela equipe para personagens e momentos importantes da investigação.
+
+A inclusão de áudio contribuiu para:
+
+- Maior imersão durante a narrativa;
+- Melhor compreensão dos diálogos;
+- Aproximação da experiência com jogos investigativos comerciais;
+- Maior engajamento do jogador ao longo da investigação.
+
+## 📖 Gibi Explicativo da Investigação
+
+Ao final da história, o jogador recebe um gibi ilustrado que apresenta a reconstrução completa dos acontecimentos do caso.
+
+Esse recurso foi desenvolvido para complementar o relatório final e permitir que o jogador compreenda visualmente:
+
+- Como o crime ocorreu;
+- Quais evidências eram verdadeiras;
+- Quais evidências foram manipuladas;
+- Como as pistas se conectam para formar a solução do caso.
+
+O objetivo do gibi é tornar a conclusão da investigação mais dinâmica e facilitar a compreensão dos eventos narrativos apresentados durante o jogo.
+
 ## 📖 Storyboard e User Stories
 
 As User Stories do projeto foram documentadas em um storyboard navegável desenvolvido no Figma.
-
-Cada história apresenta:
-
-- História de usuário;
-- Objetivo da funcionalidade;
-- Sketch da interface;
-- Navegação entre funcionalidades;
-- Evidências visuais da implementação.
 
 O storyboard foi utilizado como artefato de apoio durante o desenvolvimento e como mecanismo de rastreabilidade entre os requisitos e as funcionalidades implementadas.
 
@@ -226,6 +246,7 @@ Foram implementadas as funcionalidades responsáveis por estabelecer a base da e
 - [Protótipo no Figma](https://www.figma.com/proto/nYrh1RndZJO9kXkZlXdNWN/ai.libe?node-id=8-10&t=DVWzvsOVZvj6wX6e-0&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1)
 - [Screencast dos Testes](https://drive.google.com/file/d/1QYxtFs5ZoVz9ueSk89od_WC6WQeR7DDE/view?usp=sharing)
 - [ScreenCast das Histórias de Usuários no Trello](https://drive.google.com/file/d/1LvloIpaRKzMaGN2_6kSzIHapZJP6Z9-s/view?usp=sharing)
+- Board final da Sprint 01
 - <img src="prototipo_de_baixa/src/trello.png" width="300">
 
 ### Sprint 02
@@ -245,12 +266,11 @@ Foram implementadas as funcionalidades relacionadas a melhoria, desenvolvimento 
 
 - [Screencast dos Testes](https://drive.google.com/file/d/1XMqJAy4WeaSpG0mHwiGUokfC4kdFG3Bu/view)
 - [User Stories Implementadas Atualizada](https://www.figma.com/make/Gbf4PrvbA808cUpLNcBonx/Storyboard-para-User-Stories?code-node-id=0-6&p=f&t=Oml7Zc8YCxebr5G2-0)
-- [Link para o Trello](https://trello.com/b/1ANqqPw6/squad-3)
+- [Link para o Trello com o Board final](https://trello.com/b/1ANqqPw6/squad-3)
+- [Versão Final do Jogo](https://www.youtube.com/watch?v=AmzvtzSXBl8)
+- [Finais possíveis do Ai.libi](https://www.youtube.com/watch?v=vAmBhmPHbLg)
+
 ---
-
-## 🎮 Protótipo Navegável
-
-[Protótipo no Figma](https://www.figma.com/proto/nYrh1RndZJO9kXkZlXdNWN/ai.libe?node-id=8-10&t=DVWzvsOVZvj6wX6e-0&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1)
 
 # Como compilar e executar para a contribuição no projeto  
 
@@ -258,11 +278,9 @@ Foram implementadas as funcionalidades relacionadas a melhoria, desenvolvimento 
 
 ## Qualidade e Testes
 
-### bug tracker
+### Issue/Bug tracker
 
-[Screencast dos Testes](https://drive.google.com/file/d/1QYxtFs5ZoVz9ueSk89od_WC6WQeR7DDE/view?usp=sharing)
-
-[Bug Tracker](https://drive.google.com/file/d/1MjC1fqsw-wlaSxOmEzyaNhTbzoa0UmCD/view?usp=sharing)
+[Documentação](https://drive.google.com/file/d/1MjC1fqsw-wlaSxOmEzyaNhTbzoa0UmCD/view?usp=sharing)
 
 ## Colaboração e evidências
 
@@ -280,7 +298,8 @@ Durante o desenvolvimento da **US02**, no **dia 12/10/2026**, as **desenvolvedor
 ## Relato da Programção em Pares - US06
 
 Durante o desenvolvimento da **US06**, no **dia 29/10/2026**,  as **desevolvedoras: Luma Frazão e Lanna Marculino** utilizaram a programação em pares para resolver o problema da **contabilização de erros e acertos do jogo**. Lanna pesquisou os comandos necessários através da CLAUDE.AI, juntou eles em arquivo e mandou via e-mail para Luma, a qual separou os comandos e juntou eles à main.  
-**Reflexão (Driver):** "A experência foi interessante, pois otimiza o trabalho de ambos. Enquanto eu resolvia outras features do jogo, Lanna estava pesquisando as coisas necessárias para resolver a seguinte. Assim tornando o trabalho mais rapido e conseguindo incluir Lanna no desenvolvimento do projeto também, pois ela passou um tempo sem notebook e essa foi a alternativa que encontramos para todo mundo ficar por dentro do que estava acontecendo no desenvolvimento do AI.LIBI", *relato feito por Luma Frazão.*  
+**Reflexão (Driver):** "A experência foi interessante, pois otimiza o trabalho de ambos. Enquanto eu resolvia outras features do jogo, Lanna estava pesquisando as coisas necessárias para resolver a seguinte. Assim tornando o trabalho mais rapido e conseguindo incluir Lanna no desenvolvimento do projeto também, pois ela passou um tempo sem notebook e essa foi a alternativa que encontramos para todo mundo ficar por dentro do que estava acontecendo no desenvolvimento do AI.LIBI", *relato feito por Luma Frazão.*
+**Reflexão (Navigator):** "Acredito que não fosse conseguir dar continuidade ao desenvolvimento do jogo com as meninas devido aos problemas técnicos, mas a programação em pares se mostrou uma ótima alternativa enquanto eu estava sem meu notebook. Gostei bastante da dinâmica de programar simultaneamente com duas pessoas diferentes, pois isso proporcionou uma troca de ideias mais clara e me permitiu acompanhar melhor o andamento do nosso projeto."
 
 
 
