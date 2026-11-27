@@ -276,11 +276,32 @@ Foram implementadas as funcionalidades relacionadas a melhoria, desenvolvimento 
 
 **Presente no arquivo:** [CONTRIBUTION.md](CONTRIBUTION.MD)
 
-## Qualidade e Testes
+## 🐞 Issue Tracker
 
-### Issue/Bug tracker
+Durante a Sprint 02 foi utilizado um Issue Tracker para registrar, acompanhar e validar a correção dos problemas identificados durante os testes do projeto.
 
-[Documentação](https://drive.google.com/file/d/1MjC1fqsw-wlaSxOmEzyaNhTbzoa0UmCD/view?usp=sharing)
+### Objetivos
+
+- Registrar defeitos encontrados durante o desenvolvimento;
+- Priorizar correções;
+- Acompanhar o progresso das resoluções;
+- Garantir maior estabilidade do sistema antes da entrega final.
+
+### Estado Inicial da Sprint 02
+
+O Issue Tracker abaixo apresenta os problemas identificados no início da Sprint 02.
+
+<img src="prototipo_de_baixa/src/IssueTracker01.jpeg" width="800">
+
+### Estado Final da Sprint 02
+
+Após o ciclo de desenvolvimento e testes, os problemas registrados foram revisados e tratados conforme as prioridades definidas pela equipe.
+
+<img src="prototipo_de_baixa/src/IssueTrackerFinal.png" width="800">
+
+### Resultado
+
+Ao final da Sprint 02, as funcionalidades implementadas foram testadas e os problemas identificados foram registrados, analisados e corrigidos, contribuindo para a estabilidade e qualidade do AI.libi antes da entrega final do projeto.
 
 ## Colaboração e evidências
 
