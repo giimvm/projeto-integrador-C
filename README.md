@@ -190,7 +190,7 @@ As User Stories do projeto foram documentadas em um storyboard navegável desenv
 O storyboard foi utilizado como artefato de apoio durante o desenvolvimento e como mecanismo de rastreabilidade entre os requisitos e as funcionalidades implementadas.
 
 🔗 Acesse o storyboard completo:
-[Storyboard e User Stories](https://www.figma.com/make/Gbf4PrvbA808cUpLNcBonx/Storyboard-para-User-Stories?code-node-id=0-6&p=f&t=Oml7Zc8YCxebr5G2-0)
+[Storyboard e User Stories](https://www.figma.com/make/Gbf4PrvbA808cUpLNcBonx/Storyboard-para-User-Stories?fullscreen=1&t=zpg2ctAjjlHMhdHp-1&code-node-id=0-6)
 
 # 🔗 Rastreabilidade
 
